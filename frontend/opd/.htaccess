@@ -1,0 +1,10 @@
+DirectoryIndex index.html
+
+RewriteEngine On
+RewriteBase /opd/
+
+RewriteRule ^index\.html$ - [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /opd/index.html [L]
