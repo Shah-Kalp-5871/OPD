@@ -1,13 +1,98 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  RECEPTION
+  DOCTOR
+  NURSING
+  MEDICAL
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile relations
+  adminProfile     AdminProfile?
+  receptionProfile ReceptionProfile?
+  doctorProfile    DoctorProfile?
+  nurseProfile     NurseProfile?
+  medicalProfile   MedicalProfile?
+}
+
+// ---------------------------------------------------------
+// Profile Tables (1:1 with User)
+// ---------------------------------------------------------
+
+model AdminProfile {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  // Placeholder for admin-specific data
+  notes String?
+}
+
+model ReceptionProfile {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  salary       Float @default(0.0)
+  overtimeRate Float @default(0.0)
+}
+
+model DoctorProfile {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  specialization  String?
+  consultationFee Float    @default(0.0)
+  licenseNumber   String?  @unique
+  
+  availableDays   String[] @default([])
+  morningStart    String?
+  morningEnd      String?
+  eveningStart    String?
+  eveningEnd      String?
+  appointmentGap  Int      @default(10)
+  slotDuration    Int      @default(15)
+}
+
+model NurseProfile {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  department   String?
+  salary       Float   @default(0.0)
+  overtimeRate Float   @default(0.0)
+}
+
+model MedicalProfile {
+  id     String @id @default(uuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  isPharmacist Boolean @default(false)
+  salary       Float   @default(0.0)
+  overtimeRate Float   @default(0.0)
 }

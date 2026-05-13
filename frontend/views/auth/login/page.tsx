@@ -18,33 +18,90 @@ import {
   Sparkles,
   LayoutGrid
 } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
+
+// Helper to set cookies
+const setCookie = (name: string, value: string, days: number) => {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+};
 
 const StaticLoginView = () => {
   const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const [email, setEmail] = useState('admin@opd.com');
+  const [password, setPassword] = useState('admin123');
   const [role, setRole] = useState('Admin');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const roleRoutes: Record<string, string> = {
-    'Admin': '/admin/dashboard',
-    'Reception': '/reception/dashboard',
-    'Doctor': '/doctor/dashboard',
-    'Nursing': '/nursing/dashboard',
-    'Medical / Pharmacy': '/medical/dashboard',
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      router.push(roleRoutes[role]);
-    }, 800);
+    setErrorMsg(null);
+
+    try {
+      const response = await api.post('/auth/login', {
+        email,
+        password,
+      });
+
+      // API interceptor already unwrapped this to { access_token, user }
+      const { access_token, user } = response.data;
+      
+      // Strict Role Check: Selected role must match account role
+      // Note: Frontend role labels (Admin) might need mapping to backend Role enum (ADMIN)
+      const selectedRoleUpper = role.toUpperCase();
+      if (user.role !== selectedRoleUpper) {
+        const msg = `Unauthorized: This account does not have ${role} access.`;
+        setErrorMsg(msg);
+        setIsLoading(false);
+        return;
+      }
+
+      // Store auth state
+      setAuth(user, access_token);
+      
+      // Set cookies for middleware access (Next.js server-side)
+      setCookie('token', access_token, 7);
+      setCookie('user_role', user.role, 7);
+
+      toast.success(`Welcome back, ${user.name}!`);
+
+      // Redirect based on role
+      const redirectMap: Record<string, string> = {
+        'ADMIN': '/admin/dashboard',
+        'RECEPTION': '/reception/dashboard',
+        'DOCTOR': '/doctor/dashboard',
+        'NURSING': '/nursing/dashboard',
+        'MEDICAL': '/medical/dashboard',
+      };
+
+      router.push(redirectMap[user.role] || '/');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const message = error.response?.data?.message || 'Login failed. Connection error.';
+      setErrorMsg(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const QuickAccessCard = ({ title, href, icon: Icon, color }: any) => (
+  const QuickAccessCard = ({ title, roleName, icon: Icon, color }: any) => (
     <button 
-      onClick={() => router.push(href)}
-      className="group p-4 bg-white border border-slate-100 rounded-2xl hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 text-left relative overflow-hidden"
+      onClick={() => setRole(roleName)}
+      className={`group p-4 bg-white border rounded-2xl transition-all duration-300 text-left relative overflow-hidden ${
+        role === roleName ? 'border-emerald-500 shadow-lg shadow-emerald-500/10' : 'border-slate-100 hover:border-emerald-200 hover:shadow-xl'
+      }`}
     >
        <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
           <Icon className="w-5 h-5 text-white" />
@@ -92,11 +149,11 @@ const StaticLoginView = () => {
                   <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Quick Panel Access</h3>
                </div>
                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <QuickAccessCard title="Admin" href="/admin/dashboard" icon={ShieldCheck} color="bg-slate-900" />
-                  <QuickAccessCard title="Reception" href="/reception/dashboard" icon={Users} color="bg-blue-600" />
-                  <QuickAccessCard title="Doctor" href="/doctor/dashboard" icon={Stethoscope} color="bg-emerald-600" />
-                  <QuickAccessCard title="Nursing" href="/nursing/dashboard" icon={Activity} color="bg-indigo-600" />
-                  <QuickAccessCard title="Medical" href="/medical/dashboard" icon={Pill} color="bg-teal-600" />
+                  <QuickAccessCard title="Admin" roleName="Admin" icon={ShieldCheck} color="bg-slate-900" />
+                  <QuickAccessCard title="Reception" roleName="Reception" icon={Users} color="bg-blue-600" />
+                  <QuickAccessCard title="Doctor" roleName="Doctor" icon={Stethoscope} color="bg-emerald-600" />
+                  <QuickAccessCard title="Nursing" roleName="Nursing" icon={Activity} color="bg-indigo-600" />
+                  <QuickAccessCard title="Medical" roleName="Medical" icon={Pill} color="bg-teal-600" />
                </div>
             </div>
 
@@ -128,12 +185,14 @@ const StaticLoginView = () => {
                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                      <div className="relative">
                         <User className="w-5 h-5 absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
-                        <input 
-                           type="email" 
-                           placeholder="name@clinic.com" 
-                           defaultValue="admin@clinic.com"
-                           className="w-full pl-16 pr-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-black outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner" 
-                        />
+                         <input 
+                            type="email" 
+                            placeholder="name@clinic.com" 
+                            value={email}
+                            required
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full pl-16 pr-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-black outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner" 
+                         />
                      </div>
                   </div>
 
@@ -141,12 +200,15 @@ const StaticLoginView = () => {
                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
                      <div className="relative">
                         <Lock className="w-5 h-5 absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
-                        <input 
-                           type={showPassword ? 'text' : 'password'} 
-                           placeholder="••••••••" 
-                           defaultValue="123456"
-                           className="w-full pl-16 pr-14 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-black outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner" 
-                        />
+                         <input 
+                            type={showPassword ? 'text' : 'password'} 
+                            placeholder="••••••••" 
+                            value={password}
+                            required
+                            minLength={6}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full pl-16 pr-14 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-black outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner" 
+                         />
                         <button 
                            type="button"
                            onClick={() => setShowPassword(!showPassword)}
@@ -170,26 +232,32 @@ const StaticLoginView = () => {
                            <option>Reception</option>
                            <option>Doctor</option>
                            <option>Nursing</option>
-                           <option>Medical / Pharmacy</option>
+                           <option>Medical</option>
                         </select>
                         <ChevronDown className="w-5 h-5 absolute right-6 top-1/2 -translate-y-1/2 text-emerald-400 pointer-events-none" />
                      </div>
                   </div>
                </div>
+                {errorMsg && (
+                  <div className="bg-red-50 border border-red-100 text-red-600 px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-wider flex items-center gap-3 animate-in fade-in slide-in-from-top-2 mb-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    {errorMsg}
+                  </div>
+                )}
 
-               <button 
-                  disabled={isLoading}
-                  className="w-full py-6 bg-slate-900 text-white rounded-[2rem] text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-300 hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-4 group disabled:opacity-70"
-               >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      LOGIN TO {role.split(' ')[0]} PANEL
-                      <ArrowRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-               </button>
+                <button 
+                   disabled={isLoading}
+                   className="w-full py-6 bg-slate-900 text-white rounded-[2rem] text-[12px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-300 hover:bg-black transition-all active:scale-[0.98] flex items-center justify-center gap-4 group disabled:opacity-70"
+                >
+                   {isLoading ? (
+                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                   ) : (
+                     <>
+                       LOGIN TO SYSTEM
+                       <ArrowRight className="w-5 h-5 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+                     </>
+                   )}
+                </button>
 
                <div className="text-center">
                   <button type="button" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-emerald-600 transition-colors">Forgot your password?</button>

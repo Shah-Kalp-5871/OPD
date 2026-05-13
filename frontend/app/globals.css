@@ -24,3 +24,30 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Status Color Codes - FRD v1.0 */
+.status-waiting { background-color: #fef08a !important; } /* Yellow-200 */
+.status-in-progress { background-color: #bfdbfe !important; } /* Blue-200 */
+.status-completed { background-color: #bbf7d0 !important; } /* Green-200 */
+.status-cancelled { background-color: #fecaca !important; } /* Red-200 */
+.status-new-patient { background-color: #ddd6fe !important; } /* Violet-200 */
+.status-old-patient { background-color: #e2e8f0 !important; } /* Slate-200 */
+
+/* Payment Status Colors */
+.payment-paid { background-color: #22c55e !important; color: white !important; }
+.payment-pending { background-color: #f97316 !important; color: white !important; }
+.payment-partial { background-color: #eab308 !important; color: white !important; }
+.payment-foc { background-color: #3b82f6 !important; color: white !important; }
+.payment-discount { background-color: #a855f7 !important; color: white !important; }
+
+/* Blinking Animation for In-Progress Patients */
+@keyframes patient-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.patient-name-blinking {
+  animation: patient-blink 1s ease-in-out infinite;
+  font-weight: bold;
+}

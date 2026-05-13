@@ -18,8 +18,11 @@ import {
   BarChart3, 
   Settings, 
   LifeBuoy, 
-  UserCircle 
+  UserCircle,
+  LogOut
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { useRouter } from 'next/navigation';
 
 const menuItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' },
@@ -41,6 +44,13 @@ const menuItems = [
 
 const AdminSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   return (
     <aside className="w-64 h-screen bg-white border-r border-slate-200 fixed left-0 top-0 z-50 flex flex-col">
@@ -83,16 +93,24 @@ const AdminSidebar = () => {
       </nav>
 
       {/* Sidebar Footer */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
         <div className="flex items-center gap-3 p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-            AD
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
+            {user?.name?.substring(0, 2) || 'AD'}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-xs font-bold text-slate-800 truncate">Administrator</p>
-            <p className="text-[10px] text-slate-400 truncate">admin@medflow.com</p>
+            <p className="text-xs font-bold text-slate-800 truncate">{user?.name || 'Administrator'}</p>
+            <p className="text-[10px] text-slate-400 truncate">{user?.email || 'admin@medflow.com'}</p>
           </div>
         </div>
+        
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out System
+        </button>
       </div>
     </aside>
   );
