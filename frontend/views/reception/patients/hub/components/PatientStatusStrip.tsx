@@ -7,6 +7,10 @@ interface PatientStatusStripProps {
     caseNumber: string;
     doctor?: { name: string };
     createdAt: string;
+    queueEntry?: {
+      tokenDisplay: string;
+      status: string;
+    };
   };
 }
 
@@ -33,10 +37,22 @@ const PatientStatusStrip: React.FC<PatientStatusStripProps> = ({ hasOpenCase, ac
           <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></div>
           <span className="text-[10px] font-black text-teal-700 uppercase tracking-widest">Active Consultation</span>
         </div>
-        <div className="h-4 w-px bg-teal-200"></div>
         <div className="flex items-center gap-2 text-teal-600">
           <span className="text-[10px] font-bold uppercase tracking-tight">Case ID: {activeCase?.caseNumber}</span>
         </div>
+        {activeCase?.queueEntry && (
+          <>
+            <div className="h-4 w-px bg-teal-200"></div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-white bg-teal-600 px-2 py-0.5 rounded tracking-widest uppercase">
+                Token: {activeCase.queueEntry.tokenDisplay}
+              </span>
+              <span className="text-[9px] font-bold text-teal-600 border border-teal-200 px-1.5 py-0.5 rounded uppercase">
+                {activeCase.queueEntry.status}
+              </span>
+            </div>
+          </>
+        )}
       </div>
       
       <div className="flex items-center gap-6">

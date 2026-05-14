@@ -116,13 +116,24 @@ const PatientHubView = () => {
   const handleCreateCase = async (data: any) => {
     setIsSubmitting(true);
     try {
-      await api.post(`/patients/${patientId}/cases`, data);
-      toast.success('Clinical case created');
+      const response = await api.post(`/patients/${patientId}/cases`, data);
+      const newCase = response.data;
+
+      // Automatic Check-In to Queue
+      await api.post('/queue/check-in', {
+        caseId: newCase.id,
+        patientId: patientId,
+        doctorId: data.doctorId,
+        queueType: 'OPD',
+        priority: data.priority || 'NORMAL'
+      });
+
+      toast.success('Visit started & Token generated');
       setShowVisitModal(false);
       fetchPatientData();
       setActiveTab('cases');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create case');
+      toast.error(error.response?.data?.message || 'Failed to start visit');
     } finally {
       setIsSubmitting(false);
     }

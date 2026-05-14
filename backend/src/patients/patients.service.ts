@@ -143,7 +143,8 @@ export class PatientsService {
                   }
                 }
               }
-            }
+            },
+            queueEntry: true
           }
         },
       },

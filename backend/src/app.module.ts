@@ -9,6 +9,8 @@ import { UsersModule } from './users/users.module';
 import { DoctorsModule } from './doctors/doctors.module';
 import { StaffModule } from './staff/staff.module';
 import { PatientsModule } from './patients/patients.module';
+import { QueueModule } from './queue/queue.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { PatientsModule } from './patients/patients.module';
     DoctorsModule,
     StaffModule,
     PatientsModule,
+    QueueModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
