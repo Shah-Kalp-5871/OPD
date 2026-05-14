@@ -35,6 +35,10 @@ model User {
   doctorProfile    DoctorProfile?
   nurseProfile     NurseProfile?
   medicalProfile   MedicalProfile?
+
+  // Medical relations
+  vitalsTaken      PatientVitals[]
+  doctorCases      PatientCase[]
 }
 
 // ---------------------------------------------------------
@@ -96,3 +100,83 @@ model MedicalProfile {
   salary       Float   @default(0.0)
   overtimeRate Float   @default(0.0)
 }
+
+// ---------------------------------------------------------
+// Patient Foundation Models
+// ---------------------------------------------------------
+
+model Patient {
+  id                    String           @id @default(uuid())
+  mrdNumber             String           @unique
+  firstName             String
+  middleName            String?
+  lastName              String
+  mobile                String           @unique
+  gender                String
+  profileCompletionStatus Int             @default(20)
+  isActive              Boolean          @default(true)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  profile               PatientProfile?
+  vitals                PatientVitals[]
+  cases                 PatientCase[]
+}
+
+model PatientProfile {
+  id               String   @id @default(uuid())
+  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId        String   @unique
+
+  dob              DateTime?
+  age              Int?
+  bloodGroup       String?
+  address          String?
+  city             String?
+  state            String?
+  occupation       String?
+  maritalStatus    String?
+  allergies        String?
+  emergencyContact String?
+  notes            String?
+  photo            String?
+}
+
+model PatientVitals {
+  id            String   @id @default(uuid())
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId     String
+  
+  caseId        String?
+  
+  height        Float?
+  weight        Float?
+  bmi           Float?
+  bloodPressure String?
+  pulse         Int?
+  temperature   Float?
+  spo2          Int?
+  
+  takenBy       User?    @relation(fields: [takenById], references: [id])
+  takenById     String?
+  takenAt       DateTime @default(now())
+}
+
+model PatientCase {
+  id          String   @id @default(uuid())
+  caseNumber  String   @unique
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId   String
+  
+  doctor      User?    @relation(fields: [doctorId], references: [id])
+  doctorId    String?
+  
+  visitType   String?  // e.g., CONSULTATION, REVIEW, EMERGENCY
+  priority    String   @default("NORMAL") // NORMAL, URGENT, EMERGENCY
+  complaint   String?  // Chief complaint
+  
+  visitDate   DateTime @default(now())
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+}
+

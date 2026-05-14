@@ -71,7 +71,7 @@ const AdminSidebar = () => {
       <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-6">
         <ul className="space-y-1">
           {menuItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname === `${item.href}/`;
             const Icon = item.icon;
             return (
               <li key={item.label}>

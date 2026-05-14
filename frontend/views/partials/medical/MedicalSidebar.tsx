@@ -44,7 +44,7 @@ const MedicalSidebar = () => {
       {/* Navigation Menu */}
       <nav className="flex-1 px-4 py-8 space-y-1 overflow-y-auto scrollbar-hide">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname === `${item.href}/`;
           return (
             <Link 
               key={item.href} 
