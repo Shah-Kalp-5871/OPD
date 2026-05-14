@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
 import { UpdateQueueStatusDto, UpdateCaseStageDto } from './dto/update-queue.dto';
 import { QueueStatus, CaseStage } from '@prisma/client';
+import { EventsService } from '../common/events.service';
 
 @Injectable()
 export class QueueService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private events: EventsService
+  ) {}
 
   async createEntry(dto: CreateQueueEntryDto, userId: string) {
     if (!userId) throw new BadRequestException('User ID is required for check-in');
@@ -86,12 +90,17 @@ export class QueueService {
     if (!entry) throw new NotFoundException('Queue entry not found');
 
     return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.queueEntry.update({
+      const result = await tx.queueEntry.update({
         where: { id },
         data: { 
           status: dto.status,
           callCount: dto.status === 'CALLING' ? { increment: 1 } : undefined
         },
+        include: {
+          patient: true,
+          doctor: true,
+          case: true
+        }
       });
 
       await tx.queueHistory.create({
@@ -104,7 +113,17 @@ export class QueueService {
         },
       });
 
-      return updated;
+      // Emit real-time event
+      this.events.emitQueueUpdate({
+        type: 'STATUS_CHANGED',
+        id: result.id,
+        status: result.status,
+        token: result.tokenDisplay,
+        patientName: `${result.patient.firstName} ${result.patient.lastName}`,
+        room: result.doctor?.name ? 'Room ' + (result.doctor as any).roomNumber : 'TBD'
+      });
+
+      return result;
     });
   }
 
@@ -144,7 +163,10 @@ export class QueueService {
         data: { caseId, doctorId }
       });
 
-      const entry = await tx.queueEntry.findUnique({ where: { caseId } });
+      const entry = await tx.queueEntry.findUnique({ 
+        where: { caseId },
+        include: { patient: true, doctor: true }
+      });
       if (entry) {
         await tx.queueEntry.update({
           where: { caseId },
@@ -159,6 +181,16 @@ export class QueueService {
             toStatus: 'IN_SESSION',
             performedBy: { connect: { id: userId } },
           },
+        });
+
+        // Emit real-time event
+        this.events.emitQueueUpdate({
+          type: 'SESSION_STARTED',
+          id: entry.id,
+          status: 'IN_SESSION',
+          token: entry.tokenDisplay,
+          patientName: `${entry.patient.firstName} ${entry.patient.lastName}`,
+          doctorId: doctorId
         });
       }
 
@@ -179,12 +211,18 @@ export class QueueService {
         data: { status: 'COMPLETED', endTime: new Date() }
       });
 
-      // 2. Update Queue Entry to COMPLETED
-      const entry = await tx.queueEntry.findUnique({ where: { caseId } });
+      // 2. Update Queue Entry to BILLING_PENDING or COMPLETED
+      const entry = await tx.queueEntry.findUnique({ 
+        where: { caseId },
+        include: { patient: true }
+      });
+      
+      const finalQueueStatus = (nextStage === 'BILLING' ? 'BILLING_PENDING' : 'COMPLETED') as unknown as QueueStatus;
+
       if (entry) {
         await tx.queueEntry.update({
           where: { caseId },
-          data: { status: 'COMPLETED' }
+          data: { status: finalQueueStatus }
         });
 
         await tx.queueHistory.create({
@@ -192,9 +230,19 @@ export class QueueService {
             queueEntry: { connect: { id: entry.id } },
             action: `SESSION_END_TO_${nextStage}`,
             fromStatus: entry.status,
-            toStatus: 'COMPLETED',
+            toStatus: finalQueueStatus,
             performedBy: { connect: { id: userId } },
           },
+        });
+
+        // Emit real-time event
+        this.events.emitQueueUpdate({
+          type: 'SESSION_ENDED',
+          id: entry.id,
+          status: finalQueueStatus,
+          token: entry.tokenDisplay,
+          patientName: `${entry.patient.firstName} ${entry.patient.lastName}`,
+          nextStage: nextStage
         });
       }
 

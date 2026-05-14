@@ -5,6 +5,8 @@ import DoctorLayout from '@/views/layouts/DoctorLayout';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useQueueSSE } from '@/hooks/useQueueSSE';
+
 import { 
   Users, 
   Clock, 
@@ -26,11 +28,18 @@ const DoctorDashboardView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { entries: sseEntries } = useQueueSSE();
+
+  useEffect(() => {
+    if (sseEntries.length > 0) {
+      setQueue(sseEntries);
+    }
+  }, [sseEntries]);
+
   useEffect(() => {
     fetchMyQueue();
-    const interval = setInterval(fetchMyQueue, 30000);
-    return () => clearInterval(interval);
   }, []);
+
 
   const fetchMyQueue = async () => {
     try {
@@ -51,7 +60,7 @@ const DoctorDashboardView = () => {
       await api.post('/queue/session/start', { caseId });
       toast.success('Consultation started');
       // Redirect to the consultation page (assuming route structure)
-      router.push(`/doctor/consultation/${patientId}`);
+      router.push(`/doctor/consultation/${caseId}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to start session');
     } finally {
@@ -181,8 +190,8 @@ const DoctorDashboardView = () => {
                           ) : queue.map((entry) => (
                             <tr 
                               key={entry.id} 
-                              onClick={() => entry.status !== 'IN_SESSION' && handleStartConsultation(entry.caseId, entry.patientId)}
-                              className={`group cursor-pointer transition-all ${entry.status === 'IN_SESSION' ? 'bg-emerald-50/50 hover:bg-emerald-50' : 'hover:bg-slate-50'}`}
+                              onClick={() => entry.status === 'IN_SESSION' ? router.push(`/doctor/consultation/${entry.caseId}`) : handleStartConsultation(entry.caseId, entry.patientId)}
+                              className={`group cursor-pointer transition-all ${entry.status === 'IN_SESSION' ? 'bg-emerald-50/50 hover:bg-emerald-100' : 'hover:bg-slate-50'}`}
                             >
                                <td className="px-10 py-8">
                                   <span className={`text-[13px] font-black tracking-[0.1em] px-3 py-1.5 rounded-xl border-2 shadow-[3px_3px_0px_rgba(0,0,0,0.05)] ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white text-slate-900 border-slate-900'}`}>

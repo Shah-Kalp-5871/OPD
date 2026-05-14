@@ -3,9 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { PayBillDto } from './dto/pay-bill.dto';
 
+import { EventsService } from '../common/events.service';
+
 @Injectable()
 export class BillingService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private events: EventsService
+  ) {}
 
   async createBill(createBillDto: CreateBillDto, createdById: string) {
     const { caseId, patientId, items } = createBillDto;
@@ -129,7 +134,8 @@ export class BillingService {
     });
   }
 
-  async payBill(billId: string, payBillDto: PayBillDto) {
+  async payBill(billId: string, payBillDto: PayBillDto, userId: string) {
+
     const bill = await this.prisma.bill.findUnique({
       where: { id: billId },
     });
@@ -146,16 +152,61 @@ export class BillingService {
       paymentStatus = 'PAID';
     }
 
-    return this.prisma.bill.update({
-      where: { id: billId },
-      data: {
-        paidAmount,
-        balanceAmount: Math.max(0, balanceAmount),
-        paymentStatus,
-        paymentMode: payBillDto.paymentMode,
-        transactionId: payBillDto.transactionId,
-        paidAt: new Date(),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updatedBill = await tx.bill.update({
+        where: { id: billId },
+        data: {
+          paidAmount,
+          balanceAmount: Math.max(0, balanceAmount),
+          paymentStatus,
+          paymentMode: payBillDto.paymentMode,
+          transactionId: payBillDto.transactionId,
+          paidAt: new Date(),
+        },
+        include: {
+          patient: true,
+          case: true,
+        }
+      });
+
+      if (paymentStatus === 'PAID') {
+        // Finalize the visit
+        await tx.patientCase.update({
+          where: { id: updatedBill.caseId },
+          data: { stage: 'COMPLETED', status: 'CLOSED' }
+        });
+
+        const entry = await tx.queueEntry.findUnique({ where: { caseId: updatedBill.caseId } });
+        if (entry) {
+          await tx.queueEntry.update({
+            where: { id: entry.id },
+            data: { status: 'COMPLETED' }
+          });
+
+          await tx.queueHistory.create({
+            data: {
+              queueEntryId: entry.id,
+              action: 'FINAL_PAYMENT_COMPLETED',
+              fromStatus: entry.status,
+              toStatus: 'COMPLETED',
+              performedById: userId,
+
+            },
+          });
+        }
+      }
+
+      // Emit real-time event
+      this.events.emitQueueUpdate({
+        type: 'PAYMENT_RECEIVED',
+        billId: updatedBill.id,
+        patientName: `${updatedBill.patient.firstName} ${updatedBill.patient.lastName}`,
+        amount: payBillDto.amountPaid,
+        status: paymentStatus,
+        caseId: updatedBill.caseId
+      });
+
+      return updatedBill;
     });
   }
 

@@ -32,6 +32,7 @@ enum QueueStatus {
   WAITING
   CALLING
   IN_SESSION
+  BILLING_PENDING
   NO_RESPONSE
   CANCELLED
   COMPLETED
@@ -73,7 +74,9 @@ model User {
   doctorSessions   VisitSession[]
   performedActions QueueHistory[]
   createdBills     Bill[]         @relation("BillCreatedBy")
+  doctorConsultations ConsultationRecord[] @relation("DoctorConsultations")
 }
+
 
 // ---------------------------------------------------------
 // Profile Tables (1:1 with User)
@@ -217,10 +220,12 @@ model PatientCase {
   createdAt   DateTime @default(now())
 
   // New relations
-  queueEntry  QueueEntry?
-  sessions    VisitSession[]
-  bill        Bill?
+  queueEntry   QueueEntry?
+  sessions     VisitSession[]
+  bill         Bill?
+  consultation ConsultationRecord?
 }
+
 
 model QueueEntry {
   id            String      @id @default(uuid())
@@ -253,7 +258,10 @@ model VisitSession {
   startTime   DateTime  @default(now())
   endTime     DateTime?
   status      String    @default("ACTIVE") // ACTIVE, COMPLETED, SUSPENDED
+  
+  consultation ConsultationRecord?
 }
+
 
 model QueueHistory {
   id            String      @id @default(uuid())
@@ -316,3 +324,58 @@ model BillItem {
   createdAt     DateTime @default(now())
 }
 
+// ---------------------------------------------------------
+// Consultation & EMR Models
+// ---------------------------------------------------------
+
+model ConsultationRecord {
+  id              String           @id @default(uuid())
+  case            PatientCase      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  caseId          String           @unique
+  
+  session         VisitSession?    @relation(fields: [sessionId], references: [id])
+  sessionId       String?          @unique
+  
+  doctor          User             @relation("DoctorConsultations", fields: [doctorId], references: [id])
+  doctorId        String
+  
+  status          String           @default("DRAFT") // DRAFT, FINALIZED
+  
+  complaint       ComplaintEntry?
+  history         ClinicalHistory?
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ComplaintEntry {
+  id                   String             @id @default(uuid())
+  consultation         ConsultationRecord @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  consultationId       String             @unique
+  
+  chiefComplaint       String?
+  duration             Int?
+  durationType         String?            // DAYS, WEEKS, MONTHS, YEARS
+  severity             String?            // MILD, MODERATE, SEVERE
+  onset                String?            // SUDDEN, GRADUAL
+  aggravatingFactors   String?
+  relievingFactors     String?
+  
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+model ClinicalHistory {
+  id                   String             @id @default(uuid())
+  consultation         ConsultationRecord @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  consultationId       String             @unique
+  
+  pastHistory          String?
+  personalHistory      String?
+  surgicalHistory      String?
+  familyHistory        String?
+  obstetricHistory     String?            // For female patients
+  
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}

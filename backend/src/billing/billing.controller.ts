@@ -31,7 +31,8 @@ export class BillingController {
 
   @Post(':id/pay')
   @Roles(Role.RECEPTION, Role.ADMIN)
-  async payBill(@Param('id') id: string, @Body() payBillDto: PayBillDto) {
-    return this.billingService.payBill(id, payBillDto);
+  async payBill(@Param('id') id: string, @Body() payBillDto: PayBillDto, @Req() req) {
+    return this.billingService.payBill(id, payBillDto, req.user.userId);
   }
+
 }

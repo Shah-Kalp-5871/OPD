@@ -11,6 +11,8 @@ import { StaffModule } from './staff/staff.module';
 import { PatientsModule } from './patients/patients.module';
 import { QueueModule } from './queue/queue.module';
 import { BillingModule } from './billing/billing.module';
+import { CommonModule } from './common/common.module';
+import { ConsultationModule } from './consultation/consultation.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { BillingModule } from './billing/billing.module';
     PatientsModule,
     QueueModule,
     BillingModule,
+    CommonModule,
+    ConsultationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

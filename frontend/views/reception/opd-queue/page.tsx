@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useQueueSSE } from '@/hooks/useQueueSSE';
+
 import { 
   Users, 
   Clock, 
@@ -29,18 +31,28 @@ const OpdQueueView = () => {
   const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { entries: sseEntries, stats: sseStats, lastEvent } = useQueueSSE({
+    doctorId: selectedDoctor === 'all' ? undefined : selectedDoctor
+  });
+
+  useEffect(() => {
+    if (sseEntries.length > 0) {
+      setQueue(sseEntries);
+    }
+  }, [sseEntries]);
+
+  useEffect(() => {
+    if (sseStats) {
+      setStats(sseStats);
+    }
+  }, [sseStats]);
+
   useEffect(() => {
     fetchQueue();
     fetchStats();
     fetchDoctors();
-    
-    // Poll for updates every 15 seconds
-    const interval = setInterval(() => {
-      fetchQueue();
-      fetchStats();
-    }, 15000);
-    return () => clearInterval(interval);
   }, [selectedDoctor]);
+
 
   const fetchQueue = async () => {
     try {

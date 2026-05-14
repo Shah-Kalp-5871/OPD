@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { useQueueSSE } from '@/hooks/useQueueSSE';
+
 import { 
   BellRing, 
   UserCheck, 
@@ -18,48 +20,59 @@ const WaitingDisplay = () => {
   const [lastCalled, setLastCalled] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { entries: sseEntries, lastEvent } = useQueueSSE();
+
+  useEffect(() => {
+    if (sseEntries.length > 0) {
+      processQueueData(sseEntries);
+    }
+  }, [sseEntries]);
+
+  useEffect(() => {
+    if (lastEvent && lastEvent.type === 'STATUS_CHANGED' && lastEvent.data?.status === 'CALLING') {
+      const patient = lastEvent.data;
+      playNotification();
+      speakPatient(patient);
+    }
+  }, [lastEvent]);
+
   useEffect(() => {
     fetchQueue();
-    const interval = setInterval(fetchQueue, 5000); // Fast polling for display board
-    return () => clearInterval(interval);
   }, []);
+
 
   const fetchQueue = async () => {
     try {
       const response = await api.get('/queue/live');
-      const data = response.data;
-      
-      // Find who is currently being called
-      const calling = data.find((p: any) => p.status === 'CALLING');
-      
-      if (calling && (!currentCalling || currentCalling.id !== calling.id)) {
-        // New patient being called!
-        playNotification();
-        speakPatient(calling);
-      }
-      
-      setCurrentCalling(calling);
-      
-      // Get last 5 completed or in-session patients
-      const processed = data
-        .filter((p: any) => p.status === 'IN_SESSION' || p.status === 'COMPLETED')
-        .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-        .slice(0, 5);
-      
-      setLastCalled(processed);
-      
-      // Get next 8 waiting patients
-      const waiting = data
-        .filter((p: any) => p.status === 'WAITING')
-        .slice(0, 8);
-        
-      setQueue(waiting);
+      processQueueData(response.data);
     } catch (error) {
       console.error('Failed to fetch display data', error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const processQueueData = (data: any[]) => {
+    // Find who is currently being called
+    const calling = data.find((p: any) => p.status === 'CALLING');
+    setCurrentCalling(calling);
+    
+    // Get last 5 completed or in-session patients
+    const processed = data
+      .filter((p: any) => p.status === 'IN_SESSION' || p.status === 'COMPLETED')
+      .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 5);
+    
+    setLastCalled(processed);
+    
+    // Get next 8 waiting patients
+    const waiting = data
+      .filter((p: any) => p.status === 'WAITING')
+      .slice(0, 8);
+      
+    setQueue(waiting);
+  };
+
 
   const playNotification = () => {
     const audio = new Audio('/sounds/ding.mp3');

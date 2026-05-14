@@ -6,6 +6,8 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useQueueSSE } from '@/hooks/useQueueSSE';
+
 import { 
   Wallet, 
   CreditCard, 
@@ -37,6 +39,14 @@ const BillingView = () => {
   const [amountCollected, setAmountCollected] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { lastEvent } = useQueueSSE();
+
+  useEffect(() => {
+    if (lastEvent && (lastEvent.type === 'SESSION_ENDED' || lastEvent.type === 'STATUS_CHANGED')) {
+      fetchPendingBills();
+    }
+  }, [lastEvent]);
+
   useEffect(() => {
     if (caseId) {
       fetchBillDetails();
@@ -44,6 +54,7 @@ const BillingView = () => {
       fetchPendingBills();
     }
   }, [caseId]);
+
 
   const fetchBillDetails = async () => {
     setIsLoading(true);

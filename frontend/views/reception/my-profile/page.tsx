@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import { 
   User, 
   Mail, 
@@ -22,24 +24,62 @@ import {
   Trash2,
   Save,
   KeyRound,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 
 const MyProfileView = () => {
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    fullName: 'Kavita Patel',
-    email: 'kavita@clinic.com',
-    contact: '+91 9876543210',
-    empId: 'EMP-REC-001',
-    role: 'Reception',
-    branch: 'Surat Main Clinic'
+    fullName: '',
+    email: '',
+    contact: '',
+    empId: '---',
+    role: '',
+    branch: 'Surat Main Clinic' // Still hardcoded as branch is not in DB yet
   });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/users/me');
+        const user = response.data || response; // Handle different response formats if unwrapped by interceptor
+        
+        setProfileData({
+          fullName: user.name || '',
+          email: user.email || '',
+          contact: user.mobile || '',
+          empId: user.id.split('-')[0].toUpperCase(), // Using short ID as Emp ID for now
+          role: user.role || '',
+          branch: 'Surat Main Clinic'
+        });
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const attendanceStats = [
     { label: 'Present Days', value: '22 Days', color: 'text-teal-600', bg: 'bg-teal-50' },
     { label: 'Absent Days', value: '2 Days', color: 'text-rose-500', bg: 'bg-rose-50' },
     { label: 'Total Hours', value: '198 hrs', color: 'text-blue-600', bg: 'bg-blue-50' }
   ];
+
+  if (loading) {
+    return (
+      <ReceptionLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading your profile...</p>
+        </div>
+      </ReceptionLayout>
+    );
+  }
 
   return (
     <ReceptionLayout>
@@ -132,7 +172,10 @@ const MyProfileView = () => {
                     </div>
                     
                     <div className="mt-10 flex justify-end">
-                       <button className="flex items-center gap-3 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-100 group">
+                       <button 
+                         onClick={() => toast.success('Profile update feature coming soon!')}
+                         className="flex items-center gap-3 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-100 group"
+                       >
                           <Save className="w-4 h-4 transition-transform group-hover:scale-110" />
                           Update Profile
                        </button>
@@ -279,3 +322,4 @@ const MyProfileView = () => {
 };
 
 export default MyProfileView;
+
