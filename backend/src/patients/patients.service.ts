@@ -323,7 +323,7 @@ export class PatientsService {
     return profile;
   }
 
-  async addVitals(id: string, vitalsDto: AddVitalsDto, userId: string) {
+  async addVitals(id: string, vitalsDto: AddVitalsDto, userId: string, branchId: string) {
     const patient = await this.prisma.patient.findUnique({ where: { id } });
     if (!patient) throw new NotFoundException('Patient not found');
 
@@ -343,6 +343,7 @@ export class PatientsService {
           bmi: bmi || vitalsDto.bmi,
           patientId: id,
           takenById: userId,
+          branchId,
         },
       });
 
@@ -434,7 +435,7 @@ export class PatientsService {
     });
   }
 
-  async createCase(patientId: string, createCaseDto: CreateCaseDto) {
+  async createCase(patientId: string, createCaseDto: CreateCaseDto, branchId: string) {
     const patient = await this.prisma.patient.findUnique({
       where: { id: patientId },
     });
@@ -442,18 +443,19 @@ export class PatientsService {
 
     // Check for existing OPEN case
     const activeCase = await this.prisma.patientCase.findFirst({
-      where: { patientId, status: 'OPEN' },
+      where: { patientId, branchId, status: 'OPEN' },
     });
 
     if (activeCase) {
       return activeCase;
     }
 
-    const caseNumber = await this.generateCaseNumber();
+    const caseNumber = await this.generateCaseNumber(branchId);
 
     return this.prisma.patientCase.create({
       data: {
         ...createCaseDto,
+        branchId,
         caseNumber,
         patientId,
         status: 'OPEN',
@@ -464,7 +466,7 @@ export class PatientsService {
   /**
    * GENERATE UNIQUE CASE NUMBER
    */
-  async generateCaseNumber(): Promise<string> {
+  async generateCaseNumber(branchId: string): Promise<string> {
     const today = new Date();
     const dateStr =
       today.getFullYear().toString().slice(-2) +
@@ -473,6 +475,7 @@ export class PatientsService {
 
     const count = await this.prisma.patientCase.count({
       where: {
+        branchId,
         caseNumber: {
           startsWith: `C${dateStr}`,
         },

@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../common/events.service';
 import { BillingService } from '../billing/billing.service';
 import { DispenseMedicationDto, ReceiveStockDto, AdjustStockDto } from './dto/pharmacy.dto';
+import { Decimal } from 'decimal.js';
 
 @Injectable()
 export class PharmacyService {
@@ -16,10 +17,11 @@ export class PharmacyService {
     private readonly billing: BillingService,
   ) {}
 
-  async getPharmacyQueue() {
+  async getPharmacyQueue(branchId: string) {
     // Get all queue entries that are in PHARMACY_PENDING or PHARMACY_IN_PROGRESS
     return this.prisma.queueEntry.findMany({
       where: {
+        branchId,
         status: { in: ['PHARMACY_PENDING', 'PHARMACY_IN_PROGRESS'] },
       },
       include: {
@@ -42,7 +44,7 @@ export class PharmacyService {
     });
   }
 
-  async dispenseMedication(dto: DispenseMedicationDto, userId: string) {
+  async dispenseMedication(dto: DispenseMedicationDto, userId: string, branchId: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Validate Prescription
       const prescription = await tx.prescription.findUnique({
@@ -71,11 +73,11 @@ export class PharmacyService {
         }
 
         // ROW-LEVEL LOCKING: Lock the inventory record to prevent concurrent modifications
-        await tx.$executeRawUnsafe(`SELECT * FROM "DrugInventory" WHERE "drugId" = $1 FOR UPDATE`, item.drugId);
+        await tx.$executeRawUnsafe(`SELECT * FROM "DrugInventory" WHERE "drugId" = $1 AND "branchId" = $2 FOR UPDATE`, item.drugId, branchId);
 
         // Check Inventory
         const inventory = await tx.drugInventory.findUnique({
-          where: { drugId: item.drugId },
+          where: { drugId_branchId: { drugId: item.drugId, branchId } },
           include: {
             batches: {
               where: {
@@ -121,6 +123,8 @@ export class PharmacyService {
             data: {
               inventoryId: inventory.id,
               batchId: batch.id,
+              branchId,
+              drugId: item.drugId,
               movementType: 'OUT',
               quantity: dispenseFromBatch,
               beforeQuantity: beforeQty,
@@ -165,7 +169,10 @@ export class PharmacyService {
           drugName: prescriptionItem.drug?.drugName || 'Unknown',
           quantity: item.quantityDispensed,
           batches: touchedBatches,
-          totalPrice: touchedBatches.reduce((acc, b) => acc + (Number(b.quantity) * Number(b.mrp)), 0)
+          totalPrice: touchedBatches.reduce(
+            (acc, b) => acc.add(new Decimal(b.quantity).mul(new Decimal(b.mrp.toString()))),
+            new Decimal(0),
+          ),
         });
       }
 
@@ -179,20 +186,24 @@ export class PharmacyService {
         const bill = await this.billing.ensureActiveBill(
           dto.caseId,
           patientCase.patientId,
-          userId
+          userId,
+          branchId,
+          tx,
         );
 
         if (!bill.isFinalized) {
           await this.billing.addItemsToBill(
             bill.id,
-            dispensedResults.map(res => ({
+            dispensedResults.map((res) => ({
               serviceName: res.drugName,
               quantity: res.quantity,
-              unitPrice: res.totalPrice / res.quantity,
+              unitPrice: res.totalPrice.div(res.quantity),
               discount: 0,
               itemType: 'PHARMACY',
-              referenceId: res.drugId
-            }))
+              referenceId: res.drugId,
+            })),
+            branchId,
+            tx,
           );
         }
       }
@@ -218,17 +229,21 @@ export class PharmacyService {
     });
   }
 
-  async receiveStock(dto: any, userId: string) {
+  async receiveStock(dto: ReceiveStockDto, userId: string, branchId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const { drugId, batchNumber, expiryDate, manufacturingDate, mrp, purchasePrice, quantity, supplierId, location } = dto;
-
+      // 1. Ensure Inventory Record
       let inventory = await tx.drugInventory.findUnique({
-        where: { drugId },
+        where: { drugId_branchId: { drugId: dto.drugId, branchId } },
       });
 
       if (!inventory) {
         inventory = await tx.drugInventory.create({
-          data: { drugId, location },
+          data: {
+            drugId: dto.drugId,
+            branchId,
+            totalStock: 0,
+            reorderLevel: 100,
+          },
         });
       }
 
@@ -236,7 +251,7 @@ export class PharmacyService {
 
       // Check if batch exists
       let batch = await tx.drugBatch.findUnique({
-        where: { batchNumber },
+        where: { batchNumber: dto.batchNumber },
       });
 
       let beforeBatchQty = 0;
@@ -248,25 +263,25 @@ export class PharmacyService {
         batch = await tx.drugBatch.update({
           where: { id: batch.id },
           data: {
-            stockQuantity: { increment: quantity },
-            expiryDate: new Date(expiryDate),
-            manufacturingDate: manufacturingDate ? new Date(manufacturingDate) : null,
-            mrp,
-            purchasePrice,
-            supplierId,
+            stockQuantity: { increment: dto.quantity },
+            expiryDate: new Date(dto.expiryDate),
+            manufacturingDate: dto.manufacturingDate ? new Date(dto.manufacturingDate) : null,
+            mrp: dto.mrp,
+            purchasePrice: dto.purchasePrice,
+            supplierId: dto.supplierId,
           },
         });
       } else {
         batch = await tx.drugBatch.create({
           data: {
             inventoryId: inventory.id,
-            batchNumber,
-            expiryDate: new Date(expiryDate),
-            manufacturingDate: manufacturingDate ? new Date(manufacturingDate) : null,
-            mrp,
-            purchasePrice,
-            stockQuantity: quantity,
-            supplierId,
+            batchNumber: dto.batchNumber,
+            expiryDate: new Date(dto.expiryDate),
+            manufacturingDate: dto.manufacturingDate ? new Date(dto.manufacturingDate) : null,
+            mrp: dto.mrp,
+            purchasePrice: dto.purchasePrice,
+            stockQuantity: dto.quantity,
+            supplierId: dto.supplierId,
           },
         });
       }
@@ -275,7 +290,7 @@ export class PharmacyService {
       await tx.drugInventory.update({
         where: { id: inventory.id },
         data: {
-          totalStock: { increment: quantity },
+          totalStock: { increment: dto.quantity },
           status: 'IN_STOCK',
         },
       });
@@ -285,65 +300,72 @@ export class PharmacyService {
         data: {
           inventoryId: inventory.id,
           batchId: batch.id,
+          branchId,
+          drugId: dto.drugId,
           movementType: 'IN',
-          quantity,
+          quantity: dto.quantity,
           beforeQuantity: beforeBatchQty,
-          afterQuantity: beforeBatchQty + quantity,
-          unitPrice: purchasePrice,
+          afterQuantity: beforeBatchQty + dto.quantity,
+          unitPrice: dto.purchasePrice,
           reason: 'Stock Inward / Purchase',
           performedById: userId,
         },
       });
 
-      return { success: true, batchId: batch.id, newTotal: beforeTotal + quantity };
+      return { success: true, batchId: batch.id, newTotal: beforeTotal + dto.quantity };
     });
   }
 
-  async adjustStock(dto: any, userId: string) {
+  async adjustStock(dto: AdjustStockDto, userId: string, branchId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const { batchId, quantity, type, reason } = dto;
-
       const batch = await tx.drugBatch.findUnique({
-        where: { id: batchId },
+        where: { id: dto.batchId },
         include: { inventory: true },
       });
 
       if (!batch) throw new NotFoundException('Batch not found');
+      if (batch.inventory.branchId !== branchId)
+        throw new BadRequestException('Batch does not belong to this branch');
+
+      const inventory = batch.inventory;
+      const drugId = inventory.drugId;
 
       const beforeQty = batch.stockQuantity;
       let afterQty = beforeQty;
 
-      if (type === 'INCREMENT') {
-        afterQty += quantity;
+      if (dto.type === 'INCREMENT') {
+        afterQty += dto.quantity;
       } else {
-        if (beforeQty < quantity) throw new BadRequestException('Insufficient stock in batch for adjustment');
-        afterQty -= quantity;
+        if (beforeQty < dto.quantity) throw new BadRequestException('Insufficient stock in batch for adjustment');
+        afterQty -= dto.quantity;
       }
 
       // Update Batch
       await tx.drugBatch.update({
-        where: { id: batchId },
+        where: { id: dto.batchId },
         data: { stockQuantity: afterQty },
       });
 
       // Update Inventory
       await tx.drugInventory.update({
-        where: { id: batch.inventoryId },
+        where: { id: inventory.id },
         data: {
-          totalStock: type === 'INCREMENT' ? { increment: quantity } : { decrement: quantity },
+          totalStock: dto.type === 'INCREMENT' ? { increment: dto.quantity } : { decrement: dto.quantity },
         },
       });
 
       // Log Movement
       await tx.stockMovement.create({
         data: {
-          inventoryId: batch.inventoryId,
+          inventoryId: inventory.id,
           batchId: batch.id,
+          branchId,
+          drugId,
           movementType: 'ADJUSTMENT',
-          quantity: type === 'INCREMENT' ? quantity : -quantity,
+          quantity: dto.type === 'INCREMENT' ? dto.quantity : -dto.quantity,
           beforeQuantity: beforeQty,
           afterQuantity: afterQty,
-          reason: reason || 'Manual adjustment',
+          reason: dto.reason || 'Manual adjustment',
           performedById: userId,
         },
       });
@@ -352,25 +374,28 @@ export class PharmacyService {
     });
   }
 
-  async getInventory() {
+  async getInventory(branchId: string) {
     return this.prisma.drugInventory.findMany({
+      where: { branchId },
       include: {
         drug: true,
         batches: {
+          where: { isActive: true },
           orderBy: { expiryDate: 'asc' },
         },
       },
     });
   }
 
-  async getInventoryAlerts() {
+  async getInventoryAlerts(branchId: string) {
     const nearExpiryDate = new Date();
-    nearExpiryDate.setDate(nearExpiryDate.getDate() + 90); // 90 days threshold
+    nearExpiryDate.setMonth(nearExpiryDate.getMonth() + 6);
 
     const [nearExpiry, expired] = await Promise.all([
-      // 2. Near Expiry
+      // 2. Near Expiry (within 6 months)
       this.prisma.drugBatch.findMany({
         where: {
+          inventory: { branchId },
           stockQuantity: { gt: 0 },
           expiryDate: { lte: nearExpiryDate, gt: new Date() },
           isActive: true,
@@ -380,6 +405,7 @@ export class PharmacyService {
       // 3. Expired
       this.prisma.drugBatch.findMany({
         where: {
+          inventory: { branchId },
           stockQuantity: { gt: 0 },
           expiryDate: { lte: new Date() },
         },
@@ -392,15 +418,18 @@ export class PharmacyService {
       SELECT di.*, d.name as "drugName"
       FROM "DrugInventory" di
       JOIN "Drug" d ON d.id = di."drugId"
-      WHERE di."totalStock" <= di."reorderLevel" OR di."totalStock" = 0
+      WHERE di."branchId" = ${branchId} AND (di."totalStock" <= di."reorderLevel" OR di."totalStock" = 0)
     `;
 
     return { lowStock, nearExpiry, expired };
   }
 
-  async getStockValuation() {
+  async getStockValuation(branchId: string) {
     const batches = await this.prisma.drugBatch.findMany({
-      where: { stockQuantity: { gt: 0 } },
+      where: {
+        inventory: { branchId },
+        stockQuantity: { gt: 0 }
+      },
     });
 
     let totalValue = 0;
@@ -411,9 +440,10 @@ export class PharmacyService {
     return { totalValue, batchCount: batches.length };
   }
 
-  async getMovementHistory(filters: { drugId?: string; batchId?: string }) {
+  async getMovementHistory(filters: { drugId?: string; batchId?: string }, branchId: string) {
     return this.prisma.stockMovement.findMany({
       where: {
+        branchId,
         inventory: filters.drugId ? { drugId: filters.drugId } : undefined,
         batchId: filters.batchId,
       },
@@ -451,4 +481,113 @@ export class PharmacyService {
     if (!patientCase) throw new NotFoundException('Case not found');
     return patientCase;
   }
+
+  async returnMedication(
+    caseId: string,
+    drugId: string,
+    batchId: string,
+    quantity: number,
+    userId: string,
+    reason: string,
+    branchId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Validate Inventory
+      const inventory = await tx.drugInventory.findUnique({
+        where: { drugId_branchId: { drugId, branchId } },
+      });
+      if (!inventory) throw new NotFoundException('Inventory not found');
+
+      const batch = await tx.drugBatch.findUnique({
+        where: { id: batchId },
+      });
+      if (!batch) throw new NotFoundException('Batch not found');
+
+      const beforeBatchQty = batch.stockQuantity;
+      const afterBatchQty = beforeBatchQty + quantity;
+
+      // 2. Update Stock
+      await tx.drugBatch.update({
+        where: { id: batchId },
+        data: { stockQuantity: { increment: quantity } },
+      });
+
+      await tx.drugInventory.update({
+        where: { id: inventory.id },
+        data: { totalStock: { increment: quantity } },
+      });
+
+      // 3. Log Movement
+      await tx.stockMovement.create({
+        data: {
+          inventoryId: inventory.id,
+          batchId,
+          branchId,
+          drugId,
+          movementType: 'IN',
+          quantity,
+          beforeQuantity: beforeBatchQty,
+          afterQuantity: afterBatchQty,
+          reason: `Returned from Case ${caseId}: ${reason}`,
+          performedById: userId,
+          referenceId: caseId,
+        },
+      });
+
+      // 4. Audit Log
+      await tx.auditLog.create({
+        data: {
+          userId,
+          entityType: 'PHARMACY',
+          entityId: drugId,
+          action: 'RETURN',
+          details: `Returned ${quantity} of batch ${batch.batchNumber} for case ${caseId}. Reason: ${reason}`,
+        },
+      });
+
+      // 5. Billing Adjustment (New Production Requirement)
+      const bill = await tx.bill.findUnique({
+        where: { caseId },
+        include: { items: true }
+      });
+
+      if (bill) {
+        const refundValue = new Decimal(batch.mrp).mul(quantity);
+        
+        // If bill is already finalized, we MUST use a formal refund
+        if (bill.isFinalized) {
+          // Only process refund if there's paid amount to refund from
+          if (new Decimal(bill.paidAmount).gte(refundValue)) {
+            await this.billing.processRefund(bill.id, {
+              amount: refundValue.toNumber(),
+              reason: `Pharmacy Return: ${reason}`
+            }, userId, branchId, undefined, tx);
+          } else {
+            // If not enough paid, we just decrement the balance and gross
+            await tx.bill.update({
+              where: { id: bill.id },
+              data: {
+                grossAmount: { decrement: refundValue },
+                netAmount: { decrement: refundValue },
+                balanceAmount: { decrement: refundValue }
+              }
+            });
+          }
+        } else {
+          // If bill is still draft, just adjust totals
+          await tx.bill.update({
+            where: { id: bill.id },
+            data: {
+              grossAmount: { decrement: refundValue },
+              netAmount: { decrement: refundValue },
+              balanceAmount: { decrement: refundValue }
+            }
+          });
+        }
+      }
+
+      return { success: true, newTotal: afterBatchQty };
+    });
+  }
+
 }

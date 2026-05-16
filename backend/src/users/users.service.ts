@@ -15,6 +15,7 @@ export class UsersService {
         doctorProfile: true,
         nurseProfile: true,
         medicalProfile: true,
+        branchAccess: true,
       },
     });
   }

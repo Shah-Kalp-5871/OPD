@@ -21,7 +21,7 @@ export class AppointmentsService {
     private patientsService: PatientsService,
   ) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto) {
+  async create(createAppointmentDto: CreateAppointmentDto, branchId: string) {
     const {
       patientId,
       doctorId,
@@ -77,45 +77,46 @@ export class AppointmentsService {
 
         const existing = await tx.appointment.findFirst({
           where: {
-            doctorId,
-            appointmentDate: appointmentDateOnly,
-            appointmentTime: fullAppointmentDateTime,
-            status: { notIn: [AppointmentStatus.CANCELLED] },
-          },
-        });
+              doctorId,
+              appointmentDate: appointmentDateOnly,
+              appointmentTime: fullAppointmentDateTime,
+              status: { notIn: [AppointmentStatus.CANCELLED] },
+            },
+          });
 
-        if (existing)
-          throw new ConflictException('This slot is already booked');
+          if (existing)
+            throw new ConflictException('This slot is already booked');
 
-        return tx.appointment.create({
-          data: {
-            patientId,
-            doctorId,
-            appointmentDate: appointmentDateOnly,
-            appointmentTime: fullAppointmentDateTime,
-            purpose,
-            remarks,
-            status: AppointmentStatus.SCHEDULED,
-          },
-          include: {
-            patient: true,
-            doctor: {
-              include: {
-                user: true,
+          return tx.appointment.create({
+            data: {
+              patientId,
+              doctorId,
+              branchId,
+              appointmentDate: appointmentDateOnly,
+              appointmentTime: fullAppointmentDateTime,
+              purpose,
+              remarks,
+              status: AppointmentStatus.SCHEDULED,
+            },
+            include: {
+              patient: true,
+              doctor: {
+                include: {
+                  user: true,
+                },
               },
             },
-          },
-        });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
-  }
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    }
 
-  async getAvailableSlots(doctorId: string, dateStr: string) {
-    const date = this.parseDateOnly(dateStr);
-    const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
+    async getAvailableSlots(doctorId: string, dateStr: string, branchId: string) {
+      const date = this.parseDateOnly(dateStr);
+      const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
 
-    // 1. Get Doctor Profile & Schedules
+      // 1. Get Doctor Profile & Schedules
     const doctorProfile = await this.prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
@@ -138,6 +139,7 @@ export class AppointmentsService {
     const bookedAppointments = await this.prisma.appointment.findMany({
       where: {
         doctorId,
+        branchId,
         appointmentDate: this.toDateOnlyUtc(date),
         status: { notIn: [AppointmentStatus.CANCELLED] },
       },
@@ -223,11 +225,11 @@ export class AppointmentsService {
     return slots;
   }
 
-  async findAll(query: AppointmentQueryDto) {
+  async findAll(query: AppointmentQueryDto, branchId: string) {
     const { page = 1, limit = 10, q, doctorId, status, startDate, endDate, date } = query;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.AppointmentWhereInput = {};
+    const where: Prisma.AppointmentWhereInput = { branchId };
 
     if (date) {
       where.appointmentDate = this.parseDateOnly(date);
@@ -281,9 +283,9 @@ export class AppointmentsService {
     };
   }
 
-  async findOne(id: string) {
-    return this.prisma.appointment.findUnique({
-      where: { id },
+  async findOne(id: string, branchId: string) {
+    return this.prisma.appointment.findFirst({
+      where: { id, branchId },
       include: {
         patient: true,
         doctor: {
@@ -300,12 +302,13 @@ export class AppointmentsService {
     status: AppointmentStatus,
     userId: string,
     remarks?: string,
+    branchId?: string,
   ) {
     return this.prisma.$transaction(
       async (tx) => {
         await this.lockTransactionKey(tx, `appointment-${id}`);
-        const currentAppointment = await tx.appointment.findUnique({
-          where: { id },
+        const currentAppointment = await tx.appointment.findFirst({
+          where: { id, ...(branchId ? { branchId } : {}) },
         });
         if (!currentAppointment)
           throw new NotFoundException('Appointment not found');
@@ -347,16 +350,16 @@ export class AppointmentsService {
     );
   }
 
-  async checkIn(dto: CheckInAppointmentDto, userId: string) {
+  async checkIn(dto: CheckInAppointmentDto, userId: string, branchId: string) {
     const { appointmentId, vitals, visitType, priority, complaint } = dto;
 
     return this.prisma.$transaction(
       async (tx) => {
-        await this.lockTransactionKey(tx, `appointment-${appointmentId}`);
+        await this.lockTransactionKey(tx, `appointment-checkin-${appointmentId}`);
 
         // 1. Get Appointment
-        const appointment = await tx.appointment.findUnique({
-          where: { id: appointmentId },
+        const appointment = await tx.appointment.findFirst({
+          where: { id: appointmentId, branchId },
           include: {
             patient: true,
             doctor: true,
@@ -387,12 +390,13 @@ export class AppointmentsService {
         );
 
         // 2. Create PatientCase
-        const caseNumber = await this.generateCaseNumber(tx);
+        const caseNumber = await this.generateCaseNumber(tx, branchId);
         const patientCase = await tx.patientCase.create({
           data: {
             caseNumber,
             patientId: appointment.patientId,
             doctorId: appointment.doctor.userId,
+            branchId,
             visitType: visitType || appointment.purpose || 'CONSULTATION',
             priority: priority || 'NORMAL',
             complaint: complaint || appointment.remarks,
@@ -417,6 +421,7 @@ export class AppointmentsService {
               patientId: appointment.patientId,
               caseId: patientCase.id,
               takenById: userId,
+              branchId,
             },
           });
         }
@@ -432,6 +437,7 @@ export class AppointmentsService {
             queueType: QueueType.OPD,
           },
           userId,
+          branchId,
         );
 
         // 5. Update Appointment Status
@@ -460,12 +466,13 @@ export class AppointmentsService {
     );
   }
 
-  async getAdminStats(dateStr?: string) {
+  async getAdminStats(branchId: string, dateStr?: string) {
     const targetDate = dateStr ? this.parseDateOnly(dateStr) : this.toDateOnlyUtc(new Date());
 
     const stats = await this.prisma.appointment.groupBy({
       by: ['status'],
       where: {
+        branchId,
         appointmentDate: targetDate,
       },
       _count: true,
@@ -497,7 +504,7 @@ export class AppointmentsService {
     return result;
   }
 
-  async reschedule(id: string, newDate: string, newTime: string, userId: string, remarks: string) {
+  async reschedule(id: string, newDate: string, newTime: string, userId: string, remarks: string, branchId: string) {
     const dateObj = this.parseDateOnly(newDate);
     const appointmentDateOnly = this.toDateOnlyUtc(dateObj);
     const fullAppointmentDateTime = this.combineDateAndTime(appointmentDateOnly, newTime);
@@ -505,8 +512,8 @@ export class AppointmentsService {
     return this.prisma.$transaction(async (tx) => {
       await this.lockTransactionKey(tx, `appointment-${id}`);
       
-      const appointment = await tx.appointment.findUnique({
-        where: { id },
+      const appointment = await tx.appointment.findFirst({
+        where: { id, branchId },
         include: { doctor: true }
       });
 
@@ -552,12 +559,12 @@ export class AppointmentsService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
-  async cancel(id: string, reason: string, userId: string) {
+  async cancel(id: string, reason: string, userId: string, branchId: string) {
     return this.prisma.$transaction(async (tx) => {
       await this.lockTransactionKey(tx, `appointment-${id}`);
       
-      const appointment = await tx.appointment.findUnique({
-        where: { id }
+      const appointment = await tx.appointment.findFirst({
+        where: { id, branchId }
       });
 
       if (!appointment) throw new NotFoundException('Appointment not found');
@@ -710,6 +717,7 @@ export class AppointmentsService {
 
   private async generateCaseNumber(
     tx: Prisma.TransactionClient,
+    branchId: string,
   ): Promise<string> {
     const today = new Date();
     const dateStr =
@@ -717,10 +725,11 @@ export class AppointmentsService {
       (today.getMonth() + 1).toString().padStart(2, '0') +
       today.getDate().toString().padStart(2, '0');
 
-    await this.lockTransactionKey(tx, `case-number-${dateStr}`);
+    await this.lockTransactionKey(tx, `case-number-${branchId}-${dateStr}`);
 
     const count = await tx.patientCase.count({
       where: {
+        branchId,
         caseNumber: {
           startsWith: `C${dateStr}`,
         },

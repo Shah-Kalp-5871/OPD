@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto } from './dto/create-bill.dto';
 import { PayBillDto } from './dto/pay-bill.dto';
+import { RefundBillDto } from './dto/refund-bill.dto';
 import {
   BillStatus,
   CaseStage,
@@ -30,6 +31,7 @@ export class BillingService {
   async createBill(
     createBillDto: CreateBillDto,
     createdById: string,
+    branchId: string,
     requestIp?: string,
   ) {
     const {
@@ -43,8 +45,8 @@ export class BillingService {
         async (tx) => {
           await this.lockTransactionKey(tx, `bill-create-${caseId}`);
 
-          const existingBill = await tx.bill.findUnique({
-            where: { caseId },
+          const existingBill = await tx.bill.findFirst({
+            where: { caseId, branchId },
             include: { items: true },
           });
 
@@ -52,8 +54,8 @@ export class BillingService {
             return existingBill;
           }
 
-          const patientCase = await tx.patientCase.findUnique({
-            where: { id: caseId },
+          const patientCase = await tx.patientCase.findFirst({
+            where: { id: caseId, branchId },
             include: {
               doctor: {
                 include: {
@@ -93,7 +95,7 @@ export class BillingService {
             );
           }
 
-          const billNumber = await this.generateBillNumber(tx);
+          const billNumber = await this.generateBillNumber(tx, branchId);
           const { grossAmount, discountTotal, netAmount } =
             this.calculateTotals(finalItems);
 
@@ -102,6 +104,7 @@ export class BillingService {
               billNumber,
               caseId,
               patientId: patientCase.patientId,
+              branchId,
               grossAmount,
               discountTotal,
               netAmount,
@@ -141,7 +144,7 @@ export class BillingService {
       );
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
-        return this.getBillByCaseId(caseId);
+        return this.getBillByCaseId(caseId, branchId);
       }
 
       throw error;
@@ -152,41 +155,48 @@ export class BillingService {
     caseId: string,
     patientId: string,
     createdById: string,
+    branchId: string,
+    txClient?: Prisma.TransactionClient,
   ) {
-    try {
-      return await this.prisma.$transaction(
-        async (tx) => {
-          await this.lockTransactionKey(tx, `bill-create-${caseId}`);
+    const execute = async (tx: Prisma.TransactionClient) => {
+      await this.lockTransactionKey(tx, `bill-create-${caseId}`);
 
-          const existingBill = await tx.bill.findUnique({
-            where: { caseId },
-          });
+      const existingBill = await tx.bill.findFirst({
+        where: { caseId, branchId },
+      });
 
-          if (existingBill) {
-            return existingBill;
-          }
+      if (existingBill) {
+        return existingBill;
+      }
 
-          const billNumber = await this.generateBillNumber(tx);
-          return tx.bill.create({
-            data: {
-              billNumber,
-              caseId,
-              patientId,
-              grossAmount: 0,
-              discountTotal: 0,
-              netAmount: 0,
-              balanceAmount: 0,
-              createdById,
-              paymentStatus: 'PENDING',
-              paymentStatusEnum: BillStatus.PENDING,
-            },
-          });
+      const billNumber = await this.generateBillNumber(tx, branchId);
+      return tx.bill.create({
+        data: {
+          billNumber,
+          caseId,
+          patientId,
+          branchId,
+          grossAmount: 0,
+          discountTotal: 0,
+          netAmount: 0,
+          balanceAmount: 0,
+          createdById,
+          paymentStatus: 'PENDING',
+          paymentStatusEnum: BillStatus.PENDING,
         },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
+      });
+    };
+
+    try {
+      if (txClient) {
+        return await execute(txClient);
+      }
+      return await this.prisma.$transaction(execute, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
-        return this.prisma.bill.findUniqueOrThrow({ where: { caseId } });
+        return this.prisma.bill.findFirstOrThrow({ where: { caseId, branchId } });
       }
 
       throw error;
@@ -205,85 +215,94 @@ export class BillingService {
       referenceId?: string;
       procedureSessionId?: string;
     }[],
+    branchId: string,
+    txClient?: Prisma.TransactionClient,
   ) {
-    return await this.prisma.$transaction(
-      async (tx) => {
-        await this.lockTransactionKey(tx, `bill-update-${billId}`);
+    const execute = async (tx: Prisma.TransactionClient) => {
+      await this.lockTransactionKey(tx, `bill-update-${billId}`);
 
-        const bill = await tx.bill.findUnique({
-          where: { id: billId },
-        });
+      const bill = await tx.bill.findUnique({
+        where: { id: billId },
+      });
 
-        if (!bill) throw new NotFoundException('Bill not found');
-        if (bill.isFinalized) {
-          throw new BadRequestException('Cannot add items to a finalized bill');
-        }
+      if (!bill) throw new NotFoundException('Bill not found');
+      if (bill.isFinalized) {
+        throw new BadRequestException('Cannot add items to a finalized bill');
+      }
 
-        const billItems = await Promise.all(
-          items.map((item) => {
-            const price = new Decimal(item.unitPrice.toString());
-            const qty = new Decimal(item.quantity);
-            const disc = new Decimal(item.discount || 0);
-            
-            const itemTotal = price.mul(qty);
-            const itemDiscount = itemTotal.mul(disc).div(100);
-            const finalPrice = itemTotal.sub(itemDiscount);
+      const billItems = await Promise.all(
+        items.map((item) => {
+          const price = new Decimal(item.unitPrice.toString());
+          const qty = new Decimal(item.quantity);
+          const disc = new Decimal(item.discount || 0);
 
-            return tx.billItem.create({
-              data: {
-                billId,
-                serviceName: item.serviceName,
-                description: item.description,
-                quantity: item.quantity,
-                unitPrice: price.toNumber(),
-                discount: item.discount,
-                totalPrice: finalPrice.toNumber(),
-                itemType: item.itemType,
-                referenceId: item.referenceId,
-                procedureSessionId: item.procedureSessionId,
-              },
-            });
-          }),
-        );
+          const itemTotal = price.mul(qty);
+          const itemDiscount = itemTotal.mul(disc).div(100);
+          const finalPrice = itemTotal.sub(itemDiscount);
 
-        // Recalculate bill totals
-        const allItems = await tx.billItem.findMany({ where: { billId } });
-        let grossAmount = new Decimal(0);
-        let discountTotal = new Decimal(0);
+          return tx.billItem.create({
+            data: {
+              billId,
+              serviceName: item.serviceName,
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: price.toNumber(),
+              discount: item.discount,
+              totalPrice: finalPrice.toNumber(),
+              itemType: item.itemType,
+              referenceId: item.referenceId,
+              procedureSessionId: item.procedureSessionId,
+              branchId,
+            },
+          });
+        }),
+      );
 
-        allItems.forEach((i) => {
-          const price = new Decimal(i.unitPrice.toString());
-          const qty = new Decimal(i.quantity);
-          const disc = new Decimal(i.discount.toString());
-          
-          const lineGross = price.mul(qty);
-          const lineDisc = lineGross.mul(disc).div(100);
-          
-          grossAmount = grossAmount.add(lineGross);
-          discountTotal = discountTotal.add(lineDisc);
-        });
+      // Recalculate bill totals
+      const allItems = await tx.billItem.findMany({ where: { billId } });
+      let grossAmount = new Decimal(0);
+      let discountTotal = new Decimal(0);
 
-        const netAmount = grossAmount.sub(discountTotal);
+      allItems.forEach((i) => {
+        const price = new Decimal(i.unitPrice.toString());
+        const qty = new Decimal(i.quantity);
+        const disc = new Decimal(i.discount.toString());
 
-        await tx.bill.update({
-          where: { id: billId },
-          data: {
-            grossAmount: grossAmount.toNumber(),
-            discountTotal: discountTotal.toNumber(),
-            netAmount: netAmount.toNumber(),
-            balanceAmount: netAmount.sub(new Decimal(bill.paidAmount.toString())).toNumber(),
-          },
-        });
+        const lineGross = price.mul(qty);
+        const lineDisc = lineGross.mul(disc).div(100);
 
-        return billItems;
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
+        grossAmount = grossAmount.add(lineGross);
+        discountTotal = discountTotal.add(lineDisc);
+      });
+
+      const netAmount = grossAmount.sub(discountTotal);
+
+      await tx.bill.update({
+        where: { id: billId },
+        data: {
+          grossAmount: grossAmount.toNumber(),
+          discountTotal: discountTotal.toNumber(),
+          netAmount: netAmount.toNumber(),
+          balanceAmount: netAmount
+            .sub(new Decimal(bill.paidAmount.toString()))
+            .toNumber(),
+        },
+      });
+
+      return billItems;
+    };
+
+    if (txClient) {
+      return await execute(txClient);
+    }
+    return await this.prisma.$transaction(execute, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
   }
 
-  async getBillById(id: string) {
-    const bill = await this.prisma.bill.findUnique({
-      where: { id },
+  async getBillById(id: string, branchId: string) {
+    const bill = await this.prisma.bill.findFirst({
+      where: { id, branchId },
       include: {
         items: true,
         payments: true,
@@ -305,9 +324,9 @@ export class BillingService {
     return bill;
   }
 
-  async getBillByCaseId(caseId: string) {
-    const bill = await this.prisma.bill.findUnique({
-      where: { caseId },
+  async getBillByCaseId(caseId: string, branchId: string) {
+    const bill = await this.prisma.bill.findFirst({
+      where: { caseId, branchId },
       include: {
         items: true,
         patient: {
@@ -343,12 +362,10 @@ export class BillingService {
     return bill;
   }
 
-  async finalizeBill(billId: string, userId: string, requestIp?: string) {
-    return await this.prisma.$transaction(async (tx) => {
-      await this.lockTransactionKey(tx, `bill-finalize-${billId}`);
-
-      const bill = await tx.bill.findUnique({
-        where: { id: billId },
+  async finalizeBill(id: string, userId: string, branchId: string, requestIp?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const bill = await tx.bill.findFirst({
+        where: { id, branchId },
         include: { items: true },
       });
 
@@ -356,8 +373,10 @@ export class BillingService {
       if (bill.isFinalized) throw new BadRequestException('Bill is already finalized');
       if (bill.items.length === 0) throw new BadRequestException('Cannot finalize an empty bill');
 
+      await this.lockTransactionKey(tx, `bill-finalize-${bill.id}`);
+
       const updatedBill = await tx.bill.update({
-        where: { id: billId },
+        where: { id: bill.id },
         data: {
           isFinalized: true,
           finalizedAt: new Date(),
@@ -383,12 +402,13 @@ export class BillingService {
     });
   }
 
-  async getPendingBills() {
+  async getPendingBills(branchId: string) {
     return this.prisma.bill.findMany({
       where: {
         paymentStatus: {
           in: ['PENDING', 'PARTIAL'],
         },
+        branchId,
       },
       include: {
         patient: {
@@ -411,14 +431,15 @@ export class BillingService {
   }
 
   async payBill(
-    billId: string,
+    id: string,
     payBillDto: PayBillDto,
     userId: string,
+    branchId: string,
     requestIp?: string,
     idempotencyKey?: string,
   ) {
     const cacheKey = idempotencyKey
-      ? `${billId}:${userId}:${idempotencyKey}`
+      ? `${id}:${userId}:${idempotencyKey}`
       : null;
 
     if (cacheKey) {
@@ -428,9 +449,10 @@ export class BillingService {
       }
 
       const request = this.processPayment(
-        billId,
+        id,
         payBillDto,
         userId,
+        branchId,
         requestIp,
         idempotencyKey,
       ).catch((error) => {
@@ -446,28 +468,29 @@ export class BillingService {
       return request;
     }
 
-    return this.processPayment(billId, payBillDto, userId, requestIp);
+    return this.processPayment(id, payBillDto, userId, branchId, requestIp);
   }
 
   private async processPayment(
-    billId: string,
+    id: string,
     payBillDto: PayBillDto,
     userId: string,
+    branchId: string,
     requestIp?: string,
     idempotencyKey?: string,
   ) {
     return this.prisma.$transaction(
       async (tx) => {
-        await this.lockTransactionKey(tx, `bill-payment-${billId}`);
-
-        const bill = await tx.bill.findUnique({
-          where: { id: billId },
+        const bill = await tx.bill.findFirst({
+          where: { id, branchId },
           include: { patient: true, case: true },
         });
 
         if (!bill) {
           throw new NotFoundException('Bill not found');
         }
+
+        await this.lockTransactionKey(tx, `bill-payment-${bill.id}`);
 
         if (
           bill.paymentStatusEnum === BillStatus.PAID ||
@@ -515,6 +538,7 @@ export class BillingService {
                 status: PaymentStatus.SUCCESS,
                 transactionId: split.transactionId,
                 collectedById: userId,
+                branchId,
               },
             });
           }
@@ -542,7 +566,7 @@ export class BillingService {
             : splits[0]?.transactionId || bill.transactionId || '';
 
         const updatedBill = await tx.bill.update({
-          where: { id: billId },
+          where: { id: bill.id },
           data: {
             paidAmount: totalPaidAmount,
             balanceAmount: newBalance,
@@ -629,22 +653,24 @@ export class BillingService {
   }
 
   async processRefund(
-    billId: string,
-    refundData: { amount: number; reason: string },
+    id: string,
+    refundDto: RefundBillDto,
     userId: string,
+    branchId: string,
     requestIp?: string,
+    txClient?: Prisma.TransactionClient,
   ) {
-    return await this.prisma.$transaction(async (tx) => {
-      await this.lockTransactionKey(tx, `bill-refund-${billId}`);
-
-      const bill = await tx.bill.findUnique({
-        where: { id: billId },
+    const execute = async (tx: Prisma.TransactionClient) => {
+      const bill = await tx.bill.findFirst({
+        where: { id, branchId },
         include: { payments: true },
       });
 
       if (!bill) throw new NotFoundException('Bill not found');
       
-      const refundAmount = new Decimal(refundData.amount.toString());
+      await this.lockTransactionKey(tx, `bill-refund-${bill.id}`);
+      
+      const refundAmount = new Decimal(refundDto.amount.toString());
       const paidAmount = new Decimal(bill.paidAmount.toString());
 
       if (refundAmount.gt(paidAmount)) {
@@ -653,10 +679,11 @@ export class BillingService {
 
       const refund = await tx.billRefund.create({
         data: {
-          billId,
+          billId: bill.id,
           amount: refundAmount.toNumber(),
-          reason: refundData.reason,
+          reason: refundDto.reason,
           processedById: userId,
+          branchId,
         },
       });
 
@@ -664,7 +691,7 @@ export class BillingService {
       const newBalance = new Decimal(bill.netAmount.toString()).sub(newPaidAmount);
 
       await tx.bill.update({
-        where: { id: billId },
+        where: { id: bill.id },
         data: {
           paidAmount: newPaidAmount.toNumber(),
           balanceAmount: newBalance.toNumber(),
@@ -682,12 +709,19 @@ export class BillingService {
           details: JSON.stringify({
             billNumber: bill.billNumber,
             refundAmount: refundAmount.toString(),
-            reason: refundData.reason,
+            reason: refundDto.reason,
           }),
         },
       });
 
       return refund;
+    };
+
+    if (txClient) {
+      return await execute(txClient);
+    }
+    return this.prisma.$transaction(execute, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
   }
 
@@ -824,30 +858,33 @@ export class BillingService {
   }
 
   async generateBillNumber(
-    client: Prisma.TransactionClient | PrismaService = this.prisma,
+    tx: Prisma.TransactionClient,
+    branchId: string,
   ): Promise<string> {
-    const now = new Date();
-    const prefix = 'BILL';
-    const dateStr = this.formatDate(now, 'yyyyMMdd');
-    await this.lockTransactionKey(client, `bill-number-${dateStr}`);
+    const today = new Date();
+    const dateStr =
+      today.getFullYear().toString().slice(-2) +
+      (today.getMonth() + 1).toString().padStart(2, '0') +
+      today.getDate().toString().padStart(2, '0');
 
-    const lastBill = await client.bill.findFirst({
+    const prefix = `BILL${dateStr}`;
+    await this.lockTransactionKey(tx, `bill-number-${dateStr}-${branchId}`);
+
+    const lastBill = await tx.bill.findFirst({
       where: {
         billNumber: {
-          startsWith: `${prefix}-${dateStr}`,
+          startsWith: prefix,
         },
+        branchId,
       },
-      orderBy: {
-        billNumber: 'desc',
-      },
+      orderBy: { billNumber: 'desc' },
+      select: { billNumber: true },
     });
 
     let nextNumber = 1;
     if (lastBill) {
       const parts = lastBill.billNumber.split('-');
-      if (parts.length === 3) {
-        nextNumber = parseInt(parts[2], 10) + 1;
-      }
+      nextNumber = parseInt(parts[2], 10) + 1;
     }
 
     return `${prefix}-${dateStr}-${nextNumber.toString().padStart(4, '0')}`;

@@ -165,6 +165,33 @@ async function main() {
     },
   });
 
+  // 1.5. Create Default Clinic and Branch
+  console.log('Creating default clinic and branch...');
+  const clinic = await prisma.clinic.upsert({
+    where: { id: 'DEFAULT-CLINIC' },
+    update: {},
+    create: {
+      id: 'DEFAULT-CLINIC',
+      name: 'MedFlow Healthcare Group',
+      country: 'India',
+    },
+  });
+
+  const mainBranch = await prisma.branch.upsert({
+    where: { branchCode: 'MAIN' },
+    update: {},
+    create: {
+      clinicId: clinic.id,
+      name: 'Main Clinic',
+      branchCode: 'MAIN',
+      address: 'Central Street',
+      timezone: 'Asia/Kolkata',
+      phone: '+91 0000000000',
+      contactEmail: 'main@clinic.com',
+    },
+  });
+  const branchId = mainBranch.id;
+
   // 2. Create Sample Patients
   console.log('Creating sample patients...');
   const patient1 = await prisma.patient.upsert({
@@ -216,7 +243,7 @@ async function main() {
   
   // Active Case for Rajesh with Dr. Shah
   await prisma.patientCase.upsert({
-    where: { caseNumber: 'CASE-2024-001' },
+    where: { caseNumber_branchId: { caseNumber: 'CASE-2024-001', branchId } },
     update: {},
     create: {
       caseNumber: 'CASE-2024-001',
@@ -227,6 +254,7 @@ async function main() {
       complaint: 'Fever and cold since 2 days',
       status: 'OPEN',
       stage: CaseStage.NURSING,
+      branchId,
       queueEntry: {
         create: {
           tokenDisplay: 'DR-SHAH-001',
@@ -235,6 +263,7 @@ async function main() {
           status: QueueStatus.WAITING,
           patientId: patient1.id,
           doctorId: drShah.id,
+          branchId,
         }
       }
     }
@@ -242,7 +271,7 @@ async function main() {
 
   // Completed Case for Priya with Dr. Mehta
   const case2 = await prisma.patientCase.upsert({
-    where: { caseNumber: 'CASE-2024-002' },
+    where: { caseNumber_branchId: { caseNumber: 'CASE-2024-002', branchId } },
     update: {},
     create: {
       caseNumber: 'CASE-2024-002',
@@ -253,6 +282,7 @@ async function main() {
       complaint: 'Skin rash on arm',
       status: 'CLOSED',
       stage: CaseStage.COMPLETED,
+      branchId,
     }
   });
 
@@ -270,6 +300,7 @@ async function main() {
       balanceAmount: 0,
       paymentStatus: 'PAID',
       paymentMode: 'CASH',
+      branchId,
       items: {
         create: [
           {
@@ -277,6 +308,7 @@ async function main() {
             quantity: 1,
             unitPrice: 800,
             totalPrice: 800,
+            branchId,
           }
         ]
       }

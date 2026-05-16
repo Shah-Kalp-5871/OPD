@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -21,11 +23,26 @@ import { DrugsModule } from './admin/drugs/drugs.module';
 import { LabMasterModule } from './admin/lab/lab.module';
 import { ProcedureMasterModule } from './admin/procedures/procedures.module';
 
+import { envValidationSchema } from './common/config/env.validation';
+import { HealthModule } from './health/health.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { JobsModule } from './jobs/jobs.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { SocketModule } from './socket/socket.module';
+import { PatientPortalModule } from './patient-portal/patient-portal.module';
+import { StockTransferModule } from './inventory/stock-transfer/stock-transfer.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validationSchema: envValidationSchema,
     }),
+    ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -43,6 +60,13 @@ import { ProcedureMasterModule } from './admin/procedures/procedures.module';
     DrugsModule,
     LabMasterModule,
     ProcedureMasterModule,
+    HealthModule,
+    AnalyticsModule,
+    JobsModule,
+    NotificationsModule,
+    SocketModule,
+    PatientPortalModule,
+    StockTransferModule,
   ],
 
   controllers: [AppController],

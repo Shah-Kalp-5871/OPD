@@ -33,6 +33,7 @@ export class ConsultationService {
     orderId: string,
     file: Express.Multer.File,
     userId: string,
+    branchId: string,
   ) {
     const savedFile = await this.fileStorage.saveFile(file, 'lab', userId);
 
@@ -45,12 +46,13 @@ export class ConsultationService {
       savedFile.path,
       savedFile.sha256Hash,
       savedFile.url,
+      branchId,
     );
   }
 
-  async getOrCreateConsultation(caseId: string, userId: string) {
-    const patientCase = await this.prisma.patientCase.findUnique({
-      where: { id: caseId },
+  async getOrCreateConsultation(caseId: string, userId: string, branchId: string) {
+    const patientCase = await this.prisma.patientCase.findFirst({
+      where: { id: caseId, branchId },
     });
 
     if (!patientCase) {
@@ -93,13 +95,14 @@ export class ConsultationService {
 
       if (!consultation) {
         const activeSession = await tx.visitSession.findFirst({
-          where: { caseId, status: 'ACTIVE' },
+          where: { caseId, status: 'ACTIVE', branchId },
         });
 
         consultation = await tx.consultationRecord.create({
           data: {
             case: { connect: { id: caseId } },
             doctor: { connect: { id: patientCase.doctorId || userId } },
+            branch: { connect: { id: branchId } },
             session: activeSession
               ? { connect: { id: activeSession.id } }
               : undefined,
@@ -157,6 +160,7 @@ export class ConsultationService {
     caseId: string,
     orders: CreateInvestigationOrderDto[],
     doctorId: string,
+    branchId: string,
   ) {
     if (!orders || orders.length === 0) {
       throw new BadRequestException('Investigation orders cannot be empty');
@@ -172,20 +176,20 @@ export class ConsultationService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const createdOrders: (InvestigationOrder & {
-        results: { parameter: LabParameter }[];
-      })[] = [];
+      const createdOrders: any[] = [];
       for (const order of orders) {
         const created = await tx.investigationOrder.create({
           data: {
             patientCase: { connect: { id: caseId } },
             doctorId: doctorId,
+            branch: { connect: { id: branchId } },
             status: 'ORDERED',
             priority: order.urgent ? 'URGENT' : 'NORMAL',
             results: {
               create: {
                 parameter: { connect: { id: order.id } },
                 enteredById: doctorId,
+                branch: { connect: { id: branchId } },
               },
             },
           },
@@ -210,6 +214,8 @@ export class ConsultationService {
         caseId,
         patientCase.patientId,
         doctorId,
+        branchId,
+        tx,
       );
 
       await this.billing.addItemsToBill(
@@ -222,6 +228,8 @@ export class ConsultationService {
           itemType: 'LAB',
           referenceId: order.id,
         })),
+        branchId,
+        tx,
       );
 
       await tx.auditLog.create({
@@ -260,13 +268,14 @@ export class ConsultationService {
     items: PrescriptionItemDto[],
     notes: string,
     doctorId: string,
+    branchId: string,
   ) {
     if (!items || items.length === 0) {
       throw new BadRequestException('Prescription items cannot be empty');
     }
 
-    const consultation = await this.prisma.consultationRecord.findUnique({
-      where: { caseId },
+    const consultation = await this.prisma.consultationRecord.findFirst({
+      where: { caseId, branchId },
     });
     if (consultation?.isFinalized) {
       throw new BadRequestException(
@@ -279,6 +288,7 @@ export class ConsultationService {
         data: {
           caseId,
           doctorId,
+          branchId,
           notes,
           status: 'ACTIVE',
           items: {
@@ -289,6 +299,7 @@ export class ConsultationService {
               frequency: item.frequency,
               duration: item.duration,
               instructions: item.instructions,
+              branch: { connect: { id: branchId } },
             })),
           },
         },
@@ -324,9 +335,10 @@ export class ConsultationService {
     procedureId: string,
     notes: string,
     doctorId: string,
+    branchId: string,
   ) {
-    const consultation = await this.prisma.consultationRecord.findUnique({
-      where: { caseId },
+    const consultation = await this.prisma.consultationRecord.findFirst({
+      where: { caseId, branchId },
     });
     if (consultation?.isFinalized) {
       throw new BadRequestException(
@@ -340,6 +352,7 @@ export class ConsultationService {
           caseId,
           procedureId,
           doctorId,
+          branchId,
           status: 'SCHEDULED',
           notes,
         },
@@ -356,19 +369,26 @@ export class ConsultationService {
         caseId,
         patientCase.patientId,
         doctorId,
+        branchId,
+        tx,
       );
 
-      await this.billing.addItemsToBill(bill.id, [
-        {
-          serviceName: session.procedure.name,
-          quantity: 1,
-          unitPrice: session.procedure.basePrice,
-          discount: 0,
-          itemType: 'PROCEDURE',
-          referenceId: session.id,
-          procedureSessionId: session.id,
-        },
-      ]);
+      await this.billing.addItemsToBill(
+        bill.id,
+        [
+          {
+            serviceName: session.procedure.name,
+            quantity: 1,
+            unitPrice: session.procedure.basePrice,
+            discount: 0,
+            itemType: 'PROCEDURE',
+            referenceId: session.id,
+            procedureSessionId: session.id,
+          },
+        ],
+        branchId,
+        tx,
+      );
 
       await tx.auditLog.create({
         data: {
@@ -392,9 +412,9 @@ export class ConsultationService {
     return result;
   }
 
-  async getClinicalImages(caseId: string) {
+  async getClinicalImages(caseId: string, branchId: string) {
     return this.prisma.clinicalImage.findMany({
-      where: { caseId },
+      where: { caseId, patientCase: { branchId } },
       include: { uploadedBy: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -406,9 +426,10 @@ export class ConsultationService {
     tag: string | undefined,
     notes: string | undefined,
     userId: string,
+    branchId: string,
   ) {
-    const consultation = await this.prisma.consultationRecord.findUnique({
-      where: { caseId },
+    const consultation = await this.prisma.consultationRecord.findFirst({
+      where: { caseId, case: { branchId } },
     });
     if (consultation?.isFinalized) {
       throw new BadRequestException(
@@ -429,21 +450,20 @@ export class ConsultationService {
         mimeType: savedFile.mimeType,
         storedPath: savedFile.path,
         sha256Hash: savedFile.sha256Hash,
+        branchId,
       },
     });
   }
-
   async finalizeConsultation(
     caseId: string,
     doctorId: string,
     nextStage: CaseStage,
+    branchId: string,
   ) {
-    const currentConsultation = await this.prisma.consultationRecord.findUnique(
-      {
-        where: { caseId },
-        include: { complaint: true },
-      },
-    );
+    const currentConsultation = await this.prisma.consultationRecord.findFirst({
+      where: { caseId, case: { branchId } },
+      include: { complaint: true },
+    });
 
     if (!currentConsultation)
       throw new NotFoundException('Consultation not found');
@@ -482,7 +502,9 @@ export class ConsultationService {
         },
       });
 
-      const entry = await tx.queueEntry.findUnique({ where: { caseId } });
+      const entry = await tx.queueEntry.findFirst({
+        where: { caseId, branchId },
+      });
       if (entry) {
         let finalQueueStatus: QueueStatus = 'COMPLETED';
         if (nextStage === 'BILLING') finalQueueStatus = 'BILLING_PENDING';
@@ -524,14 +546,14 @@ export class ConsultationService {
       return consultation;
     });
   }
-
   async updateConsultation(
     caseId: string,
     dto: UpdateConsultationDto,
     userId: string,
+    branchId: string,
   ) {
-    const consultation = await this.prisma.consultationRecord.findUnique({
-      where: { caseId },
+    const consultation = await this.prisma.consultationRecord.findFirst({
+      where: { caseId, case: { branchId } },
     });
 
     if (!consultation) throw new NotFoundException('Consultation not found');
@@ -610,9 +632,9 @@ export class ConsultationService {
     });
   }
 
-  async getInvestigationOrders(caseId: string) {
+  async getInvestigationOrders(caseId: string, branchId: string) {
     return this.prisma.investigationOrder.findMany({
-      where: { caseId },
+      where: { caseId, branchId },
       include: {
         results: { include: { parameter: true } },
         files: true,
@@ -621,9 +643,9 @@ export class ConsultationService {
     });
   }
 
-  async getInvestigationOrderById(orderId: string) {
-    const order = await this.prisma.investigationOrder.findUnique({
-      where: { id: orderId },
+  async getInvestigationOrderById(orderId: string, branchId: string) {
+    const order = await this.prisma.investigationOrder.findFirst({
+      where: { id: orderId, branchId },
       include: {
         results: {
           include: {
@@ -675,6 +697,7 @@ export class ConsultationService {
     storedPath: string,
     sha256Hash: string,
     fileUrl: string,
+    branchId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
       const file = await tx.investigationFile.create({
@@ -687,11 +710,12 @@ export class ConsultationService {
           storedPath,
           sha256Hash,
           uploadedById: userId,
+          branchId,
         },
       });
 
-      const order = await tx.investigationOrder.findUnique({
-        where: { id: orderId },
+      const order = await tx.investigationOrder.findFirst({
+        where: { id: orderId, branchId },
       });
       if (order && order.status === 'ORDERED') {
         await tx.investigationOrder.update({

@@ -14,25 +14,32 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { DispenseMedicationDto, ReceiveStockDto, AdjustStockDto } from './dto/pharmacy.dto';
 
+import { BranchId } from '../common/decorators/branch-id.decorator';
+import { BranchGuard } from '../common/guards/branch.guard';
+
 @Controller('pharmacy')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'MEDICAL', 'PHARMACY') // Using MEDICAL and PHARMACY roles
+@UseGuards(JwtAuthGuard, RolesGuard, BranchGuard)
+@Roles('ADMIN', 'MEDICAL', 'PHARMACY')
 export class PharmacyController {
   constructor(private readonly pharmacyService: PharmacyService) {}
 
   @Get('queue')
-  async getQueue() {
-    return this.pharmacyService.getPharmacyQueue();
+  async getQueue(@BranchId() branchId: string) {
+    return this.pharmacyService.getPharmacyQueue(branchId);
   }
 
   @Post('dispense')
-  async dispense(@Body() dto: DispenseMedicationDto, @Request() req) {
-    return this.pharmacyService.dispenseMedication(dto, req.user.id);
+  async dispense(
+    @Body() dto: DispenseMedicationDto,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.pharmacyService.dispenseMedication(dto, req.user.id, branchId);
   }
 
   @Get('inventory')
-  async getInventory() {
-    return this.pharmacyService.getInventory();
+  async getInventory(@BranchId() branchId: string) {
+    return this.pharmacyService.getInventory(branchId);
   }
 
   @Get('prescriptions/:caseId')
@@ -41,30 +48,57 @@ export class PharmacyController {
   }
 
   @Get('inventory/alerts')
-  async getAlerts() {
-    return this.pharmacyService.getInventoryAlerts();
+  async getAlerts(@BranchId() branchId: string) {
+    return this.pharmacyService.getInventoryAlerts(branchId);
   }
 
   @Get('inventory/valuation')
-  async getValuation() {
-    return this.pharmacyService.getStockValuation();
+  async getValuation(@BranchId() branchId: string) {
+    return this.pharmacyService.getStockValuation(branchId);
   }
 
   @Get('inventory/movements')
   async getMovements(
-    @Query('drugId') drugId?: string,
-    @Query('batchId') batchId?: string,
+    @Query('drugId') drugId: string,
+    @Query('batchId') batchId: string,
+    @BranchId() branchId: string,
   ) {
-    return this.pharmacyService.getMovementHistory({ drugId, batchId });
+    return this.pharmacyService.getMovementHistory({ drugId, batchId }, branchId);
   }
 
   @Post('inventory/receive')
-  async receiveStock(@Body() dto: ReceiveStockDto, @Request() req) {
-    return this.pharmacyService.receiveStock(dto, req.user.id);
+  async receiveStock(
+    @Body() dto: ReceiveStockDto,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.pharmacyService.receiveStock(dto, req.user.id, branchId);
   }
 
   @Post('inventory/adjust')
-  async adjustStock(@Body() dto: AdjustStockDto, @Request() req) {
-    return this.pharmacyService.adjustStock(dto, req.user.id);
+  async adjustStock(
+    @Body() dto: AdjustStockDto,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.pharmacyService.adjustStock(dto, req.user.id, branchId);
+  }
+
+  @Post('return')
+  async returnMedication(
+    @Body() dto: { caseId: string; drugId: string; batchId: string; quantity: number; reason: string },
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.pharmacyService.returnMedication(
+      dto.caseId,
+      dto.drugId,
+      dto.batchId,
+      dto.quantity,
+      req.user.id,
+      dto.reason,
+      branchId,
+    );
   }
 }
+

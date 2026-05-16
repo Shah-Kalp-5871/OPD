@@ -52,6 +52,14 @@ model User {
   processedRefunds       BillRefund[]         @relation("ProcessedRefunds")
   finalizedBills         Bill[]               @relation("BillFinalizedBy")
   stockMovements         StockMovement[]
+  transfersRequested     StockTransfer[]      @relation("TransfersRequested")
+  transfersApproved      StockTransfer[]      @relation("TransfersApproved")
+  transfersDispatched    StockTransfer[]      @relation("TransfersDispatched")
+  transfersReceived      StockTransfer[]      @relation("TransfersReceived")
+  communicationLogs      CommunicationLog[]
+  inAppNotifications     InAppNotification[]
+  primaryBranchId        String?
+  branchAccess           UserBranchAccess[]
 }
 
 model AdminProfile {
@@ -87,6 +95,8 @@ model DoctorProfile {
   department      Department?      @relation(fields: [departmentId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedules       DoctorSchedule[]
+  leaves          DoctorLeave[]
+  blockedSlots    DoctorBlockedSlot[]
 }
 
 model NurseProfile {
@@ -152,6 +162,8 @@ model Patient {
   profile                 PatientProfile?
   vitals                  PatientVitals[]
   queueEntries            QueueEntry[]
+  communicationLogs       CommunicationLog[]
+  auth                    PatientAuth?
 
   @@index([firstName, lastName])
   @@index([createdAt])
@@ -196,11 +208,13 @@ model PatientVitals {
   patientCase   PatientCase? @relation(fields: [caseId], references: [id], onDelete: Cascade)
   patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
   takenBy       User?        @relation(fields: [takenById], references: [id])
+  branchId      String
+  branch        Branch       @relation("BranchVitals", fields: [branchId], references: [id])
 }
 
 model PatientCase {
   id                  String               @id @default(uuid())
-  caseNumber          String               @unique
+  caseNumber          String
   patientId           String
   doctorId            String?
   visitType           String?
@@ -231,11 +245,15 @@ model PatientCase {
   procedureSessions   ProcedureSession[]
   queueEntry          QueueEntry?
   sessions            VisitSession[]
+  branchId            String
+  branch              Branch               @relation("BranchCases", fields: [branchId], references: [id])
+
+  @@unique([caseNumber, branchId])
 }
 
 model QueueEntry {
   id           String         @id @default(uuid())
-  tokenDisplay String         @unique
+  tokenDisplay String
   tokenNumber  Int
   queueType    QueueType      @default(OPD)
   status       QueueStatus    @default(WAITING)
@@ -252,7 +270,10 @@ model QueueEntry {
   doctor       User?          @relation(fields: [doctorId], references: [id])
   patient      Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
   history      QueueHistory[]
+  branchId     String
+  branch       Branch         @relation("BranchQueue", fields: [branchId], references: [id])
 
+  @@unique([tokenDisplay, branchId])
   @@index([status, checkInTime])
 }
 
@@ -266,6 +287,8 @@ model VisitSession {
   consultation ConsultationRecord?
   case         PatientCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
   doctor       User                @relation(fields: [doctorId], references: [id])
+  branchId     String
+  branch       Branch              @relation("BranchSessions", fields: [branchId], references: [id])
 }
 
 model QueueHistory {
@@ -282,7 +305,7 @@ model QueueHistory {
 
 model Bill {
   id                String        @id @default(uuid())
-  billNumber        String        @unique
+  billNumber        String
   caseId            String        @unique
   patientId         String
   grossAmount       Decimal       @default(0.0) @db.Decimal(10, 2)
@@ -311,7 +334,10 @@ model Bill {
   items             BillItem[]
   payments          BillPayment[]
   refunds           BillRefund[]
+  branchId          String
+  branch            Branch        @relation("BranchBills", fields: [branchId], references: [id])
 
+  @@unique([billNumber, branchId])
   @@index([paymentStatusEnum, billingDate])
   @@index([caseId])
   @@index([finalizedAt])
@@ -331,7 +357,9 @@ model BillItem {
   itemType           String?
   procedureSessionId String?
   referenceId        String?
-  bill               Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  branchId           String
+  branch             Branch               @relation("BranchBillItems", fields: [branchId], references: [id])
+  bill               Bill                 @relation(fields: [billId], references: [id], onDelete: Cascade)
 }
 
 model ConsultationRecord {
@@ -359,6 +387,8 @@ model ConsultationRecord {
   session              VisitSession?      @relation(fields: [sessionId], references: [id])
   updatedBy            User?              @relation("ConsultationUpdatedBy", fields: [updatedById], references: [id])
   finalizedBy          User?              @relation("ConsultationFinalizedBy", fields: [finalizedById], references: [id])
+  branchId             String
+  branch               Branch             @relation("BranchConsultations", fields: [branchId], references: [id])
 }
 
 model ComplaintEntry {
@@ -483,18 +513,58 @@ model Clinic {
 }
 
 model Branch {
-  id          String       @id @default(uuid())
-  clinicId    String
-  name        String
-  branchCode  String       @unique
-  address     String?
-  phone       String?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  clinic      Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  departments Department[]
-  rooms       Room[]
+  id           String        @id @default(uuid())
+  clinicId     String
+  name         String
+  branchCode   String        @unique
+  address      String?
+  phone        String?
+  timezone     String        @default("UTC")
+  contactEmail String?
+  settings     Json?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  departments  Department[]
+  rooms        Room[]
+  patientCases PatientCase[] @relation("BranchCases")
+  queueEntries QueueEntry[]  @relation("BranchQueue")
+  bills        Bill[]        @relation("BranchBills")
+  appointments Appointment[] @relation("BranchAppointments")
+  sessions     VisitSession[] @relation("BranchSessions")
+  vitals       PatientVitals[] @relation("BranchVitals")
+  payments     BillPayment[]   @relation("BranchPayments")
+  refunds      BillRefund[]    @relation("BranchRefunds")
+  clinicalImages ClinicalImage[] @relation("BranchClinicalImages")
+  caseNotes    CaseNote[]      @relation("BranchCaseNotes")
+  consultations ConsultationRecord[] @relation("BranchConsultations")
+  inventory    DrugInventory[] @relation("BranchInventory")
+  movements    StockMovement[] @relation("BranchMovements")
+  schedules    DoctorSchedule[] @relation("BranchSchedules")
+  transfersOut        StockTransfer[]      @relation("TransfersOut")
+  transfersIn         StockTransfer[]      @relation("TransfersIn")
+  prescriptions       Prescription[]       @relation("BranchPrescriptions")
+  investigations      InvestigationOrder[] @relation("BranchInvestigations")
+  procedures          ProcedureSession[]   @relation("BranchProcedures")
+  investigationResults InvestigationResult[] @relation("BranchInvestigationResults")
+  investigationFiles   InvestigationFile[]   @relation("BranchInvestigationFiles")
+  prescriptionItems    PrescriptionItem[]    @relation("BranchPrescriptionItems")
+  billItems            BillItem[]            @relation("BranchBillItems")
+  userAccess           UserBranchAccess[]    @relation("BranchUsers")
+}
+
+model UserBranchAccess {
+  id        String   @id @default(uuid())
+  userId    String
+  branchId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation("BranchUsers", fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
 }
 
 model Department {
@@ -523,6 +593,7 @@ model Room {
 model DoctorSchedule {
   id        String        @id @default(uuid())
   doctorId  String
+  branchId  String
   dayOfWeek Int
   startTime DateTime      @db.Time(6)
   endTime   DateTime      @db.Time(6)
@@ -531,6 +602,7 @@ model DoctorSchedule {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  branch    Branch        @relation("BranchSchedules", fields: [branchId], references: [id])
 }
 
 model ClinicSetting {
@@ -543,6 +615,38 @@ model ClinicSetting {
   clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, settingKey])
+}
+
+model DoctorLeave {
+  id        String        @id @default(uuid())
+  doctorId  String
+  startDate DateTime      @db.Date
+  endDate   DateTime      @db.Date
+  reason    String?
+  status    LeaveStatus   @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+model DoctorBlockedSlot {
+  id        String        @id @default(uuid())
+  doctorId  String
+  branchId  String
+  date      DateTime      @db.Date
+  startTime DateTime      @db.Time(6)
+  endTime   DateTime      @db.Time(6)
+  reason    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 model Holiday {
@@ -659,6 +763,7 @@ model Appointment {
   id              String                     @id @default(uuid())
   patientId       String
   doctorId        String
+  branchId        String
   appointmentDate DateTime                   @db.Date
   appointmentTime DateTime                   @db.Time(6)
   purpose         String
@@ -674,6 +779,7 @@ model Appointment {
   patientCase     PatientCase?               @relation(fields: [caseId], references: [id])
   doctor          DoctorProfile              @relation(fields: [doctorId], references: [id])
   patient         Patient                    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  branch          Branch                     @relation("BranchAppointments", fields: [branchId], references: [id])
   statusHistory   AppointmentStatusHistory[]
 
   @@index([doctorId, appointmentDate])
@@ -736,6 +842,8 @@ model CaseNote {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   patientCase PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch      @relation("BranchCaseNotes", fields: [branchId], references: [id])
 }
 
 model CaseTag {
@@ -766,6 +874,8 @@ model BillPayment {
   createdAt     DateTime      @default(now())
   bill          Bill          @relation(fields: [billId], references: [id], onDelete: Cascade)
   collectedBy   User          @relation("CollectedPayments", fields: [collectedById], references: [id])
+  branchId      String
+  branch        Branch        @relation("BranchPayments", fields: [branchId], references: [id])
 
   @@index([billId])
   @@index([paymentDate])
@@ -782,6 +892,8 @@ model BillRefund {
 
   bill        Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
   processedBy User @relation("ProcessedRefunds", fields: [processedById], references: [id])
+  branchId    String
+  branch      Branch @relation("BranchRefunds", fields: [branchId], references: [id])
 
   @@index([billId])
   @@index([refundDate])
@@ -804,8 +916,10 @@ model Drug {
   archivedAt        DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  inventory         DrugInventory?
+  inventory         DrugInventory[]
   prescriptionItems PrescriptionItem[]
+  stockMovements    StockMovement[]
+  transferItems     StockTransferItem[]
 
   @@index([drugName])
   @@index([genericName])
@@ -814,7 +928,8 @@ model Drug {
 
 model DrugInventory {
   id            String          @id @default(uuid())
-  drugId        String          @unique
+  drugId        String
+  branchId      String
   totalStock    Int             @default(0)
   reservedStock Int             @default(0)
   reorderLevel  Int             @default(10)
@@ -824,29 +939,32 @@ model DrugInventory {
   batches       DrugBatch[]
   drug          Drug            @relation(fields: [drugId], references: [id], onDelete: Cascade)
   movements     StockMovement[]
+  branch        Branch          @relation("BranchInventory", fields: [branchId], references: [id])
 
+  @@unique([drugId, branchId])
   @@index([totalStock])
   @@index([status])
 }
 
 model DrugBatch {
-  id                String          @id @default(uuid())
+  id                String              @id @default(uuid())
   inventoryId       String
-  batchNumber       String          @unique
-  manufacturingDate DateTime?       @db.Date
-  expiryDate        DateTime        @db.Date
-  mrp               Decimal         @default(0.0) @db.Decimal(10, 2)
-  purchasePrice     Decimal         @default(0.0) @db.Decimal(10, 2)
-  stockQuantity     Int             @default(0)
-  reservedQuantity  Int             @default(0)
-  isActive          Boolean         @default(true)
-  isExpired         Boolean         @default(false)
+  batchNumber       String              @unique
+  manufacturingDate DateTime?           @db.Date
+  expiryDate        DateTime            @db.Date
+  mrp               Decimal             @default(0.0) @db.Decimal(10, 2)
+  purchasePrice     Decimal             @default(0.0) @db.Decimal(10, 2)
+  stockQuantity     Int                 @default(0)
+  reservedQuantity  Int                 @default(0)
+  isActive          Boolean             @default(true)
+  isExpired         Boolean             @default(false)
   supplierId        String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  inventory         DrugInventory   @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  supplier          Supplier?       @relation(fields: [supplierId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  inventory         DrugInventory       @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  supplier          Supplier?           @relation(fields: [supplierId], references: [id])
   movements         StockMovement[]
+  transferItems     StockTransferItem[]
 
   @@index([inventoryId])
   @@index([expiryDate])
@@ -860,6 +978,7 @@ model StockMovement {
   id             String         @id @default(uuid())
   inventoryId    String
   batchId        String?
+  branchId       String
   movementType   String // IN, OUT, ADJUSTMENT, RETURN, EXPIRED, DAMAGE, TRANSFER
   quantity       Int
   beforeQuantity Int?
@@ -869,9 +988,12 @@ model StockMovement {
   referenceId    String? // Link to BillId or PrescriptionId
   performedById  String
   createdAt      DateTime       @default(now())
+  drugId         String
+  drug           Drug           @relation(fields: [drugId], references: [id])
   inventory      DrugInventory  @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
   batch          DrugBatch?     @relation(fields: [batchId], references: [id])
   performedBy    User           @relation(fields: [performedById], references: [id])
+  branch         Branch         @relation("BranchMovements", fields: [branchId], references: [id])
 
   @@index([inventoryId])
   @@index([batchId])
@@ -879,6 +1001,7 @@ model StockMovement {
   @@index([createdAt])
   @@index([performedById])
   @@index([referenceId])
+  @@index([branchId])
 }
 
 model Supplier {
@@ -908,8 +1031,11 @@ model Prescription {
   updatedAt   DateTime           @updatedAt
   patientCase PatientCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
   items       PrescriptionItem[]
+  branchId    String
+  branch      Branch             @relation("BranchPrescriptions", fields: [branchId], references: [id])
 
   @@index([caseId])
+  @@index([branchId])
 }
 
 model PrescriptionItem {
@@ -925,6 +1051,8 @@ model PrescriptionItem {
   createdAt      DateTime     @default(now())
   drug           Drug?        @relation(fields: [drugId], references: [id])
   prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  branchId       String
+  branch         Branch       @relation("BranchPrescriptionItems", fields: [branchId], references: [id])
 }
 
 model Procedure {
@@ -965,6 +1093,8 @@ model ProcedureSession {
   complications String?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
+  branchId      String
+  branch        Branch               @relation("BranchProcedures", fields: [branchId], references: [id])
   images        ProcedureImage[]
   parameters    ProcedureParameter[]
   patientCase   PatientCase          @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -1015,6 +1145,8 @@ model ClinicalImage {
   createdAt    DateTime    @default(now())
   patientCase  PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   uploadedBy   User        @relation(fields: [uploadedById], references: [id])
+  branchId     String
+  branch       Branch      @relation("BranchClinicalImages", fields: [branchId], references: [id])
 }
 
 model LabCategory {
@@ -1082,6 +1214,8 @@ model InvestigationOrder {
   notes       String?
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
+  branchId    String
+  branch      Branch                @relation("BranchInvestigations", fields: [branchId], references: [id])
   files       InvestigationFile[]
   patientCase PatientCase           @relation(fields: [caseId], references: [id], onDelete: Cascade)
   results     InvestigationResult[]
@@ -1101,6 +1235,8 @@ model InvestigationResult {
   createdAt    DateTime           @default(now())
   order        InvestigationOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   parameter    LabParameter       @relation(fields: [parameterId], references: [id])
+  branchId     String
+  branch       Branch             @relation("BranchInvestigationResults", fields: [branchId], references: [id])
 }
 
 model InvestigationFile {
@@ -1117,6 +1253,8 @@ model InvestigationFile {
   uploadedAt   DateTime           @default(now())
   order        InvestigationOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   uploadedBy   User               @relation(fields: [uploadedById], references: [id])
+  branchId     String
+  branch       Branch             @relation("BranchInvestigationFiles", fields: [branchId], references: [id])
 }
 
 model NotificationTemplate {
@@ -1230,6 +1368,10 @@ enum Role {
   PHARMACY
   LAB_TECHNICIAN
   ACCOUNTANT
+  BRANCH_ADMIN
+  CLINIC_MANAGER
+  CENTRAL_FINANCE
+  CENTRAL_PHARMACY
 }
 
 enum CaseStage {
@@ -1408,4 +1550,103 @@ enum Severity {
   MODERATE
   SEVERE
   CRITICAL
+}
+
+model StockTransfer {
+  id             String               @id @default(uuid())
+  sourceBranchId String
+  destBranchId   String
+  status         StockTransferStatus  @default(REQUESTED)
+  requestedById  String
+  approvedById   String?
+  dispatchedById String?
+  receivedById   String?
+  notes          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  items          StockTransferItem[]
+
+  sourceBranch   Branch               @relation("TransfersOut", fields: [sourceBranchId], references: [id])
+  destBranch     Branch               @relation("TransfersIn", fields: [destBranchId], references: [id])
+  requestedBy    User                 @relation("TransfersRequested", fields: [requestedById], references: [id])
+  approvedBy     User?                @relation("TransfersApproved", fields: [approvedById], references: [id])
+  dispatchedBy   User?                @relation("TransfersDispatched", fields: [dispatchedById], references: [id])
+  receivedBy     User?                @relation("TransfersReceived", fields: [receivedById], references: [id])
+}
+
+model StockTransferItem {
+  id              String         @id @default(uuid())
+  transferId      String
+  drugId          String
+  batchId         String?
+  requestedQty    Int
+  dispatchedQty   Int            @default(0)
+  receivedQty     Int            @default(0)
+  status          StockTransferItemStatus @default(PENDING)
+
+  transfer        StockTransfer  @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  drug            Drug           @relation(fields: [drugId], references: [id])
+  batch           DrugBatch?     @relation(fields: [batchId], references: [id])
+}
+
+enum StockTransferStatus {
+  REQUESTED
+  APPROVED
+  IN_TRANSIT
+  RECEIVED
+  REJECTED
+  PARTIAL
+}
+
+enum StockTransferItemStatus {
+  PENDING
+  DISPATCHED
+  RECEIVED
+  DAMAGED
+  MISSING
+}
+
+model PatientAuth {
+  id             String    @id @default(uuid())
+  patientId      String    @unique
+  otp            String?
+  otpExpires     DateTime?
+  lastLogin      DateTime?
+  mobileVerified Boolean   @default(false)
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model CommunicationLog {
+  id           String             @id @default(uuid())
+  recipient    String
+  channel      String             // SMS, EMAIL, WHATSAPP, IN_APP
+  payload      String             @db.Text
+  templateName String?
+  status       String             @default("PENDING") // PENDING, SENT, FAILED
+  errorMessage String?            @db.Text
+  patientId    String?
+  userId       String?
+  metadata     Json?
+  createdAt    DateTime           @default(now())
+  deliveredAt  DateTime?
+  patient      Patient?           @relation(fields: [patientId], references: [id])
+  user         User?              @relation(fields: [userId], references: [id])
+}
+
+model InAppNotification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String   @db.Text
+  severity  String   @default("MILD") // MILD, MODERATE, SEVERE, CRITICAL
+  status    String   @default("UNREAD") // UNREAD, READ, ARCHIVED
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }

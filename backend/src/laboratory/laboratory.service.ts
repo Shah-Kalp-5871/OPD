@@ -18,10 +18,11 @@ export class LaboratoryService {
     private readonly events: EventsService,
   ) {}
 
-  async getPendingInvestigations() {
+  async getPendingInvestigations(branchId: string) {
     return this.prisma.investigationOrder.findMany({
       where: {
         status: { in: ['ORDERED', 'SAMPLE_COLLECTED', 'PROCESSING'] },
+        branchId,
       },
       include: {
         patientCase: {
@@ -38,10 +39,11 @@ export class LaboratoryService {
     orderId: string,
     dto: UpdateInvestigationStatusDto,
     userId: string,
+    branchId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const order = await tx.investigationOrder.findUnique({
-        where: { id: orderId },
+      const order = await tx.investigationOrder.findFirst({
+        where: { id: orderId, branchId },
       });
       if (!order) throw new NotFoundException('Investigation order not found');
 
@@ -80,10 +82,11 @@ export class LaboratoryService {
     orderId: string,
     dto: SubmitLabResultsDto,
     userId: string,
+    branchId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const order = await tx.investigationOrder.findUnique({
-        where: { id: orderId },
+      const order = await tx.investigationOrder.findFirst({
+        where: { id: orderId, branchId },
       });
       if (!order) throw new NotFoundException('Investigation order not found');
 
@@ -98,6 +101,7 @@ export class LaboratoryService {
             isAbnormal: res.isAbnormal || false,
             notes: res.notes,
             enteredById: userId,
+            branchId,
           },
         });
       }
@@ -118,9 +122,9 @@ export class LaboratoryService {
     });
   }
 
-  async getOrderDetails(orderId: string) {
-    const order = await this.prisma.investigationOrder.findUnique({
-      where: { id: orderId },
+  async getOrderDetails(orderId: string, branchId: string) {
+    const order = await this.prisma.investigationOrder.findFirst({
+      where: { id: orderId, branchId },
       include: {
         patientCase: {
           include: {

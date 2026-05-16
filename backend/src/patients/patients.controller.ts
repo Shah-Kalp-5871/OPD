@@ -21,8 +21,11 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 
+import { BranchId } from '../common/decorators/branch-id.decorator';
+import { BranchGuard } from '../common/guards/branch.guard';
+
 @Controller('patients')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BranchGuard)
 export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 
@@ -89,7 +92,7 @@ export class PatientsController {
     @Body() vitalsDto: AddVitalsDto,
     @Request() req,
   ) {
-    return this.patientsService.addVitals(id, vitalsDto, req.user.id);
+    return this.patientsService.addVitals(id, vitalsDto, req.user.id, req.user.branchId);
   }
 
   @Get(':id/vitals-history')
@@ -117,8 +120,12 @@ export class PatientsController {
   }
 
   @Post(':id/cases')
-  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR)
-  createCase(@Param('id') id: string, @Body() createCaseDto: CreateCaseDto) {
-    return this.patientsService.createCase(id, createCaseDto);
+  @Roles(Role.ADMIN, Role.RECEPTION)
+  createCase(
+    @Param('id') id: string,
+    @Body() createCaseDto: CreateCaseDto,
+    @BranchId() branchId: string,
+  ) {
+    return this.patientsService.createCase(id, createCaseDto, branchId);
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/views/layouts/AdminLayout';
 import { 
   Users, 
@@ -10,168 +10,325 @@ import {
   ClipboardList, 
   AlertTriangle,
   MoreVertical,
-  ArrowUpRight
+  Activity,
+  TrendingUp,
+  Package,
+  Clock,
+  CheckCircle2,
+  Stethoscope,
+  Filter
 } from 'lucide-react';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
+import { analyticsApi } from '@/lib/api/analytics';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const SummaryCard = ({ title, value, icon: Icon, color }: { title: string, value: string | number, icon: any, color: string }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group cursor-default">
-    <div className="flex items-center justify-between mb-4">
-      <div className={`p-2 rounded-xl bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6" />
+const SummaryCard = ({ title, value, icon: Icon, color, trend }: { title: string, value: string | number, icon: any, color: string, trend?: string }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-slate-200 transition-all group cursor-default relative overflow-hidden"
+  >
+    <div className={`absolute top-0 right-0 w-24 h-24 bg-${color}-500/5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-500`} />
+    
+    <div className="flex items-center justify-between mb-4 relative z-10">
+      <div className={`p-3 rounded-2xl bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform shadow-sm`}>
+        <Icon className="w-5 h-5" />
       </div>
-      <button className="text-slate-300 hover:text-slate-600 transition-colors">
-        <MoreVertical className="w-4 h-4" />
-      </button>
+      {trend && (
+        <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg uppercase tracking-wider">
+          {trend}
+        </span>
+      )}
     </div>
-    <h3 className="text-2xl font-black text-slate-800 tracking-tight">{value}</h3>
-    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">{title}</p>
-  </div>
+    
+    <div className="relative z-10">
+      <h3 className="text-3xl font-black text-slate-900 tracking-tight group-hover:translate-x-1 transition-transform">{value}</h3>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 leading-none">{title}</p>
+    </div>
+  </motion.div>
 );
 
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
 const AdminDashboardView = () => {
-  const summaries = [
-    { title: 'Total Patients', value: '1,248', icon: Users, color: 'blue' },
-    { title: "Today's Appts", value: '34', icon: CalendarDays, color: 'indigo' },
-    { title: "Today's Revenue", value: '₹ 18,500', icon: IndianRupee, color: 'emerald' },
-    { title: 'Active Staff', value: '6', icon: UserPlus, color: 'violet' },
-    { title: 'Pending F/U', value: '12', icon: ClipboardList, color: 'orange' },
-    { title: 'Drug Alerts', value: '3', icon: AlertTriangle, color: 'rose' },
+  const [stats, setStats] = useState<any>(null);
+  const [financials, setFinancials] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [statsRes, finRes] = await Promise.all([
+          analyticsApi.getDashboardStats(),
+          analyticsApi.getFinancialAnalytics()
+        ]);
+        setStats(statsRes.data);
+        setFinancials(finRes.data);
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+        toast.error('Failed to load real-time analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  const summaryCards = [
+    { title: "Today's Revenue", value: stats ? formatCurrency(stats.revenueToday) : '₹0', icon: IndianRupee, color: 'emerald' },
+    { title: "Today's Patients", value: stats?.patientsToday || 0, icon: Users, color: 'blue' },
+    { title: "Active Queue", value: stats?.activeQueue || 0, icon: Clock, color: 'indigo' },
+    { title: "Consultations", value: stats?.completedConsultations || 0, icon: CheckCircle2, color: 'violet' },
+    { title: "Pending Bills", value: stats?.pendingBills || 0, icon: ClipboardList, color: 'orange' },
+    { title: "Stock Alerts", value: stats?.lowStockCount || 0, icon: AlertTriangle, color: 'rose' },
   ];
 
-  const appointments = [
-    { id: 'C001-001', name: 'Rameshbhai Patel', doctor: 'Dr. Valaki', status: 'Completed', payment: 'Paid', time: '09:00' },
-    { id: 'C002-001', name: 'Sneha Shah', doctor: 'Dr. Valaki', status: 'In Progress', payment: 'Pending', time: '09:10' },
-    { id: 'C003-001', name: 'Mahesh Kumar', doctor: 'Dr. Valaki', status: 'Waiting', payment: '-', time: '09:20' },
-  ];
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="space-y-8 pb-12 animate-pulse">
+           <div className="h-12 w-64 bg-slate-100 rounded-xl" />
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-40 bg-slate-50 rounded-3xl border border-slate-100" />
+              ))}
+           </div>
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-80 bg-slate-50 rounded-3xl border border-slate-100" />
+              <div className="h-80 bg-slate-50 rounded-3xl border border-slate-100" />
+           </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
       <div className="space-y-8 pb-12">
         {/* Header Section */}
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Overview - Today's Summary</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Real-time pulse of your clinic operations.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <Activity className="w-8 h-8 text-indigo-600" />
+              Operational Intelligence
+            </h1>
+            <p className="text-sm text-slate-500 font-bold mt-1 uppercase tracking-wider">Clinic Performance & Real-time Metrics</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                <Filter className="w-3 h-3" />
+                Filters
+             </button>
+             <button className="px-6 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200">
+                Refresh Stats
+             </button>
+          </div>
         </div>
 
         {/* Summary Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {summaries.map((s) => (
+          {summaryCards.map((s) => (
             <SummaryCard key={s.title} {...s} />
           ))}
         </div>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Patient Volume Bar Chart Placeholder */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-slate-800">Patient Volume - Last 7 Days</h3>
-              <button className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-wider">Details</button>
-            </div>
-            <div className="h-64 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 p-4">
-              <div className="flex items-end gap-2 w-full max-w-[200px] h-32">
-                <div className="flex-1 bg-blue-200 h-[40%] rounded-t-sm"></div>
-                <div className="flex-1 bg-blue-400 h-[70%] rounded-t-sm"></div>
-                <div className="flex-1 bg-blue-300 h-[50%] rounded-t-sm"></div>
-                <div className="flex-1 bg-blue-600 h-[90%] rounded-t-sm"></div>
-                <div className="flex-1 bg-blue-400 h-[60%] rounded-t-sm"></div>
-                <div className="flex-1 bg-blue-500 h-[80%] rounded-t-sm"></div>
-                <div className="flex-1 bg-blue-200 h-[30%] rounded-t-sm"></div>
+          {/* Revenue Trend Area Chart */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Revenue Trends</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last 30 Days Performance</p>
               </div>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-4">[ Bar Chart Placeholder ]</p>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <TrendingUp className="w-5 h-5" />
+              </div>
             </div>
-          </div>
+            
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={financials?.revenueByDay || []}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="paymentDate" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                    tickFormatter={(val) => new Date(val).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                    formatter={(val: any) => [formatCurrency(val), 'Revenue']}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="_sum.amount" 
+                    stroke="#10b981" 
+                    strokeWidth={4}
+                    fillOpacity={1} 
+                    fill="url(#colorRevenue)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
 
-          {/* Revenue Breakdown Pie Chart Placeholder */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-slate-800">Revenue Breakdown</h3>
-              <button className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase tracking-wider">Reports</button>
-            </div>
-            <div className="h-64 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4">
-              <div className="w-32 h-32 rounded-full border-8 border-blue-500 border-t-emerald-500 border-r-indigo-500 relative flex items-center justify-center">
-                <div className="absolute inset-4 bg-slate-50 rounded-full border-2 border-dashed border-slate-200"></div>
+          {/* Payment Mode Pie Chart */}
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Payment Distribution</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Collection Channel Analysis</p>
               </div>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">[ Pie Chart Placeholder ]</p>
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                <Activity className="w-5 h-5" />
+              </div>
             </div>
-          </div>
+
+            <div className="h-72 w-full flex items-center justify-center relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={financials?.paymentModeBreakdown || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={8}
+                    dataKey="_sum.amount"
+                    nameKey="paymentMode"
+                  >
+                    {(financials?.paymentModeBreakdown || []).map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Collected</p>
+                 <p className="text-xl font-black text-slate-900">{formatCurrency(financials?.paymentModeBreakdown?.reduce((acc: number, curr: any) => acc + Number(curr._sum.amount), 0) || 0)}</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Recent Appointments Table */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-            <h3 className="font-bold text-slate-800">Recent Appointments</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded border border-slate-100 shadow-sm">Today's List</span>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/80 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-                  <th className="px-6 py-4">Case No.</th>
-                  <th className="px-6 py-4">Patient</th>
-                  <th className="px-6 py-4">Time</th>
-                  <th className="px-6 py-4">Doctor</th>
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-right">Payment</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {appointments.map((apt) => (
-                  <tr key={apt.id} className="hover:bg-slate-50/50 transition-colors group cursor-default">
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-slate-600">{apt.id}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-extrabold text-slate-800">{apt.name}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold text-slate-500">{apt.time}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                          <Stethoscope className="w-3 h-3 text-indigo-500" />
-                        </div>
-                        <span className="text-xs font-bold text-slate-700">{apt.doctor}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                        apt.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                        apt.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                        'bg-amber-50 text-amber-600 border border-amber-100'
-                      }`}>
-                        {apt.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`text-xs font-bold ${apt.payment === 'Paid' ? 'text-emerald-600' : apt.payment === 'Pending' ? 'text-amber-600' : 'text-slate-400'}`}>
-                        {apt.payment}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-4 bg-slate-50/30 border-t border-slate-50 text-center">
-            <button className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
-              View All Appointments
-            </button>
-          </div>
+        {/* Bottom Section - Tables */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+           {/* Top Doctors by Revenue */}
+           <div className="xl:col-span-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+              <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                 <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Department Performance</h3>
+                 <button className="text-[10px] font-black text-blue-600 hover:underline tracking-widest uppercase">View All</button>
+              </div>
+              <div className="p-4">
+                 <div className="space-y-4">
+                    {(financials?.topRevenueDoctors || []).map((doc: any, i: number) => (
+                       <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-colors">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-black">
+                                {i + 1}
+                             </div>
+                             <div>
+                                <p className="text-sm font-black text-slate-900 uppercase">{doc.serviceName}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Medical Service Unit</p>
+                             </div>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-sm font-black text-slate-900">{formatCurrency(doc._sum.totalPrice)}</p>
+                             <div className="w-32 h-2 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                                <div 
+                                  className="h-full bg-indigo-500 rounded-full" 
+                                  style={{ width: `${(doc._sum.totalPrice / financials?.topRevenueDoctors[0]?._sum.totalPrice) * 100}%` }}
+                                />
+                             </div>
+                          </div>
+                       </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+
+           {/* Stock Alerts Widget */}
+           <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                 <Package className="w-32 h-32" />
+              </div>
+              <h3 className="text-lg font-black uppercase tracking-tight relative z-10">Inventory Health</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 relative z-10">Critical Stock Alerts</p>
+              
+              <div className="mt-10 space-y-6 relative z-10">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse" />
+                       <span className="text-xs font-bold uppercase tracking-wider">Low Stock Items</span>
+                    </div>
+                    <span className="text-xl font-black">{stats?.lowStockCount || 0}</span>
+                 </div>
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                       <span className="text-xs font-bold uppercase tracking-wider">Expiring Soon</span>
+                    </div>
+                    <span className="text-xl font-black">{stats?.nearExpiryCount || 0}</span>
+                 </div>
+                 
+                 <div className="pt-6 border-t border-white/10 mt-6">
+                    <button className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all">
+                       Audit Inventory
+                    </button>
+                 </div>
+              </div>
+           </div>
         </div>
       </div>
     </AdminLayout>
   );
 };
-
-// Internal icon for Table since I need Stethoscope
-const Stethoscope = ({ className }: { className: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4.8 2.3A.3.3 0 1 0 5 2.8l2.7.7a5.1 5.1 0 0 0 1.5 8 2.5 2.5 0 0 1 1.2 2.2V16"/><path d="M12.9 3.5a2.1 2.1 0 1 1 4.1.8 2.1 2.1 0 1 1-4.1-.8Z"/><path d="M15 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M12 16v5a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-5"/><path d="M18 16h-6"/><path d="M15 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
-  </svg>
-);
 
 export default AdminDashboardView;

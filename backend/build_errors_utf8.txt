@@ -1,0 +1,621 @@
+﻿
+> backend@0.0.1 build
+> nest build
+
+node.exe : [96mprisma/seed.ts[0m:[93m219[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '{ caseNumber: 
+string; }' is not assignable to type 'PatientCaseWhereUniqueInput'.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([96mprisma/see...reUniqueInput'.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Type '{ caseNumber: string; }' is not assignable to type '{ id: string; caseNumber_branchId: 
+PatientCaseCaseNumberBranchIdCompoundUniqueInput; } & { id?: string | undefined; caseNumber_branchId?: 
+PatientCaseCaseNumberBranchIdCompoundUniqueInput | undefined; ... 35 more ...; branch?: (Without<...> & 
+BranchWhereInput) | ... 1 more ... | undefined; }'.
+    Type '{ caseNumber: string; }' is missing the following properties from type '{ id: string; caseNumber_branchId: 
+PatientCaseCaseNumberBranchIdCompoundUniqueInput; }': id, caseNumber_branchId
+
+[7m219[0m     where: { caseNumber: 'CASE-2024-001' },
+[7m   [0m [91m    ~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m24196[0m:[93m5[0m
+    [7m24196[0m     where: PatientCaseWhereUniqueInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: 
+PatientCaseSelect<DefaultArgs> | null | undefined; omit?: PatientCaseOmit<DefaultArgs> | null | undefined; include?: 
+PatientCaseInclude<...> | ... 1 more ... | undefined; where: PatientCaseWhereUniqueInput; create: (Without<...> & 
+PatientCaseUncheckedCreateInput) | (Without<...> & PatientCaseCreateInput);...'
+[96mprisma/seed.ts[0m:[93m231[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ tokenDisplay: string; 
+tokenNumber: number; queueType: "OPD"; status: "WAITING"; patientId: string; doctorId: string; }' is not assignable to 
+type '(Without<QueueEntryCreateWithoutCaseInput, QueueEntryUncheckedCreateWithoutCaseInput> & 
+QueueEntryUncheckedCreateWithoutCaseInput) | (Without<...> & QueueEntryCreateWithoutCaseInput) | undefined'.
+  Type '{ tokenDisplay: string; tokenNumber: number; queueType: "OPD"; status: "WAITING"; patientId: string; doctorId: 
+string; }' is not assignable to type 'Without<QueueEntryCreateWithoutCaseInput, 
+QueueEntryUncheckedCreateWithoutCaseInput> & QueueEntryUncheckedCreateWithoutCaseInput'.
+    Property 'branchId' is missing in type '{ tokenDisplay: string; tokenNumber: number; queueType: "OPD"; status: 
+"WAITING"; patientId: string; doctorId: string; }' but required in type 'QueueEntryUncheckedCreateWithoutCaseInput'.
+
+[7m231[0m         create: {
+[7m   [0m [91m        ~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m140378[0m:[93m5[0m
+    [7m140378[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+[96mprisma/seed.ts[0m:[93m245[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '{ caseNumber: string; }' is 
+not assignable to type 'PatientCaseWhereUniqueInput'.
+  Type '{ caseNumber: string; }' is not assignable to type '{ id: string; caseNumber_branchId: 
+PatientCaseCaseNumberBranchIdCompoundUniqueInput; } & { id?: string | undefined; caseNumber_branchId?: 
+PatientCaseCaseNumberBranchIdCompoundUniqueInput | undefined; ... 35 more ...; branch?: (Without<...> & 
+BranchWhereInput) | ... 1 more ... | undefined; }'.
+    Type '{ caseNumber: string; }' is missing the following properties from type '{ id: string; caseNumber_branchId: 
+PatientCaseCaseNumberBranchIdCompoundUniqueInput; }': id, caseNumber_branchId
+
+[7m245[0m     where: { caseNumber: 'CASE-2024-002' },
+[7m   [0m [91m    ~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m24196[0m:[93m5[0m
+    [7m24196[0m     where: PatientCaseWhereUniqueInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: 
+PatientCaseSelect<DefaultArgs> | null | undefined; omit?: PatientCaseOmit<DefaultArgs> | null | undefined; include?: 
+PatientCaseInclude<...> | ... 1 more ... | undefined; where: PatientCaseWhereUniqueInput; create: (Without<...> & 
+PatientCaseUncheckedCreateInput) | (Without<...> & PatientCaseCreateInput);...'
+[96mprisma/seed.ts[0m:[93m247[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '{ caseNumber: string; 
+patientId: string; doctorId: string; visitType: string; priority: string; complaint: string; status: string; stage: 
+"COMPLETED"; }' is not assignable to type '(Without<PatientCaseCreateInput, PatientCaseUncheckedCreateInput> & 
+PatientCaseUncheckedCreateInput) | (Without<...> & PatientCaseCreateInput)'.
+  Type '{ caseNumber: string; patientId: string; doctorId: string; visitType: string; priority: string; complaint: 
+string; status: string; stage: "COMPLETED"; }' is not assignable to type 'Without<PatientCaseCreateInput, 
+PatientCaseUncheckedCreateInput> & PatientCaseUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ caseNumber: string; patientId: string; doctorId: string; visitType: 
+string; priority: string; complaint: string; status: string; stage: "COMPLETED"; }' but required in type 
+'PatientCaseUncheckedCreateInput'.
+
+[7m247[0m     create: {
+[7m   [0m [91m    ~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m115698[0m:[93m5[0m
+    [7m115698[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m24200[0m:[93m5[0m
+    [7m24200[0m     create: XOR<PatientCaseCreateInput, PatientCaseUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: 
+PatientCaseSelect<DefaultArgs> | null | undefined; omit?: PatientCaseOmit<DefaultArgs> | null | undefined; include?: 
+PatientCaseInclude<...> | ... 1 more ... | undefined; where: PatientCaseWhereUniqueInput; create: (Without<...> & 
+PatientCaseUncheckedCreateInput) | (Without<...> & PatientCaseCreateInput);...'
+[96mprisma/seed.ts[0m:[93m263[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '{ billNumber: string; caseId: 
+string; patientId: string; grossAmount: number; netAmount: number; paidAmount: number; balanceAmount: number; 
+paymentStatus: string; paymentMode: string; items: { ...; }; }' is not assignable to type '(Without<BillCreateInput, 
+BillUncheckedCreateInput> & BillUncheckedCreateInput) | (Without<...> & BillCreateInput)'.
+  Type '{ billNumber: string; caseId: string; patientId: string; grossAmount: number; netAmount: number; paidAmount: 
+number; balanceAmount: number; paymentStatus: string; paymentMode: string; items: { ...; }; }' is not assignable to 
+type 'Without<BillCreateInput, BillUncheckedCreateInput> & BillUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ billNumber: string; caseId: string; patientId: string; grossAmount: 
+number; netAmount: number; paidAmount: number; balanceAmount: number; paymentStatus: string; paymentMode: string; 
+items: { ...; }; }' but required in type 'BillUncheckedCreateInput'.
+
+[7m263[0m     create: {
+[7m   [0m [91m    ~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m116152[0m:[93m5[0m
+    [7m116152[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m29484[0m:[93m5[0m
+    [7m29484[0m     create: XOR<BillCreateInput, BillUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~~~[0m
+    The expected type comes from property 'create' which is declared here on type '{ select?: BillSelect<DefaultArgs> 
+| null | undefined; omit?: BillOmit<DefaultArgs> | null | undefined; include?: BillInclude<DefaultArgs> | null | 
+undefined; where: BillWhereUniqueInput; create: (Without<...> & BillUncheckedCreateInput) | (Without<...> & 
+BillCreateInput); update: (Without<...> & BillUncheckedUpdate...'
+[96msrc/appointments/appointments.service.ts[0m:[93m91[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '{ 
+patientId: string; doctorId: string; appointmentDate: Date; appointmentTime: Date; purpose: string; remarks: string | 
+undefined; status: "SCHEDULED"; }' is not assignable to type '(Without<AppointmentCreateInput, 
+AppointmentUncheckedCreateInput> & AppointmentUncheckedCreateInput) | (Without<...> & AppointmentCreateInput)'.
+  Type '{ patientId: string; doctorId: string; appointmentDate: Date; appointmentTime: Date; purpose: string; remarks: 
+string | undefined; status: "SCHEDULED"; }' is not assignable to type 'Without<AppointmentCreateInput, 
+AppointmentUncheckedCreateInput> & AppointmentUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ patientId: string; doctorId: string; appointmentDate: Date; 
+appointmentTime: Date; purpose: string; remarks: string | undefined; status: "SCHEDULED"; }' but required in type 
+'AppointmentUncheckedCreateInput'.
+
+[7m91[0m           data: {
+[7m  [0m [91m          ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m118644[0m:[93m5[0m
+    [7m118644[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m61378[0m:[93m5[0m
+    [7m61378[0m     data: XOR<AppointmentCreateInput, AppointmentUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+AppointmentSelect<DefaultArgs> | null | undefined; omit?: AppointmentOmit<DefaultArgs> | null | undefined; include?: 
+AppointmentInclude<...> | ... 1 more ... | undefined; data: (Without<...> & AppointmentUncheckedCreateInput) | 
+(Without<...> & AppointmentCreateInput); }'
+[96msrc/appointments/appointments.service.ts[0m:[93m392[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '{ 
+caseNumber: string; patientId: string; doctorId: string; visitType: string; priority: $Enums.CasePriority; complaint: 
+string | null; status: string; stage: "NURSING"; appointment: { ...; }; }' is not assignable to type 
+'(Without<PatientCaseCreateInput, PatientCaseUncheckedCreateInput> & PatientCaseUncheckedCreateInput) | (Without<...> 
+& PatientCaseCreateInput)'.
+  Type '{ caseNumber: string; patientId: string; doctorId: string; visitType: string; priority: $Enums.CasePriority; 
+complaint: string | null; status: string; stage: "NURSING"; appointment: { ...; }; }' is not assignable to type 
+'Without<PatientCaseCreateInput, PatientCaseUncheckedCreateInput> & PatientCaseUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ caseNumber: string; patientId: string; doctorId: string; visitType: 
+string; priority: $Enums.CasePriority; complaint: string | null; status: string; stage: "NURSING"; appointment: { ...; 
+}; }' but required in type 'PatientCaseUncheckedCreateInput'.
+
+[7m392[0m           data: {
+[7m   [0m [91m          ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m115698[0m:[93m5[0m
+    [7m115698[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m24066[0m:[93m5[0m
+    [7m24066[0m     data: XOR<PatientCaseCreateInput, PatientCaseUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+PatientCaseSelect<DefaultArgs> | null | undefined; omit?: PatientCaseOmit<DefaultArgs> | null | undefined; include?: 
+PatientCaseInclude<...> | ... 1 more ... | undefined; data: (Without<...> & PatientCaseUncheckedCreateInput) | 
+(Without<...> & PatientCaseCreateInput); }'
+[96msrc/billing/billing.service.ts[0m:[93m101[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ billNumber: 
+string; caseId: string; patientId: string; grossAmount: Decimal; discountTotal: Decimal; netAmount: Decimal; 
+balanceAmount: Decimal; createdById: string; paymentStatus: string; paymentStatusEnum: "PENDING"; items: { ...; }; }' 
+is not assignable to type '(Without<BillCreateInput, BillUncheckedCreateInput> & BillUncheckedCreateInput) | 
+(Without<...> & BillCreateInput)'.
+  Type '{ billNumber: string; caseId: string; patientId: string; grossAmount: Decimal; discountTotal: Decimal; 
+netAmount: Decimal; balanceAmount: Decimal; createdById: string; paymentStatus: string; paymentStatusEnum: "PENDING"; 
+items: { ...; }; }' is not assignable to type 'Without<BillCreateInput, BillUncheckedCreateInput> & 
+BillUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ billNumber: string; caseId: string; patientId: string; grossAmount: 
+Decimal; discountTotal: Decimal; netAmount: Decimal; balanceAmount: Decimal; createdById: string; paymentStatus: 
+string; paymentStatusEnum: "PENDING"; items: { ...; }; }' but required in type 'BillUncheckedCreateInput'.
+
+[7m101[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m116152[0m:[93m5[0m
+    [7m116152[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m29350[0m:[93m5[0m
+    [7m29350[0m     data: XOR<BillCreateInput, BillUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: BillSelect<DefaultArgs> | 
+null | undefined; omit?: BillOmit<DefaultArgs> | null | undefined; include?: BillInclude<DefaultArgs> | null | 
+undefined; data: (Without<...> & BillUncheckedCreateInput) | (Without<...> & BillCreateInput); }'
+[96msrc/billing/billing.service.ts[0m:[93m170[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ billNumber: 
+string; caseId: string; patientId: string; grossAmount: number; discountTotal: number; netAmount: number; 
+balanceAmount: number; createdById: string; paymentStatus: string; paymentStatusEnum: "PENDING"; }' is not assignable 
+to type '(Without<BillCreateInput, BillUncheckedCreateInput> & BillUncheckedCreateInput) | (Without<...> & 
+BillCreateInput)'.
+  Type '{ billNumber: string; caseId: string; patientId: string; grossAmount: number; discountTotal: number; 
+netAmount: number; balanceAmount: number; createdById: string; paymentStatus: string; paymentStatusEnum: "PENDING"; }' 
+is not assignable to type 'Without<BillCreateInput, BillUncheckedCreateInput> & BillUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ billNumber: string; caseId: string; patientId: string; grossAmount: 
+number; discountTotal: number; netAmount: number; balanceAmount: number; createdById: string; paymentStatus: string; 
+paymentStatusEnum: "PENDING"; }' but required in type 'BillUncheckedCreateInput'.
+
+[7m170[0m         data: {
+[7m   [0m [91m        ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m116152[0m:[93m5[0m
+    [7m116152[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m29350[0m:[93m5[0m
+    [7m29350[0m     data: XOR<BillCreateInput, BillUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: BillSelect<DefaultArgs> | 
+null | undefined; omit?: BillOmit<DefaultArgs> | null | undefined; include?: BillInclude<DefaultArgs> | null | 
+undefined; data: (Without<...> & BillUncheckedCreateInput) | (Without<...> & BillCreateInput); }'
+[96msrc/consultation/consultation.service.ts[0m:[93m99[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ id: 
+string; status: string; caseId: string; doctorId: string; updatedAt: Date; branchId: string; createdAt: Date; 
+isFinalized: boolean; finalizedAt: Date | null; finalizedById: string | null; ... 7 more ...; updatedById: string | 
+null; }' is not assignable to type '{ case: { doctor: { name: string; } | null; patient: { profile: { id: string; 
+patientId: string; notes: string | null; dob: Date | null; age: number | null; bloodGroup: string | null; ... 11 more 
+...; maritalStatusEnum: MaritalStatus; } | null; vitals: { ...; }[]; } & { ...; }; clinicalImages: ({ ...; } & { ...; 
+})[...'.
+  Type '{ id: string; status: string; caseId: string; doctorId: string; updatedAt: Date; branchId: string; createdAt: 
+Date; isFinalized: boolean; finalizedAt: Date | null; finalizedById: string | null; ... 7 more ...; updatedById: 
+string | null; }' is missing the following properties from type '{ case: { doctor: { name: string; } | null; patient: 
+{ profile: { id: string; patientId: string; notes: string | null; dob: Date | null; age: number | null; bloodGroup: 
+string | null; ... 11 more ...; maritalStatusEnum: MaritalStatus; } | null; vitals: { ...; }[]; } & { ...; }; 
+clinicalImages: ({ ...; } & { ...; })[...': case, history, complaint, session
+
+[7m99[0m         consultation = await tx.consultationRecord.create({
+[7m  [0m [91m        ~~~~~~~~~~~~[0m
+[96msrc/consultation/consultation.service.ts[0m:[93m100[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '{ 
+case: { connect: { id: string; }; }; doctor: { connect: { id: string; }; }; session: { connect: { id: string; }; } | 
+undefined; status: string; complaint: { create: {}; }; history: { create: {}; }; }' is not assignable to type 
+'(Without<ConsultationRecordCreateInput, ConsultationRecordUncheckedCreateInput> & 
+ConsultationRecordUncheckedCreateInput) | (Without<...> & ConsultationRecordCreateInput)'.
+  Type '{ case: { connect: { id: string; }; }; doctor: { connect: { id: string; }; }; session: { connect: { id: 
+string; }; } | undefined; status: string; complaint: { create: {}; }; history: { create: {}; }; }' is not assignable 
+to type 'Without<ConsultationRecordUncheckedCreateInput, ConsultationRecordCreateInput> & 
+ConsultationRecordCreateInput'.
+    Property 'branch' is missing in type '{ case: { connect: { id: string; }; }; doctor: { connect: { id: string; }; 
+}; session: { connect: { id: string; }; } | undefined; status: string; complaint: { create: {}; }; history: { create: 
+{}; }; }' but required in type 'ConsultationRecordCreateInput'.
+
+[7m100[0m           data: {
+[7m   [0m [91m          ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m116412[0m:[93m5[0m
+    [7m116412[0m     branch: BranchCreateNestedOneWithoutConsultationsInput
+    [7m      [0m [96m    ~~~~~~[0m
+    'branch' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m31949[0m:[93m5[0m
+    [7m31949[0m     data: XOR<ConsultationRecordCreateInput, ConsultationRecordUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+ConsultationRecordSelect<DefaultArgs> | null | undefined; omit?: ConsultationRecordOmit<DefaultArgs> | null | 
+undefined; include?: ConsultationRecordInclude<...> | ... 1 more ... | undefined; data: (Without<...> & 
+ConsultationRecordUncheckedCreateInput) | (Without<...> & ConsultationRecordCreateInput); }'
+[96msrc/notifications/notification.processor.ts[0m:[93m25[0m:[93m25[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'communicationLog' does not exist on type 'PrismaService'.
+
+[7m25[0m       await this.prisma.communicationLog.update({
+[7m  [0m [91m                        ~~~~~~~~~~~~~~~~[0m
+[96msrc/notifications/notification.processor.ts[0m:[93m38[0m:[93m25[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'communicationLog' does not exist on type 'PrismaService'.
+
+[7m38[0m       await this.prisma.communicationLog.update({
+[7m  [0m [91m                        ~~~~~~~~~~~~~~~~[0m
+[96msrc/notifications/notifications.service.ts[0m:[93m34[0m:[93m37[0m - [91merror[0m[90m TS2339: [0mProperty 
+'communicationLog' does not exist on type 'PrismaService'.
+
+[7m34[0m       const log = await this.prisma.communicationLog.create({
+[7m  [0m [91m                                    ~~~~~~~~~~~~~~~~[0m
+[96msrc/notifications/notifications.service.ts[0m:[93m78[0m:[93m24[0m - [91merror[0m[90m TS2551: [0mProperty 
+'inAppNotification' does not exist on type 'PrismaService'. Did you mean 'notification'?
+
+[7m78[0m     return this.prisma.inAppNotification.create({
+[7m  [0m [91m                       ~~~~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m1660[0m:[93m7[0m
+    [7m1660[0m   get notification(): Prisma.NotificationDelegate<ExtArgs, ClientOptions>;
+    [7m    [0m [96m      ~~~~~~~~~~~~[0m
+    'notification' is declared here.
+[96msrc/notifications/notifications.service.ts[0m:[93m93[0m:[93m24[0m - [91merror[0m[90m TS2551: [0mProperty 
+'inAppNotification' does not exist on type 'PrismaService'. Did you mean 'notification'?
+
+[7m93[0m     return this.prisma.inAppNotification.update({
+[7m  [0m [91m                       ~~~~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m1660[0m:[93m7[0m
+    [7m1660[0m   get notification(): Prisma.NotificationDelegate<ExtArgs, ClientOptions>;
+    [7m    [0m [96m      ~~~~~~~~~~~~[0m
+    'notification' is declared here.
+[96msrc/notifications/notifications.service.ts[0m:[93m104[0m:[93m24[0m - [91merror[0m[90m TS2551: 
+[0mProperty 'inAppNotification' does not exist on type 'PrismaService'. Did you mean 'notification'?
+
+[7m104[0m     return this.prisma.inAppNotification.findMany({
+[7m   [0m [91m                       ~~~~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m1660[0m:[93m7[0m
+    [7m1660[0m   get notification(): Prisma.NotificationDelegate<ExtArgs, ClientOptions>;
+    [7m    [0m [96m      ~~~~~~~~~~~~[0m
+    'notification' is declared here.
+[96msrc/notifications/notifications.service.ts[0m:[93m112[0m:[93m24[0m - [91merror[0m[90m TS2551: 
+[0mProperty 'inAppNotification' does not exist on type 'PrismaService'. Did you mean 'notification'?
+
+[7m112[0m     return this.prisma.inAppNotification.updateMany({
+[7m   [0m [91m                       ~~~~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m1660[0m:[93m7[0m
+    [7m1660[0m   get notification(): Prisma.NotificationDelegate<ExtArgs, ClientOptions>;
+    [7m    [0m [96m      ~~~~~~~~~~~~[0m
+    'notification' is declared here.
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m30[0m:[93m23[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'patientAuth' does not exist on type 'PrismaService'.
+
+[7m30[0m     await this.prisma.patientAuth.upsert({
+[7m  [0m [91m                      ~~~~~~~~~~~[0m
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m54[0m:[93m18[0m - [91merror[0m[90m TS2353: [0mObject 
+literal may only specify known properties, and 'auth' does not exist in type 'PatientInclude<DefaultArgs>'.
+
+[7m54[0m       include: { auth: true },
+[7m  [0m [91m                 ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m19725[0m:[93m5[0m
+    [7m19725[0m     include?: PatientInclude<ExtArgs> | null
+    [7m     [0m [96m    ~~~~~~~[0m
+    The expected type comes from property 'include' which is declared here on type '{ select?: 
+PatientSelect<DefaultArgs> | null | undefined; omit?: PatientOmit<DefaultArgs> | null | undefined; include?: 
+PatientInclude<...> | ... 1 more ... | undefined; where: PatientWhereUniqueInput; }'
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m57[0m:[93m30[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'auth' does not exist on type '{ id: string; updatedAt: Date; email: string | null; createdAt: Date; 
+isActive: boolean; mobile: string; deletedAt: Date | null; firstName: string; lastName: string; mrdNumber: string; ... 
+6 more ...; preferredLanguage: string; }'.
+
+[7m57[0m     if (!patient || !patient.auth) {
+[7m  [0m [91m                             ~~~~[0m
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m61[0m:[93m17[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'auth' does not exist on type '{ id: string; updatedAt: Date; email: string | null; createdAt: Date; 
+isActive: boolean; mobile: string; deletedAt: Date | null; firstName: string; lastName: string; mrdNumber: string; ... 
+6 more ...; preferredLanguage: string; }'.
+
+[7m61[0m     if (patient.auth.otp !== otp || !patient.auth.otpExpires || patient.auth.otpExpires < new Date()) {
+[7m  [0m [91m                ~~~~[0m
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m61[0m:[93m46[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'auth' does not exist on type '{ id: string; updatedAt: Date; email: string | null; createdAt: Date; 
+isActive: boolean; mobile: string; deletedAt: Date | null; firstName: string; lastName: string; mrdNumber: string; ... 
+6 more ...; preferredLanguage: string; }'.
+
+[7m61[0m     if (patient.auth.otp !== otp || !patient.auth.otpExpires || patient.auth.otpExpires < new Date()) {
+[7m  [0m [91m                                             ~~~~[0m
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m61[0m:[93m73[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'auth' does not exist on type '{ id: string; updatedAt: Date; email: string | null; createdAt: Date; 
+isActive: boolean; mobile: string; deletedAt: Date | null; firstName: string; lastName: string; mrdNumber: string; ... 
+6 more ...; preferredLanguage: string; }'.
+
+[7m61[0m     if (patient.auth.otp !== otp || !patient.auth.otpExpires || patient.auth.otpExpires < new Date()) {
+[7m  [0m [91m                                                                        ~~~~[0m
+[96msrc/patient-portal/patient-portal.service.ts[0m:[93m66[0m:[93m23[0m - [91merror[0m[90m TS2339: 
+[0mProperty 'patientAuth' does not exist on type 'PrismaService'.
+
+[7m66[0m     await this.prisma.patientAuth.update({
+[7m  [0m [91m                      ~~~~~~~~~~~[0m
+[96msrc/patients/patients.service.ts[0m:[93m455[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ 
+caseNumber: string; patientId: string; status: string; doctorId: string; visitType?: string; priority?: string; 
+complaint?: string; }' is not assignable to type '(Without<PatientCaseCreateInput, PatientCaseUncheckedCreateInput> & 
+PatientCaseUncheckedCreateInput) | (Without<...> & PatientCaseCreateInput)'.
+  Type '{ caseNumber: string; patientId: string; status: string; doctorId: string; visitType?: string; priority?: 
+string; complaint?: string; }' is not assignable to type 'Without<PatientCaseCreateInput, 
+PatientCaseUncheckedCreateInput> & PatientCaseUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ caseNumber: string; patientId: string; status: string; doctorId: string; 
+visitType?: string; priority?: string; complaint?: string; }' but required in type 'PatientCaseUncheckedCreateInput'.
+
+[7m455[0m       data: {
+[7m   [0m [91m      ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m115698[0m:[93m5[0m
+    [7m115698[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m24066[0m:[93m5[0m
+    [7m24066[0m     data: XOR<PatientCaseCreateInput, PatientCaseUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+PatientCaseSelect<DefaultArgs> | null | undefined; omit?: PatientCaseOmit<DefaultArgs> | null | undefined; include?: 
+PatientCaseInclude<...> | ... 1 more ... | undefined; data: (Without<...> & PatientCaseUncheckedCreateInput) | 
+(Without<...> & PatientCaseCreateInput); }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m79[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '{ drugId: 
+string; }' is not assignable to type 'DrugInventoryWhereUniqueInput'.
+  Type '{ drugId: string; }' is not assignable to type '{ id: string; drugId_branchId: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput; } & { id?: string | undefined; drugId_branchId?: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput | undefined; ... 14 more ...; branch?: (Without<...> & 
+BranchWhereInput) | ... 1 more ... | undefined; }'.
+    Type '{ drugId: string; }' is missing the following properties from type '{ id: string; drugId_branchId: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput; }': id, drugId_branchId
+
+[7m79[0m           where: { drugId: item.drugId },
+[7m  [0m [91m          ~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m73491[0m:[93m5[0m
+    [7m73491[0m     where: DrugInventoryWhereUniqueInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: 
+DrugInventorySelect<DefaultArgs> | null | undefined; omit?: DrugInventoryOmit<DefaultArgs> | null | undefined; 
+include?: DrugInventoryInclude<...> | ... 1 more ... | undefined; where: DrugInventoryWhereUniqueInput; }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m105[0m:[93m39[0m - [91merror[0m[90m TS2339: [0mProperty 
+'batches' does not exist on type '{ id: string; status: StockStatus; updatedAt: Date; branchId: string; drugId: 
+string; totalStock: number; reservedStock: number; reorderLevel: number; location: string | null; }'.
+
+[7m105[0m         for (const batch of inventory.batches) {
+[7m   [0m [91m                                      ~~~~~~~[0m
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m122[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType '{ 
+inventoryId: string; batchId: any; movementType: string; quantity: number; beforeQuantity: any; afterQuantity: number; 
+reason: string; performedById: string; referenceId: string; }' is not assignable to type 
+'(Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput) | 
+(Without<...> & StockMovementCreateInput)'.
+  Type '{ inventoryId: string; batchId: any; movementType: string; quantity: number; beforeQuantity: any; 
+afterQuantity: number; reason: string; performedById: string; referenceId: string; }' is not assignable to type 
+'Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput'.
+    Type '{ inventoryId: string; batchId: any; movementType: string; quantity: number; beforeQuantity: any; 
+afterQuantity: number; reason: string; performedById: string; referenceId: string; }' is missing the following 
+properties from type 'StockMovementUncheckedCreateInput': branchId, drugId
+
+[7m122[0m             data: {
+[7m   [0m [91m            ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m76293[0m:[93m5[0m
+    [7m76293[0m     data: XOR<StockMovementCreateInput, StockMovementUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+StockMovementSelect<DefaultArgs> | null | undefined; omit?: StockMovementOmit<DefaultArgs> | null | undefined; 
+include?: StockMovementInclude<...> | ... 1 more ... | undefined; data: (Without<...> & 
+StockMovementUncheckedCreateInput) | (Without<...> & StockMovementCreateInput); }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m232[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ drugId: 
+any; }' is not assignable to type 'DrugInventoryWhereUniqueInput'.
+  Type '{ drugId: any; }' is not assignable to type '{ id: string; drugId_branchId: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput; } & { id?: string | undefined; drugId_branchId?: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput | undefined; ... 14 more ...; branch?: (Without<...> & 
+BranchWhereInput) | ... 1 more ... | undefined; }'.
+    Type '{ drugId: any; }' is missing the following properties from type '{ id: string; drugId_branchId: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput; }': id, drugId_branchId
+
+[7m232[0m         where: { drugId },
+[7m   [0m [91m        ~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m73491[0m:[93m5[0m
+    [7m73491[0m     where: DrugInventoryWhereUniqueInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: 
+DrugInventorySelect<DefaultArgs> | null | undefined; omit?: DrugInventoryOmit<DefaultArgs> | null | undefined; 
+include?: DrugInventoryInclude<...> | ... 1 more ... | undefined; where: DrugInventoryWhereUniqueInput; }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m237[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '{ drugId: 
+any; location: any; }' is not assignable to type '(Without<DrugInventoryCreateInput, 
+DrugInventoryUncheckedCreateInput> & DrugInventoryUncheckedCreateInput) | (Without<...> & DrugInventoryCreateInput)'.
+  Type '{ drugId: any; location: any; }' is not assignable to type 'Without<DrugInventoryUncheckedCreateInput, 
+DrugInventoryCreateInput> & DrugInventoryCreateInput'.
+    Type '{ drugId: any; location: any; }' is missing the following properties from type 'DrugInventoryCreateInput': 
+drug, branch
+
+[7m237[0m           data: { drugId, location },
+[7m   [0m [91m          ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m73686[0m:[93m5[0m
+    [7m73686[0m     data: XOR<DrugInventoryCreateInput, DrugInventoryUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+DrugInventorySelect<DefaultArgs> | null | undefined; omit?: DrugInventoryOmit<DefaultArgs> | null | undefined; 
+include?: DrugInventoryInclude<...> | ... 1 more ... | undefined; data: (Without<...> & 
+DrugInventoryUncheckedCreateInput) | (Without<...> & DrugInventoryCreateInput); }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m291[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ 
+inventoryId: string; batchId: string; movementType: string; quantity: any; beforeQuantity: number; afterQuantity: any; 
+unitPrice: any; reason: string; performedById: string; }' is not assignable to type 
+'(Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput) | 
+(Without<...> & StockMovementCreateInput)'.
+  Type '{ inventoryId: string; batchId: string; movementType: string; quantity: any; beforeQuantity: number; 
+afterQuantity: any; unitPrice: any; reason: string; performedById: string; }' is not assignable to type 
+'Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput'.
+    Type '{ inventoryId: string; batchId: string; movementType: string; quantity: any; beforeQuantity: number; 
+afterQuantity: any; unitPrice: any; reason: string; performedById: string; }' is missing the following properties from 
+type 'StockMovementUncheckedCreateInput': branchId, drugId
+
+[7m291[0m         data: {
+[7m   [0m [91m        ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m76293[0m:[93m5[0m
+    [7m76293[0m     data: XOR<StockMovementCreateInput, StockMovementUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+StockMovementSelect<DefaultArgs> | null | undefined; omit?: StockMovementOmit<DefaultArgs> | null | undefined; 
+include?: StockMovementInclude<...> | ... 1 more ... | undefined; data: (Without<...> & 
+StockMovementUncheckedCreateInput) | (Without<...> & StockMovementCreateInput); }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m345[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ 
+inventoryId: string; batchId: string; movementType: string; quantity: any; beforeQuantity: number; afterQuantity: 
+number; reason: any; performedById: string; }' is not assignable to type '(Without<StockMovementCreateInput, 
+StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput) | (Without<...> & StockMovementCreateInput)'.
+  Type '{ inventoryId: string; batchId: string; movementType: string; quantity: any; beforeQuantity: number; 
+afterQuantity: number; reason: any; performedById: string; }' is not assignable to type 
+'Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput'.
+    Type '{ inventoryId: string; batchId: string; movementType: string; quantity: any; beforeQuantity: number; 
+afterQuantity: number; reason: any; performedById: string; }' is missing the following properties from type 
+'StockMovementUncheckedCreateInput': branchId, drugId
+
+[7m345[0m         data: {
+[7m   [0m [91m        ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m76293[0m:[93m5[0m
+    [7m76293[0m     data: XOR<StockMovementCreateInput, StockMovementUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+StockMovementSelect<DefaultArgs> | null | undefined; omit?: StockMovementOmit<DefaultArgs> | null | undefined; 
+include?: StockMovementInclude<...> | ... 1 more ... | undefined; data: (Without<...> & 
+StockMovementUncheckedCreateInput) | (Without<...> & StockMovementCreateInput); }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m472[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ drugId: 
+string; }' is not assignable to type 'DrugInventoryWhereUniqueInput'.
+  Type '{ drugId: string; }' is not assignable to type '{ id: string; drugId_branchId: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput; } & { id?: string | undefined; drugId_branchId?: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput | undefined; ... 14 more ...; branch?: (Without<...> & 
+BranchWhereInput) | ... 1 more ... | undefined; }'.
+    Type '{ drugId: string; }' is missing the following properties from type '{ id: string; drugId_branchId: 
+DrugInventoryDrugIdBranchIdCompoundUniqueInput; }': id, drugId_branchId
+
+[7m472[0m         where: { drugId },
+[7m   [0m [91m        ~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m73491[0m:[93m5[0m
+    [7m73491[0m     where: DrugInventoryWhereUniqueInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: 
+DrugInventorySelect<DefaultArgs> | null | undefined; omit?: DrugInventoryOmit<DefaultArgs> | null | undefined; 
+include?: DrugInventoryInclude<...> | ... 1 more ... | undefined; where: DrugInventoryWhereUniqueInput; }'
+[96msrc/pharmacy/pharmacy.service.ts[0m:[93m497[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ 
+inventoryId: string; batchId: string; movementType: string; quantity: number; beforeQuantity: number; afterQuantity: 
+number; reason: string; performedById: string; referenceId: string; }' is not assignable to type 
+'(Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput) | 
+(Without<...> & StockMovementCreateInput)'.
+  Type '{ inventoryId: string; batchId: string; movementType: string; quantity: number; beforeQuantity: number; 
+afterQuantity: number; reason: string; performedById: string; referenceId: string; }' is not assignable to type 
+'Without<StockMovementCreateInput, StockMovementUncheckedCreateInput> & StockMovementUncheckedCreateInput'.
+    Type '{ inventoryId: string; batchId: string; movementType: string; quantity: number; beforeQuantity: number; 
+afterQuantity: number; reason: string; performedById: string; referenceId: string; }' is missing the following 
+properties from type 'StockMovementUncheckedCreateInput': branchId, drugId
+
+[7m497[0m         data: {
+[7m   [0m [91m        ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m76293[0m:[93m5[0m
+    [7m76293[0m     data: XOR<StockMovementCreateInput, StockMovementUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+StockMovementSelect<DefaultArgs> | null | undefined; omit?: StockMovementOmit<DefaultArgs> | null | undefined; 
+include?: StockMovementInclude<...> | ... 1 more ... | undefined; data: (Without<...> & 
+StockMovementUncheckedCreateInput) | (Without<...> & StockMovementCreateInput); }'
+[96msrc/queue/queue.service.ts[0m:[93m65[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType '{ tokenDisplay: 
+string; tokenNumber: number; queueType: $Enums.QueueType; priority: string; caseId: string; patientId: string; 
+doctorId: string | null; }' is not assignable to type '(Without<QueueEntryCreateInput, QueueEntryUncheckedCreateInput> 
+& QueueEntryUncheckedCreateInput) | (Without<...> & QueueEntryCreateInput)'.
+  Type '{ tokenDisplay: string; tokenNumber: number; queueType: $Enums.QueueType; priority: string; caseId: string; 
+patientId: string; doctorId: string | null; }' is not assignable to type 'Without<QueueEntryCreateInput, 
+QueueEntryUncheckedCreateInput> & QueueEntryUncheckedCreateInput'.
+Found 38 error(s).
+
+    Property 'branchId' is missing in type '{ tokenDisplay: string; tokenNumber: number; queueType: $Enums.QueueType; 
+priority: string; caseId: string; patientId: string; doctorId: string | null; }' but required in type 
+'QueueEntryUncheckedCreateInput'.
+
+[7m65[0m       data: {
+[7m  [0m [91m      ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m115871[0m:[93m5[0m
+    [7m115871[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m25672[0m:[93m5[0m
+    [7m25672[0m     data: XOR<QueueEntryCreateInput, QueueEntryUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+QueueEntrySelect<DefaultArgs> | null | undefined; omit?: QueueEntryOmit<DefaultArgs> | null | undefined; include?: 
+QueueEntryInclude<...> | ... 1 more ... | undefined; data: (Without<...> & QueueEntryUncheckedCreateInput) | 
+(Without<...> & QueueEntryCreateInput); }'
+[96msrc/queue/queue.service.ts[0m:[93m116[0m:[93m45[0m - [91merror[0m[90m TS2322: [0mType '{ tokenDisplay: 
+string; }' is not assignable to type 'QueueEntryWhereUniqueInput'.
+  Type '{ tokenDisplay: string; }' is not assignable to type '{ id: string; caseId: string; tokenDisplay_branchId: 
+QueueEntryTokenDisplayBranchIdCompoundUniqueInput; } & { id?: string | undefined; ... 22 more ...; branch?: 
+(Without<...> & BranchWhereInput) | ... 1 more ... | undefined; }'.
+    Type '{ tokenDisplay: string; }' is missing the following properties from type '{ id: string; caseId: string; 
+tokenDisplay_branchId: QueueEntryTokenDisplayBranchIdCompoundUniqueInput; }': id, caseId, tokenDisplay_branchId
+
+[7m116[0m     while (await tx.queueEntry.findUnique({ where: { tokenDisplay } })) {
+[7m   [0m [91m                                            ~~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m25477[0m:[93m5[0m
+    [7m25477[0m     where: QueueEntryWhereUniqueInput
+    [7m     [0m [96m    ~~~~~[0m
+    The expected type comes from property 'where' which is declared here on type '{ select?: 
+QueueEntrySelect<DefaultArgs> | null | undefined; omit?: QueueEntryOmit<DefaultArgs> | null | undefined; include?: 
+QueueEntryInclude<...> | ... 1 more ... | undefined; where: QueueEntryWhereUniqueInput; }'
+[96msrc/queue/queue.service.ts[0m:[93m210[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType '{ caseId: string; 
+doctorId: string; }' is not assignable to type '(Without<VisitSessionCreateInput, VisitSessionUncheckedCreateInput> & 
+VisitSessionUncheckedCreateInput) | (Without<...> & VisitSessionCreateInput)'.
+  Type '{ caseId: string; doctorId: string; }' is not assignable to type 'Without<VisitSessionCreateInput, 
+VisitSessionUncheckedCreateInput> & VisitSessionUncheckedCreateInput'.
+    Property 'branchId' is missing in type '{ caseId: string; doctorId: string; }' but required in type 
+'VisitSessionUncheckedCreateInput'.
+
+[7m210[0m         data: { caseId, doctorId },
+[7m   [0m [91m        ~~~~[0m
+
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m115979[0m:[93m5[0m
+    [7m115979[0m     branchId: string
+    [7m      [0m [96m    ~~~~~~~~[0m
+    'branchId' is declared here.
+  [96mnode_modules/.prisma/client/index.d.ts[0m:[93m26843[0m:[93m5[0m
+    [7m26843[0m     data: XOR<VisitSessionCreateInput, VisitSessionUncheckedCreateInput>
+    [7m     [0m [96m    ~~~~[0m
+    The expected type comes from property 'data' which is declared here on type '{ select?: 
+VisitSessionSelect<DefaultArgs> | null | undefined; omit?: VisitSessionOmit<DefaultArgs> | null | undefined; include?: 
+VisitSessionInclude<...> | ... 1 more ... | undefined; data: (Without<...> & VisitSessionUncheckedCreateInput) | 
+(Without<...> & VisitSessionCreateInput); }'
+

@@ -15,6 +15,8 @@ import { ConsultationService } from './consultation.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { BranchGuard } from '../auth/branch.guard';
+import { BranchId } from '../auth/branch-id.decorator';
 import { FILE_UPLOAD_MULTER_OPTIONS } from '../common/file-storage/file-storage.service';
 import {
   CreateInvestigationOrderDto,
@@ -25,7 +27,7 @@ import {
 } from './dto/consultation.dto';
 
 @Controller('consultation')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, BranchGuard)
 export class ConsultationController {
   constructor(private readonly consultationService: ConsultationService) {}
 
@@ -49,10 +51,15 @@ export class ConsultationController {
 
   @Get(':caseId')
   @Roles('DOCTOR', 'ADMIN', 'NURSING')
-  async getConsultation(@Param('caseId') caseId: string, @Request() req) {
+  async getConsultation(
+    @Param('caseId') caseId: string,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
     return this.consultationService.getOrCreateConsultation(
       caseId,
       req.user.id,
+      branchId,
     );
   }
 
@@ -62,11 +69,13 @@ export class ConsultationController {
     @Param('caseId') caseId: string,
     @Body() dto: UpdateConsultationDto,
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     return this.consultationService.updateConsultation(
       caseId,
       dto,
       req.user.id,
+      branchId,
     );
   }
 
@@ -76,11 +85,13 @@ export class ConsultationController {
     @Param('caseId') caseId: string,
     @Body('orders') orders: CreateInvestigationOrderDto[],
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     return this.consultationService.createInvestigationOrders(
       caseId,
       orders,
       req.user.id,
+      branchId,
     );
   }
 
@@ -90,12 +101,14 @@ export class ConsultationController {
     @Param('caseId') caseId: string,
     @Body() dto: CreatePrescriptionDto,
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     return this.consultationService.createPrescription(
       caseId,
       dto.items,
       dto.notes || '',
       req.user.id,
+      branchId,
     );
   }
 
@@ -105,19 +118,24 @@ export class ConsultationController {
     @Param('caseId') caseId: string,
     @Body() dto: CreateProcedureSessionDto,
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     return this.consultationService.createProcedureSession(
       caseId,
       dto.procedureId,
       dto.notes || '',
       req.user.id,
+      branchId,
     );
   }
 
   @Get(':caseId/images')
   @Roles('DOCTOR', 'ADMIN', 'NURSING')
-  async getClinicalImages(@Param('caseId') caseId: string) {
-    return this.consultationService.getClinicalImages(caseId);
+  async getClinicalImages(
+    @Param('caseId') caseId: string,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.getClinicalImages(caseId, branchId);
   }
 
   @Post(':caseId/images')
@@ -128,6 +146,7 @@ export class ConsultationController {
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { tag?: string; notes?: string },
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     if (!file) {
       throw new BadRequestException('Clinical image file is required');
@@ -139,6 +158,7 @@ export class ConsultationController {
       body.tag,
       body.notes,
       req.user.id,
+      branchId,
     );
   }
 
@@ -148,24 +168,32 @@ export class ConsultationController {
     @Param('caseId') caseId: string,
     @Body() dto: FinalizeConsultationDto,
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     return this.consultationService.finalizeConsultation(
       caseId,
       req.user.id,
       dto.nextStage as any,
+      branchId,
     );
   }
 
   @Get(':caseId/investigations')
   @Roles('DOCTOR', 'ADMIN', 'NURSING', 'LAB_TECHNICIAN')
-  async getInvestigationOrders(@Param('caseId') caseId: string) {
-    return this.consultationService.getInvestigationOrders(caseId);
+  async getInvestigationOrders(
+    @Param('caseId') caseId: string,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.getInvestigationOrders(caseId, branchId);
   }
 
   @Get('investigations/:orderId')
   @Roles('DOCTOR', 'ADMIN', 'NURSING', 'LAB_TECHNICIAN')
-  async getInvestigationOrder(@Param('orderId') orderId: string) {
-    return this.consultationService.getInvestigationOrderById(orderId);
+  async getInvestigationOrder(
+    @Param('orderId') orderId: string,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.getInvestigationOrderById(orderId, branchId);
   }
 
   @Post('investigations/:orderId/upload')
@@ -175,11 +203,13 @@ export class ConsultationController {
     @Param('orderId') orderId: string,
     @UploadedFile() file: Express.Multer.File,
     @Request() req,
+    @BranchId() branchId: string,
   ) {
     return this.consultationService.processInvestigationUpload(
       orderId,
       file,
       req.user.id,
+      branchId,
     );
   }
 }

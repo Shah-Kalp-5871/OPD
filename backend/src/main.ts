@@ -2,16 +2,36 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
+import * as compression from 'compression';
+import { Request, Response, NextFunction } from 'express';
+
+// BigInt Serialization Fix for JSON.stringify
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
-  const frontendOrigin =
-    process.env.FRONTEND_ORIGIN ||
-    process.env.FRONTEND_URL ||
-    'http://localhost:3000';
+  // Security Hardening
+  app.use(helmet());
+  app.use(compression());
+
+  // Correlation ID Middleware
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const correlationId = req.headers['x-correlation-id'] || crypto.randomUUID();
+    req.headers['x-correlation-id'] = correlationId;
+    res.setHeader('x-correlation-id', correlationId);
+    next();
+  });
+
+  const frontendOrigin = configService.get('CORS_ORIGIN');
   app.enableCors({
     origin: frontendOrigin,
     credentials: true,
@@ -21,8 +41,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Global Interceptors & Filters
-  app.useGlobalInterceptors(new TransformInterceptor());
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
+  app.useGlobalFilters(new AllExceptionsFilter(configService));
 
   // Strict Validation
   app.useGlobalPipes(
@@ -34,8 +54,9 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT ?? 3001;
+  const port = configService.get('PORT');
   await app.listen(port);
-  logger.log(`Backend running on: http://localhost:${port}`);
+  logger.log(`MedFlow API running on port: ${port} [${configService.get('NODE_ENV')}]`);
+  logger.log(`CORS allowed for: ${frontendOrigin}`);
 }
 bootstrap();
