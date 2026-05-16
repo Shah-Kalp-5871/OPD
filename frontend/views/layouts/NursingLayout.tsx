@@ -20,7 +20,7 @@ const NursingLayout: React.FC<NursingLayoutProps> = ({ children }) => {
         <NursingHeader />
 
         {/* Scrollable Content Area */}
-        <main className="mt-20 flex-1 p-8 overflow-y-auto">
+        <main className="mt-20 flex-1 p-8 overflow-y-auto custom-scrollbar scrollbar-stable">
           {children}
         </main>
         

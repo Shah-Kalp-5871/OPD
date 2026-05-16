@@ -1,264 +1,423 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/views/layouts/AdminLayout';
-import { 
-  Plus, 
-  Search, 
-  Package, 
-  AlertTriangle, 
-  Edit3, 
-  Trash2, 
-  Info, 
-  Save, 
-  Filter,
-  ChevronDown,
-  LayoutGrid,
-  FileText,
-  Thermometer,
-  ShieldAlert,
-  Archive
-} from 'lucide-react';
+import { Package, Edit3, ShieldAlert, Archive, ChevronDown } from 'lucide-react';
+import { drugApi, Drug } from '@/lib/api/drugs';
+import { toast } from 'sonner';
+import {
+  AdminPageHeader,
+  AdminToolbar,
+  AdminDataTable,
+  AdminStatusBadge,
+  AdminFormWrapper
+} from '@/components/admin';
+import { usePaginatedAdminData } from '@/hooks/admin/usePaginatedAdminData';
 
 const DrugMasterView = () => {
-  const [editingDrug, setEditingDrug] = useState<any>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [formulations, setFormulations] = useState<string[]>([]);
+  
+  const [editingDrug, setEditingDrug] = useState<Partial<Drug> | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const drugs = [
-    { content: 'Tab Fluconazole 400mg', brand: 'Flucocip', form: 'Tablet', dose: '1 Tab', freq: 'OD', price: 12, stock: 48, minStock: 10, isSimple: false },
-    { content: 'Cream Clotrimazole 1%', brand: 'Monpic', form: 'Cream', dose: '1 App', freq: 'TDS', price: 25, stock: 30, minStock: 5, isSimple: false },
-    { content: '(S) Tab Levocetrizine', brand: '(S) Zylivo', form: 'Tablet', dose: '1 Tab', freq: 'OD', price: 12, stock: 8, minStock: 12, isSimple: true },
-    { content: 'Syrup Albendazole', brand: 'Zentel', form: 'Syrup', dose: '5 ml', freq: 'Weekly', price: 8, stock: 25, minStock: 8, isSimple: false },
-  ];
+  const {
+    data: drugs,
+    total: totalItems,
+    page,
+    totalPages,
+    limit,
+    search: searchQuery,
+    filters,
+    loading,
+    setPage,
+    setSearch,
+    refresh
+  } = usePaginatedAdminData<Drug, any>({
+    fetchFn: drugApi.findAll.bind(drugApi)
+  });
 
-  const handleEdit = (drug: any) => {
+  // Form State
+  const [formData, setFormData] = useState<Partial<Drug>>({
+    drugName: '',
+    genericName: '',
+    manufacturer: '',
+    drugCategory: 'GENERAL',
+    formulation: 'TABLET',
+    strength: '',
+    unitOfMeasure: 'UNIT',
+    unitPrice: 0,
+    taxable: true,
+    stockTracked: true,
+    schedule: '',
+    isActive: true
+  });
+
+  const fetchMasters = useCallback(async () => {
+    try {
+      const [cats, forms] = await Promise.all([
+        drugApi.getMasterCategories(),
+        drugApi.getMasterFormulations()
+      ]);
+      setCategories(cats);
+      setFormulations(forms);
+    } catch (error) {
+      console.error('Failed to fetch masters', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMasters();
+  }, [fetchMasters]);
+
+  const handleEdit = (drug: Drug) => {
     setEditingDrug(drug);
-    document.getElementById('drug-form')?.scrollIntoView({ behavior: 'smooth' });
+    setFormData(drug);
+    setShowForm(true);
+    setTimeout(() => {
+      document.getElementById('admin-form')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const handleAdd = () => {
     setEditingDrug(null);
-    document.getElementById('drug-form')?.scrollIntoView({ behavior: 'smooth' });
+    setFormData({
+      drugName: '',
+      genericName: '',
+      manufacturer: '',
+      drugCategory: 'GENERAL',
+      formulation: 'TABLET',
+      strength: '',
+      unitOfMeasure: 'UNIT',
+      unitPrice: 0,
+      taxable: true,
+      stockTracked: true,
+      schedule: '',
+      isActive: true
+    });
+    setShowForm(true);
+    setTimeout(() => {
+      document.getElementById('admin-form')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.drugName || !formData.drugCategory || !formData.formulation) {
+      toast.error('Please fill required fields');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      if (editingDrug?.id) {
+        await drugApi.update(editingDrug.id, formData);
+        toast.success('Drug updated successfully');
+      } else {
+        await drugApi.create(formData);
+        toast.success('New drug added to master');
+      }
+      setShowForm(false);
+      refresh();
+    } catch (error) {
+      console.error('Save failed', error);
+      toast.error('Failed to save drug data');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeactivate = async (drug: Drug) => {
+    if (!confirm(`Are you sure you want to archive ${drug.drugName}?`)) return;
+    try {
+      await drugApi.archive(drug.id);
+      toast.success('Drug archived');
+      refresh();
+    } catch (error) {
+      toast.error('Failed to archive drug');
+    }
+  };
+
+  const columns = [
+    {
+      key: 'name',
+      header: 'Medication Name',
+      render: (drug: Drug) => (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-800 font-extrabold">{drug.drugName}</span>
+          {!drug.isActive && <AdminStatusBadge isActive={false} />}
+        </div>
+      )
+    },
+    {
+      key: 'generic',
+      header: 'Generic Molecule',
+      render: (drug: Drug) => (
+        <span className="text-slate-500 font-bold italic">{drug.genericName || 'N/A'}</span>
+      )
+    },
+    {
+      key: 'formulation',
+      header: 'Form / Strength',
+      render: (drug: Drug) => (
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500">
+            {drug.formulation}
+          </span>
+          <span className="text-slate-400 text-xs font-bold">{drug.strength}</span>
+        </div>
+      )
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      render: (drug: Drug) => (
+        <span className="text-blue-600 font-black text-[10px] uppercase tracking-wider">{drug.drugCategory}</span>
+      )
+    },
+    {
+      key: 'price',
+      header: 'Price (₹)',
+      render: (drug: Drug) => (
+        <span className="text-slate-800 font-black">{drug.unitPrice.toFixed(2)}</span>
+      )
+    },
+    {
+      key: 'stock',
+      header: 'In Stock',
+      align: 'center' as const,
+      render: (drug: Drug) => {
+        if (drug.inventory && drug.inventory.totalStock <= drug.inventory.minStockLevel) {
+          return (
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-rose-600 font-black text-xs">{drug.inventory.totalStock}</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[9px] font-black uppercase tracking-tighter">
+                <ShieldAlert className="w-2.5 h-2.5" />
+                Low Stock
+              </span>
+            </div>
+          );
+        }
+        return <span className="text-slate-600 font-black">{drug.inventory?.totalStock || 0}</span>;
+      }
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right' as const,
+      render: (drug: Drug) => (
+        <div className="flex items-center justify-end gap-2">
+          <button 
+            onClick={() => handleEdit(drug)}
+            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+            title="Edit Drug"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          {drug.isActive && (
+            <button 
+              onClick={() => handleDeactivate(drug)}
+              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+              title="Archive Drug"
+            >
+              <Archive className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )
+    }
+  ];
 
   return (
     <AdminLayout>
       <div className="space-y-8 pb-20">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Drug Master Database</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Pharmacy Inventory & Prescription Master</p>
-          </div>
-          <button 
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-black transition-all shadow-lg shadow-slate-200 uppercase tracking-widest"
-          >
-            <Plus className="w-4 h-4" />
-            + Add Drug
-          </button>
-        </div>
+        <AdminPageHeader
+          title="Drug Master Database"
+          totalCount={totalItems}
+          onAdd={handleAdd}
+          addLabel="+ Add Drug"
+        />
 
-        {/* Search Bar Section */}
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="relative group max-w-2xl">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Search drugs by Content Name / Brand Name / Form..."
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 transition-all text-sm font-bold"
-            />
-          </div>
+          <AdminToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearch}
+            onRefresh={refresh}
+          />
         </div>
 
-        {/* Drug Table Card */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-slate-100">
-                  <th className="px-8 py-5">Content Name</th>
-                  <th className="px-8 py-5">Brand Name</th>
-                  <th className="px-8 py-5">Form</th>
-                  <th className="px-8 py-5">Dose</th>
-                  <th className="px-8 py-5">Freq</th>
-                  <th className="px-8 py-5">Price/Unit</th>
-                  <th className="px-8 py-5 text-center">Stock</th>
-                  <th className="px-8 py-5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 text-sm font-medium">
-                {drugs.map((drug, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2">
-                        {drug.isSimple && <span className="text-blue-600 font-black">(S)</span>}
-                        <span className="text-slate-800 font-extrabold">{drug.content.replace('(S) ', '')}</span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-slate-500 font-bold italic">{drug.brand}</td>
-                    <td className="px-8 py-5">
-                      <span className="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500">
-                        {drug.form}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-slate-600 font-bold">{drug.dose}</td>
-                    <td className="px-8 py-5 text-slate-600 font-bold">{drug.freq}</td>
-                    <td className="px-8 py-5 text-slate-800 font-black">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-slate-400 font-medium">■</span> {drug.price}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-center">
-                      {drug.stock <= drug.minStock ? (
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-rose-600 font-black text-xs">{drug.stock}</span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[9px] font-black uppercase tracking-tighter">
-                            <ShieldAlert className="w-2.5 h-2.5" />
-                            Stock Below Minimum
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-600 font-black">{drug.stock}</span>
-                      )}
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <button 
-                        onClick={() => handleEdit(drug)}
-                        className="px-4 py-1.5 bg-slate-50 text-slate-600 hover:bg-blue-600 hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-widest border border-slate-100"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-8 py-4 bg-slate-50/30 border-t border-slate-50">
-             <div className="flex items-center gap-3">
-                <Info className="w-4 h-4 text-blue-500" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  (S) prefix = simple / sample drug. Separate inventory tracking enabled. Low stock alerts are notified to admin & doctors.
-                </p>
-             </div>
-          </div>
-        </div>
-
-        {/* 🔷 Add / Edit Drug Form */}
-        <div id="drug-form" className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden scroll-mt-24">
-          <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.1em]">
-              Add / Edit Drug Form
-            </h3>
-            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              <Archive className="w-3.5 h-3.5" />
-              Prescription Master Data
-            </div>
-          </div>
-
-          <div className="p-10 space-y-10">
-            {/* Row 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Content Name / Generic *</label>
-                <input 
-                  type="text" 
-                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
-                  defaultValue={editingDrug?.content.replace('(S) ', '')}
-                />
+        {showForm && (
+          <AdminFormWrapper
+            title="Drug"
+            isEditing={!!editingDrug}
+            submitting={submitting}
+            onClose={() => setShowForm(false)}
+            onSubmit={handleSave}
+          >
+            <div className="space-y-10">
+              {/* Row 1 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Medication Name *</label>
+                  <input 
+                    type="text" 
+                    required
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
+                    value={formData.drugName || ''}
+                    onChange={(e) => setFormData({...formData, drugName: e.target.value})}
+                    placeholder="e.g. Paracetamol 500mg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Generic Name / Molecule</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
+                    value={formData.genericName || ''}
+                    onChange={(e) => setFormData({...formData, genericName: e.target.value})}
+                    placeholder="e.g. Acetaminophen"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Manufacturer</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
+                    value={formData.manufacturer || ''}
+                    onChange={(e) => setFormData({...formData, manufacturer: e.target.value})}
+                    placeholder="e.g. Cipla, Mankind"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Brand Name *</label>
-                <input 
-                  type="text" 
-                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
-                  defaultValue={editingDrug?.brand.replace('(S) ', '')}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Manufacturer / Brand</label>
-                <input 
-                  type="text" 
-                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
-                  placeholder="e.g. Cipla, Mankind"
-                />
-              </div>
-            </div>
 
-            {/* Row 2 */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Drug Form (Dropdown)</label>
-                <div className="relative">
-                  <select className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 transition-all text-sm font-bold appearance-none cursor-pointer" defaultValue={editingDrug?.form}>
-                    <option>Select Form</option>
-                    <option>Tablet</option>
-                    <option>Syrup</option>
-                    <option>Cream</option>
-                    <option>Injection</option>
-                    <option>Capsule</option>
+              {/* Row 2 */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Drug Category *</label>
+                  <div className="relative">
+                    <select 
+                      required
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 transition-all text-sm font-bold appearance-none cursor-pointer uppercase"
+                      value={formData.drugCategory}
+                      onChange={(e) => setFormData({...formData, drugCategory: e.target.value})}
+                    >
+                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Formulation *</label>
+                  <div className="relative">
+                    <select 
+                      required
+                      className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 transition-all text-sm font-bold appearance-none cursor-pointer uppercase"
+                      value={formData.formulation}
+                      onChange={(e) => setFormData({...formData, formulation: e.target.value})}
+                    >
+                      {formulations.map(form => <option key={form} value={form}>{form}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Strength</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" 
+                    placeholder="e.g. 500mg, 10mg" 
+                    value={formData.strength || ''}
+                    onChange={(e) => setFormData({...formData, strength: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Unit of Measure</label>
+                  <select 
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none appearance-none cursor-pointer"
+                    value={formData.unitOfMeasure}
+                    onChange={(e) => setFormData({...formData, unitOfMeasure: e.target.value})}
+                  >
+                    <option value="UNIT">UNIT</option>
+                    <option value="STRIP">STRIP</option>
+                    <option value="BOTTLE">BOTTLE</option>
+                    <option value="VIAL">VIAL</option>
+                    <option value="BOX">BOX</option>
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Default Dose</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" placeholder="1 Tab / 5 ml" defaultValue={editingDrug?.dose} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Default Frequency</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" placeholder="OD / TDS / BD" defaultValue={editingDrug?.freq} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Default Timing</label>
-                <select className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none appearance-none cursor-pointer">
-                  <option>After Food</option>
-                  <option>Before Food</option>
-                  <option>Empty Stomach</option>
-                </select>
-              </div>
-            </div>
 
-            {/* Row 3 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 items-end">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Route</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" placeholder="Oral / Topical" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Price per Unit (■)</label>
-                <input type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingDrug?.price} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Min Stock Alert</label>
-                <input type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingDrug?.minStock || 10} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Slot Code</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" placeholder="Rack-A1" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Simple Drug (S)?</label>
-                <div className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked={editingDrug?.isSimple} />
-                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mark as (S)</span>
+              {/* Row 3 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-end">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Unit Price (₹) *</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" 
+                    value={formData.unitPrice || 0}
+                    onChange={(e) => setFormData({...formData, unitPrice: parseFloat(e.target.value)})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Schedule (Class)</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" 
+                    placeholder="e.g. H, H1, G"
+                    value={formData.schedule || ''}
+                    onChange={(e) => setFormData({...formData, schedule: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Stock Tracking</label>
+                  <div className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={formData.stockTracked || false}
+                        onChange={(e) => setFormData({...formData, stockTracked: e.target.checked})}
+                      />
+                      <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Track Inventory</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Taxable</label>
+                  <div className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={formData.taxable || false}
+                        onChange={(e) => setFormData({...formData, taxable: e.target.checked})}
+                      />
+                      <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Apply GST/Tax</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </AdminFormWrapper>
+        )}
 
-            {/* Save Button */}
-            <div className="pt-6 flex justify-center">
-              <button className="px-16 py-4 bg-slate-900 text-white font-black rounded-xl text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-[0.2em]">
-                SAVE DRUG
-              </button>
-            </div>
-          </div>
-        </div>
+        <AdminDataTable
+          columns={columns}
+          data={drugs}
+          loading={loading}
+          page={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          rowKey={(d) => d.id}
+          rowClassName={(d) => !d.isActive ? 'opacity-50' : ''}
+          emptyIcon={<Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />}
+          emptyText="No drugs found in database"
+        />
       </div>
     </AdminLayout>
   );

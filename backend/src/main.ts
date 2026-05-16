@@ -7,10 +7,16 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
-  
-  // Enable CORS
-  app.enableCors();
-  
+
+  const frontendOrigin =
+    process.env.FRONTEND_ORIGIN ||
+    process.env.FRONTEND_URL ||
+    'http://localhost:3000';
+  app.enableCors({
+    origin: frontendOrigin,
+    credentials: true,
+  });
+
   // Global prefix
   app.setGlobalPrefix('api');
 
@@ -19,12 +25,14 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Strict Validation
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-    errorHttpStatusCode: 400,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      errorHttpStatusCode: 400,
+    }),
+  );
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port);

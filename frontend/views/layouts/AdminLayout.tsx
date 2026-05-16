@@ -24,7 +24,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <AdminHeader onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
 
         {/* Content Area - Scrollable */}
-        <main className="flex-1 mt-16 p-4 md:p-8 overflow-y-auto">
+        <main className="flex-1 mt-16 p-4 md:p-8 overflow-y-auto custom-scrollbar scrollbar-stable">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

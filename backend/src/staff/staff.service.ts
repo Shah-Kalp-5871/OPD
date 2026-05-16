@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateStaffDto, UpdateStaffDto } from './dto/staff.dto';
 import * as bcrypt from 'bcrypt';
@@ -31,9 +35,15 @@ export class StaffService {
         password: hashedPassword,
         role: createStaffDto.role,
         isActive: createStaffDto.isActive ?? true,
-        ...(createStaffDto.role === Role.RECEPTION && { receptionProfile: { create: profileData } }),
-        ...(createStaffDto.role === Role.NURSING && { nurseProfile: { create: profileData } }),
-        ...(createStaffDto.role === Role.MEDICAL && { medicalProfile: { create: profileData } }),
+        ...(createStaffDto.role === Role.RECEPTION && {
+          receptionProfile: { create: profileData },
+        }),
+        ...(createStaffDto.role === Role.NURSING && {
+          nurseProfile: { create: profileData },
+        }),
+        ...(createStaffDto.role === Role.MEDICAL && {
+          medicalProfile: { create: profileData },
+        }),
       },
       include: {
         receptionProfile: true,
@@ -46,21 +56,48 @@ export class StaffService {
     return result;
   }
 
-  async findAll() {
-    const staff = await this.prisma.user.findMany({
-      where: {
-        role: {
-          in: [Role.RECEPTION, Role.NURSING, Role.MEDICAL],
-        },
-      },
-      include: {
-        receptionProfile: true,
-        nurseProfile: true,
-        medicalProfile: true,
-      },
-    });
+  async findAll(params?: any) {
+    const { search, page = 1, limit = 20, includeInactive = false } = params || {};
+    const skip = (page - 1) * limit;
 
-    return staff.map(({ password, ...user }) => user);
+    const where: any = {
+      role: {
+        in: [Role.RECEPTION, Role.NURSING, Role.MEDICAL],
+      },
+      ...(!includeInactive && { isActive: true }),
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, staff] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          receptionProfile: true,
+          nurseProfile: true,
+          medicalProfile: true,
+        },
+      }),
+    ]);
+
+    const items = staff.map(({ password, ...user }) => user);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
   }
 
   async findOne(id: string) {
@@ -117,7 +154,9 @@ export class StaffService {
       where: { id },
       data: {
         ...updateData,
-        ...(staff.role === Role.RECEPTION && { receptionProfile: profileUpdate }),
+        ...(staff.role === Role.RECEPTION && {
+          receptionProfile: profileUpdate,
+        }),
         ...(staff.role === Role.NURSING && { nurseProfile: profileUpdate }),
         ...(staff.role === Role.MEDICAL && { medicalProfile: profileUpdate }),
       },

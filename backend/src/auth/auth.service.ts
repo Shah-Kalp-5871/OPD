@@ -12,18 +12,33 @@ export class AuthService {
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findOneByEmail(email);
-    
+
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isMatch = await bcrypt.compare(pass, user.password);
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid email or password');
+    // Check if account is locked
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      throw new UnauthorizedException(
+        `Account is locked until ${user.lockedUntil.toLocaleString()}`,
+      );
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Your account has been disabled. Please contact admin.');
+      throw new UnauthorizedException('Account disabled');
+    }
+
+    const isMatch = await bcrypt.compare(pass, user.password);
+
+    if (!isMatch) {
+      // Track failed attempt
+      await this.usersService.incrementFailedAttempts(user.id);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Reset failed attempts on successful login
+    if (user.failedLoginAttempts > 0) {
+      await this.usersService.resetFailedAttempts(user.id);
     }
 
     const { password, ...result } = user;

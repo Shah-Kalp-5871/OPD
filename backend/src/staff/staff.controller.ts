@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Put, UseGuards, SetMetadata } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+  SetMetadata,
+  Query,
+} from '@nestjs/common';
 import { StaffService } from './staff.service';
 import { CreateStaffDto, UpdateStaffDto } from './dto/staff.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -20,8 +30,18 @@ export class StaffController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll() {
-    return this.staffService.findAll();
+  findAll(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return this.staffService.findAll({
+      search,
+      page: page ? parseInt(page) : undefined,
+      limit: limit ? parseInt(limit) : undefined,
+      includeInactive: includeInactive === 'true',
+    });
   }
 
   @Get(':id')

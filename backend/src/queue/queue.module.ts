@@ -6,6 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [PrismaModule],
   providers: [QueueService],
-  controllers: [QueueController]
+  controllers: [QueueController],
+  exports: [QueueService],
 })
 export class QueueModule {}

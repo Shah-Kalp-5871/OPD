@@ -1,184 +1,346 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import AdminLayout from '@/views/layouts/AdminLayout';
-import Link from 'next/link';
 import { 
-  UserPlus, 
-  Mail, 
-  Clock, 
-  DollarSign, 
-  ShieldCheck, 
-  Search,
-  Filter,
-  MoreVertical,
-  Briefcase,
-  Loader2
+  Briefcase, 
+  Clock,
+  Edit3,
+  Archive,
 } from 'lucide-react';
-import api from '@/lib/api';
 import { toast } from 'sonner';
+import { 
+  AdminPageHeader, 
+  AdminToolbar, 
+  AdminDataTable, 
+  AdminStatusBadge,
+  AdminFormWrapper
+} from '@/components/admin';
+import { usePaginatedAdminData } from '@/hooks/admin/usePaginatedAdminData';
+import { staffApi, StaffMember } from '@/lib/api/staff';
+
+const EMPTY_FORM = {
+  id: undefined,
+  name: '',
+  email: '',
+  password: '',
+  role: '',
+  salary: 0,
+  overtimeRate: 200,
+  isActive: true,
+};
 
 const StaffManagementView = () => {
-  const [staffMembers, setStaffMembers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [filterRole, setFilterRole] = useState('');
 
-  useEffect(() => {
-    fetchStaff();
-  }, []);
+  const {
+    data: staffMembers,
+    total,
+    totalPages,
+    page,
+    limit,
+    search,
+    loading,
+    setPage,
+    setSearch,
+    refresh,
+  } = usePaginatedAdminData<StaffMember, any>({
+    fetchFn: (params) => staffApi.findAll({ ...params, role: filterRole || undefined }),
+    initialLimit: 20,
+    defaultFilters: { role: filterRole },
+  });
 
-  const fetchStaff = async () => {
+  const getProfile = (staff: StaffMember) => {
+    return staff.receptionProfile || staff.nurseProfile || staff.medicalProfile || {};
+  };
+
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+    setTimeout(() => scrollToForm(), 50);
+  };
+
+  const openEdit = (s: StaffMember) => {
+    const profile = getProfile(s) as any;
+    setForm({
+      id: s.id as any,
+      name: s.name,
+      email: s.email,
+      password: '',
+      role: s.role,
+      salary: profile.salary || 0,
+      overtimeRate: profile.overtimeRate || 200,
+      isActive: s.isActive,
+    });
+    setShowForm(true);
+    setTimeout(() => scrollToForm(), 50);
+  };
+
+  const scrollToForm = () => document.getElementById('admin-form-wrapper')?.scrollIntoView({ behavior: 'smooth' });
+
+  const handleSave = async () => {
+    if (!form.name || !form.email || !form.role) {
+      toast.error('Name, Email, and Role are required.');
+      return;
+    }
     try {
-      const response = await api.get('/staff');
-      setStaffMembers(response.data);
-    } catch (error) {
-      console.error('Staff fetch error:', error);
-      toast.error('Failed to load staff members');
+      setSubmitting(true);
+      if (form.id) {
+        await staffApi.update(form.id, form);
+        toast.success('Staff member updated');
+      } else {
+        await staffApi.create(form as any);
+        toast.success('Staff member created');
+      }
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to save staff member');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const getProfile = (staff: any) => {
-    return staff.receptionProfile || staff.nurseProfile || staff.medicalProfile || {};
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSave();
   };
+
+  const handleToggleActive = async (s: StaffMember) => {
+    try {
+      await staffApi.toggleActive(s.id, s.isActive);
+      toast.success(s.isActive ? 'Staff deactivated' : 'Staff activated');
+      refresh();
+    } catch {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const tableColumns = [
+    {
+      key: 'employee',
+      header: 'Employee',
+      render: (s: StaffMember) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 shrink-0 uppercase font-black text-xs">
+            {s.name.charAt(0)}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-slate-800">{s.name}</span>
+            <span className="text-[10px] font-bold text-slate-400 lowercase">{s.email}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Department/Role',
+      render: (s: StaffMember) => (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 border border-slate-200/50">
+          <Briefcase className="w-3 h-3" />
+          {s.role}
+        </span>
+      ),
+    },
+    {
+      key: 'salary',
+      header: 'Salary (₹)',
+      render: (s: StaffMember) => {
+        const profile = getProfile(s) as any;
+        return <span className="text-sm font-black text-slate-700">₹{profile.salary || 0}</span>;
+      },
+    },
+    {
+      key: 'joined',
+      header: 'Joined Date',
+      render: (s: StaffMember) => (
+        <span className="text-xs font-bold text-slate-500">
+          {new Date(s.createdAt).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (s: StaffMember) => <AdminStatusBadge isActive={s.isActive} />,
+      align: 'right' as const,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right' as const,
+      render: (s: StaffMember) => (
+        <div className="flex items-center justify-end gap-2">
+          <button 
+            onClick={() => openEdit(s)}
+            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+            title="Edit Staff"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => handleToggleActive(s)}
+            className={`p-2 rounded-lg transition-all ${s.isActive ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-slate-400 hover:text-green-600 hover:bg-green-50'}`}
+            title={s.isActive ? "Archive Staff" : "Activate Staff"}
+          >
+            <Archive className="w-4 h-4" />
+          </button>
+        </div>
+      )
+    }
+  ];
 
   return (
     <AdminLayout>
       <div className="space-y-8 pb-20">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight text-[28px]">Staff Administration</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Workforce, Payroll & Role Management</p>
-          </div>
-          <Link 
-            href="/admin/staff/add"
-            className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-widest"
+        <AdminPageHeader
+          title="Staff Administration"
+          subtitle={`${total} staff members configured`}
+          actions={[
+            {
+              label: 'Add Staff Member',
+              onClick: openCreate,
+              variant: 'primary',
+            }
+          ]}
+        />
+
+        <AdminToolbar
+          searchQuery={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search by name or email..."
+          onRefresh={refresh}
+          filters={[
+            {
+              value: filterRole,
+              onChange: setFilterRole,
+              options: [
+                { value: 'RECEPTION', label: 'Reception' },
+                { value: 'NURSING', label: 'Nursing' },
+                { value: 'MEDICAL', label: 'Medical' },
+              ],
+              placeholder: 'All Roles',
+            }
+          ]}
+        />
+
+        <AdminDataTable
+          data={staffMembers}
+          columns={tableColumns}
+          loading={loading}
+          totalItems={total}
+          totalPages={totalPages}
+          page={page}
+          onPageChange={setPage}
+          emptyIcon={<Briefcase className="w-10 h-10 text-slate-200 mx-auto mb-3" />}
+          emptyText="No staff records found"
+          rowKey={(s: any) => s.id || 'new'}
+        />
+
+        {showForm && (
+          <AdminFormWrapper
+            title={form.id ? 'Staff Member' : 'Staff Member'}
+            onClose={() => setShowForm(false)}
+            onSubmit={handleSubmit}
+            isEditing={!!form.id}
+            submitting={submitting}
           >
-            <UserPlus className="w-4 h-4" />
-            Add Staff Member
-          </Link>
-        </div>
+            <div className="p-2 mb-6 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-3">
+              <Clock className="w-4 h-4 text-amber-500 ml-2" />
+              <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider leading-tight">
+                Overtime auto-calc based on admin-set hourly rate.
+              </p>
+            </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[
-            { label: 'Total Staff', value: staffMembers.length.toString(), icon: UserPlus, color: 'blue' },
-            { label: 'Active Now', value: staffMembers.filter(s => s.isActive).length.toString(), icon: ShieldCheck, color: 'emerald' },
-            { label: 'Avg Salary', value: '20k', icon: DollarSign, color: 'amber' },
-            { label: 'On Leave', value: '02', icon: Clock, color: 'rose' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-lg bg-${stat.color}-50 text-${stat.color}-600`}>
-                  <stat.icon className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Full Name *</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                />
               </div>
-              <h3 className="text-2xl font-black text-slate-800">{stat.value}</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Email Address *</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Role *</label>
+                <select
+                  value={form.role}
+                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all appearance-none"
+                >
+                  <option value="">Select Role</option>
+                  <option value="RECEPTION">Reception</option>
+                  <option value="NURSING">Nursing</option>
+                  <option value="MEDICAL">Medical</option>
+                </select>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Filters & Search */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="SEARCH BY NAME, EMAIL OR ROLE..." 
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-slate-900/5 transition-all"
-            />
-          </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-50 transition-all">
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
-            <button className="flex-1 md:flex-none px-5 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all">
-              Export CSV
-            </button>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  {form.id ? 'Change Password (optional)' : 'Password *'}
+                </label>
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  placeholder={form.id ? 'Leave blank to keep' : 'Min 6 chars'}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Monthly Salary (■) *</label>
+                <input
+                  type="number"
+                  value={form.salary}
+                  onChange={e => setForm(f => ({ ...f, salary: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Overtime Rate / hr (■)</label>
+                <input
+                  type="number"
+                  value={form.overtimeRate}
+                  onChange={e => setForm(f => ({ ...f, overtimeRate: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500 transition-all"
+                />
+              </div>
+            </div>
 
-        {/* Staff Table */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-h-[400px] flex flex-col">
-          {loading ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-20">
-              <Loader2 className="w-10 h-10 text-slate-300 animate-spin mb-4" />
-              <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Synchronizing Workforce Data...</p>
+            <div className="mt-6 flex items-center gap-3">
+              <div className="relative cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={form.isActive}
+                  onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
+                />
+                <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+              </div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Staff Member</span>
             </div>
-          ) : staffMembers.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-20 text-center">
-              <Briefcase className="w-12 h-12 text-slate-200 mb-4" />
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No staff records found</p>
-              <p className="text-[10px] text-slate-300 mt-2 font-medium">Add your first employee to get started</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-slate-100">
-                    <th className="px-8 py-5">Employee</th>
-                    <th className="px-8 py-5">Department/Role</th>
-                    <th className="px-8 py-5">Salary (■)</th>
-                    <th className="px-8 py-5">Joined Date</th>
-                    <th className="px-8 py-5">Status</th>
-                    <th className="px-8 py-5 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {staffMembers.map((staff) => {
-                    const profile = getProfile(staff);
-                    return (
-                      <tr key={staff.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-8 py-5">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-black text-slate-800">{staff.name}</span>
-                            <span className="text-[10px] font-bold text-slate-400 lowercase">{staff.email}</span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 text-slate-600 border border-slate-200/50`}>
-                            <Briefcase className="w-3 h-3" />
-                            {staff.role}
-                          </span>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className="text-sm font-black text-slate-700">{profile.salary || 0}</span>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className="text-xs font-bold text-slate-500">{new Date(staff.createdAt).toLocaleDateString()}</span>
-                        </td>
-                        <td className="px-8 py-5">
-                          <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            staff.isActive 
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                            : 'bg-slate-100 text-slate-400 border border-slate-200'
-                          }`}>
-                            {staff.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-8 py-5 text-right">
-                          <Link 
-                            href={`/admin/staff/edit?id=${staff.id}`}
-                            className="p-2 hover:bg-slate-100 rounded-lg transition-all inline-block text-slate-400 hover:text-slate-900"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </AdminFormWrapper>
+        )}
       </div>
     </AdminLayout>
   );
 };
 
 export default StaffManagementView;
+

@@ -1,232 +1,349 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '@/views/layouts/AdminLayout';
-import { 
-  Plus, 
-  FlaskConical, 
-  Activity, 
-  AlertOctagon, 
-  Eye, 
-  EyeOff, 
-  Edit3, 
-  Save, 
-  ChevronDown, 
-  Info,
-  ShieldAlert,
-  ArrowDownCircle,
-  FileText
+import {
+  FlaskConical, ShieldAlert, AlertOctagon, Edit3, Archive,
 } from 'lucide-react';
+import { labApi, LabCategory, LabParameter } from '@/lib/api/lab';
+import { toast } from 'sonner';
+import {
+  AdminPageHeader,
+  AdminToolbar,
+  AdminDataTable,
+  AdminStatusBadge,
+  AdminFormWrapper,
+  Column,
+} from '@/components/admin';
+import { usePaginatedAdminData } from '@/hooks/admin/usePaginatedAdminData';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface ParamForm {
+  id?: string;
+  categoryId: string;
+  name: string;
+  code: string;
+  unit: string;
+  basePrice: number;
+  criticalLow: string;
+  criticalHigh: string;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+const EMPTY_FORM: ParamForm = {
+  categoryId: '', name: '', code: '', unit: '',
+  basePrice: 0, criticalLow: '', criticalHigh: '',
+  displayOrder: 0, isActive: true,
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const LabMasterView = () => {
-  const [editingParam, setEditingParam] = useState<any>(null);
+  const [categories, setCategories] = useState<LabCategory[]>([]);
+  const [form, setForm] = useState<ParamForm>(EMPTY_FORM);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // Use the shared hook for fetching data
+  const {
+    data: parameters,
+    total,
+    totalPages,
+    page,
+    limit,
+    search,
+    filters,
+    loading,
+    setPage,
+    setSearch,
+    setFilter,
+    refresh,
+  } = usePaginatedAdminData<LabParameter, any>({
+    fetchFn: labApi.getParameters.bind(labApi),
+    initialLimit: 20
+  });
 
-  const parameters = [
-    { group: 'CBC', name: 'Haemoglobin', unit: 'g/dL', male: '13.5–17.5', female: '11.5–15.5', child: '11–16', critLow: '7', status: 'Active' },
-    { group: 'CBC', name: 'WBC Count', unit: 'K/uL', male: '4.5–11', female: '4.5–11', child: '4.5–11', critLow: '2', status: 'Active' },
-    { group: 'Blood Sugar', name: 'Fasting', unit: 'mg/dL', male: '70–100', female: '70–100', child: '70–100', critLow: '50', status: 'Active' },
-    { group: 'Thyroid', name: 'TSH', unit: 'mIU/L', male: '0.4–4.0', female: '0.4–4.0', child: '0.5–4.5', critLow: '0.1', status: 'Active' },
-    { group: 'LFT', name: 'SGPT', unit: 'IU/L', male: '7–40', female: '7–40', child: '7–40', critLow: '0', status: 'Inactive' },
+  const filterCat = filters.categoryId || '';
+  const setFilterCat = (val: string) => setFilter('categoryId', val);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await labApi.getCategories(true);
+      setCategories(res.data);
+    } catch { toast.error('Failed to load categories'); }
+  }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+
+  const openCreate = () => { setForm(EMPTY_FORM); setShowForm(true); };
+  const openEdit = (p: LabParameter) => {
+    setForm({
+      id: p.id, categoryId: p.categoryId, name: p.name,
+      code: p.code || '', unit: p.unit || '',
+      basePrice: p.basePrice, displayOrder: p.displayOrder,
+      criticalLow: p.criticalLow?.toString() ?? '',
+      criticalHigh: p.criticalHigh?.toString() ?? '',
+      isActive: p.isActive,
+    });
+    setShowForm(true);
+    setTimeout(() => document.getElementById('admin-form-wrapper')?.scrollIntoView({ behavior: 'smooth' }), 50);
+  };
+
+  const handleSave = async () => {
+    if (!form.categoryId || !form.name.trim()) {
+      toast.error('Category and name are required'); return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        ...form,
+        criticalLow: form.criticalLow ? parseFloat(form.criticalLow) : undefined,
+        criticalHigh: form.criticalHigh ? parseFloat(form.criticalHigh) : undefined,
+      };
+      if (form.id) {
+        await labApi.updateParameter(form.id, payload);
+        toast.success('Parameter updated');
+      } else {
+        await labApi.createParameter(payload);
+        toast.success('Parameter created');
+      }
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+      refresh();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to save parameter');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSave();
+  };
+
+  const handleToggleActive = async (p: LabParameter) => {
+    try {
+      await labApi.updateParameter(p.id, { isActive: !p.isActive });
+      toast.success(p.isActive ? 'Parameter archived' : 'Parameter activated');
+      refresh();
+    } catch { toast.error('Failed to update status'); }
+  };
+
+  const handleCreateCategory = async () => {
+    const name = prompt('New category name:');
+    if (!name?.trim()) return;
+    try {
+      await labApi.createCategory({ name: name.trim() });
+      toast.success('Category created');
+      fetchCategories();
+    } catch (e: any) { toast.error(e?.response?.data?.message || 'Failed'); }
+  };
+
+  const tableColumns: Column<LabParameter>[] = [
+    {
+      key: 'category',
+      header: 'Category',
+      render: (p: LabParameter) => (
+        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">
+          {p.category?.name ?? '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'name',
+      header: 'Parameter',
+      render: (p: LabParameter) => <span className="text-sm font-extrabold text-slate-800">{p.name}</span>,
+    },
+    {
+      key: 'code',
+      header: 'Code',
+      render: (p: LabParameter) => <span className="text-xs font-mono text-slate-400">{p.code ?? '—'}</span>,
+    },
+    {
+      key: 'unit',
+      header: 'Unit',
+      render: (p: LabParameter) => <span className="text-xs font-black text-slate-400 italic">{p.unit ?? '—'}</span>,
+    },
+    {
+      key: 'price',
+      header: 'Price (₹)',
+      render: (p: LabParameter) => <span className="text-sm font-black text-indigo-600">₹{p.basePrice}</span>,
+      align: 'right' as const,
+    },
+    {
+      key: 'critical',
+      header: 'Critical',
+      render: (p: LabParameter) => (
+        (p.criticalLow != null || p.criticalHigh != null) ? (
+          <div className="flex items-center justify-center gap-1 px-2 py-1 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[8px] font-black uppercase mx-auto w-fit">
+            <ShieldAlert className="w-2.5 h-2.5" />
+            {p.criticalLow ?? '—'} / {p.criticalHigh ?? '—'}
+          </div>
+        ) : <span className="text-slate-200 text-xs">—</span>
+      ),
+      align: 'center' as const,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (p: LabParameter) => <AdminStatusBadge isActive={p.isActive} />,
+      align: 'right' as const,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right' as const,
+      render: (p: LabParameter) => (
+        <div className="flex items-center justify-end gap-2">
+          <button 
+            onClick={() => openEdit(p)}
+            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+            title="Edit Parameter"
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => handleToggleActive(p)}
+            className={`p-2 rounded-lg transition-all ${p.isActive ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50' : 'text-slate-400 hover:text-green-600 hover:bg-green-50'}`}
+            title={p.isActive ? "Archive Parameter" : "Activate Parameter"}
+          >
+            <Archive className="w-4 h-4" />
+          </button>
+        </div>
+      )
+    }
   ];
-
-  const handleEdit = (param: any) => {
-    setEditingParam(param);
-    document.getElementById('param-form')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleAdd = () => {
-    setEditingParam(null);
-    document.getElementById('param-form')?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   return (
     <AdminLayout>
-      <div className="space-y-10 pb-20">
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Lab Investigation Master</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Diagnostic Parameter Configuration</p>
-          </div>
-          <button 
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-black transition-all shadow-lg shadow-slate-200 uppercase tracking-widest"
+      <div className="space-y-8 pb-20">
+        <AdminPageHeader
+          title="Lab Investigation Master"
+          subtitle={`${total} parameters configured`}
+          actions={[
+            {
+              label: 'Add Category',
+              onClick: handleCreateCategory,
+              variant: 'secondary',
+            },
+            {
+              label: 'Add Parameter',
+              onClick: openCreate,
+              variant: 'primary',
+            }
+          ]}
+        />
+
+        <AdminToolbar
+          searchQuery={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search parameters..."
+          onRefresh={refresh}
+          filters={[
+            {
+              value: filterCat,
+              onChange: setFilterCat,
+              options: categories.map(c => ({ value: c.id, label: c.name })),
+              placeholder: 'All Categories'
+            }
+          ]}
+        />
+
+        <AdminDataTable
+          data={parameters}
+          columns={tableColumns}
+          loading={loading}
+          totalItems={total}
+          totalPages={totalPages}
+          page={page}
+          onPageChange={setPage}
+          emptyIcon={<FlaskConical className="w-10 h-10 text-slate-200 mx-auto mb-3" />}
+          emptyText="No parameters found"
+          rowKey={(p) => p.id}
+        />
+
+        {showForm && (
+          <AdminFormWrapper
+            title={form.id ? 'Parameter' : 'Parameter'}
+            onClose={() => setShowForm(false)}
+            onSubmit={handleSubmit}
+            isEditing={!!form.id}
+            submitting={submitting}
           >
-            <Plus className="w-4 h-4" />
-            + Add Parameter
-          </button>
-        </div>
-
-        {/* Lab Parameters Table */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-slate-100">
-                  <th className="px-8 py-5">Group</th>
-                  <th className="px-8 py-5">Parameter</th>
-                  <th className="px-8 py-5">Unit</th>
-                  <th className="px-8 py-5">Normal (M)</th>
-                  <th className="px-8 py-5">Normal (F)</th>
-                  <th className="px-8 py-5">Normal (C)</th>
-                  <th className="px-8 py-5 text-center">Crit Low</th>
-                  <th className="px-8 py-5 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {parameters.map((p, idx) => (
-                  <tr key={idx} className={`hover:bg-slate-50/50 transition-colors group ${p.status === 'Inactive' ? 'opacity-40 grayscale' : ''}`}>
-                    <td className="px-8 py-5">
-                      <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
-                        {p.group}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-sm font-extrabold text-slate-800">{p.name}</td>
-                    <td className="px-8 py-5 text-xs font-black text-slate-400 uppercase tracking-wider italic">{p.unit}</td>
-                    <td className="px-8 py-5 text-xs font-bold text-slate-600">{p.male}</td>
-                    <td className="px-8 py-5 text-xs font-bold text-slate-600">{p.female}</td>
-                    <td className="px-8 py-5 text-xs font-bold text-slate-600">{p.child}</td>
-                    <td className="px-8 py-5 text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <span className="text-rose-600 font-black text-xs">{p.critLow}</span>
-                        {p.critLow !== '0' && (
-                          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-100 rounded text-[8px] font-black uppercase tracking-tighter">
-                            <ShieldAlert className="w-2 h-2" />
-                            Red Flag
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button onClick={() => handleEdit(p)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                          p.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400 border border-slate-200'
-                        }`}>
-                          {p.status}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-8 py-4 bg-slate-50/30 border-t border-slate-50">
-             <div className="flex items-start gap-3">
-                <Info className="w-4 h-4 text-blue-500 mt-0.5" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-relaxed">
-                  Note: Inactive parameters are hidden from doctor's investigation search. Critical thresholds trigger real-time red flag indicators in the doctor's module.
-                </p>
-             </div>
-          </div>
-        </div>
-
-        {/* 🔷 Add / Edit Parameter Form */}
-        <div id="param-form" className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden scroll-mt-24">
-          <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.1em]">
-              {editingParam ? 'Edit Parameter Configuration' : 'Add / Edit Parameter'}
-            </h3>
-            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              <FlaskConical className="w-3.5 h-3.5" />
-              Diagnostic Standards Data
-            </div>
-          </div>
-
-          <div className="p-10 space-y-10">
-            {/* Row 1: Primary Info */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Test Group (Dropdown)</label>
-                <div className="relative">
-                  <select className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 transition-all text-sm font-bold appearance-none cursor-pointer" defaultValue={editingParam?.group}>
-                    <option>Select Group</option>
-                    <option>CBC</option>
-                    <option>Blood Sugar</option>
-                    <option>Thyroid</option>
-                    <option>LFT</option>
-                    <option>RFT</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Category *</label>
+                <select value={form.categoryId}
+                  onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold appearance-none outline-none focus:border-indigo-400 transition-all cursor-pointer">
+                  <option value="">Select category</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
-              <div className="space-y-2 lg:col-span-1">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parameter Name</label>
-                <input 
-                  type="text" 
-                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
-                  defaultValue={editingParam?.name}
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Parameter Name *</label>
+                <input type="text" value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Haemoglobin"
-                />
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-indigo-400 transition-all" />
               </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Short Code</label>
+                <input type="text" value={form.code}
+                  onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
+                  placeholder="e.g. HGB"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-indigo-400 transition-all" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
               <div className="space-y-2">
                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Unit</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingParam?.unit} placeholder="g/dL" />
+                <input type="text" value={form.unit}
+                  onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                  placeholder="g/dL"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-indigo-400 transition-all" />
               </div>
               <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Display Order</label>
-                <input type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" placeholder="1" />
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Base Price (₹)</label>
+                <input type="number" value={form.basePrice}
+                  onChange={e => setForm(f => ({ ...f, basePrice: parseFloat(e.target.value) || 0 }))}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-indigo-400 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <ShieldAlert className="w-3 h-3 text-rose-500" /> Critical Low
+                </label>
+                <input type="number" value={form.criticalLow}
+                  onChange={e => setForm(f => ({ ...f, criticalLow: e.target.value }))}
+                  placeholder="e.g. 7"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-rose-400 transition-all" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <AlertOctagon className="w-3 h-3 text-amber-500" /> Critical High
+                </label>
+                <input type="number" value={form.criticalHigh}
+                  onChange={e => setForm(f => ({ ...f, criticalHigh: e.target.value }))}
+                  placeholder="Optional"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-amber-400 transition-all" />
               </div>
             </div>
 
-            {/* Row 2: Normal Ranges */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  Normal Range – Male
-                </label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingParam?.male} placeholder="13.5-17.5" />
+            <div className="flex items-center gap-3 cursor-pointer mt-6">
+              <div className="relative">
+                <input type="checkbox" className="sr-only peer" checked={form.isActive}
+                  onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} />
+                <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Normal Range – Female</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingParam?.female} placeholder="11.5-15.5" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Normal Range – Child</label>
-                <input type="text" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingParam?.child} placeholder="11-16" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Active (Y/N)</label>
-                <div className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked={editingParam?.status === 'Active'} />
-                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                  </label>
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Parameter</span>
-                </div>
-              </div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Parameter</span>
             </div>
-
-            {/* Row 3: Critical Thresholds */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <AlertOctagon className="w-3.5 h-3.5 text-rose-500" />
-                  Critical Low Threshold
-                </label>
-                <input type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" defaultValue={editingParam?.critLow} placeholder="e.g. 7" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                  Critical High Threshold
-                </label>
-                <input type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" placeholder="Optional" />
-              </div>
-              <div className="flex justify-end">
-                <button className="px-16 py-4 bg-slate-900 text-white font-black rounded-xl text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-[0.2em]">
-                  SAVE PARAMETER
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+          </AdminFormWrapper>
+        )}
       </div>
     </AdminLayout>
   );
 };
 
 export default LabMasterView;
+

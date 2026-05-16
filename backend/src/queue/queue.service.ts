@@ -1,88 +1,131 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
-import { UpdateQueueStatusDto, UpdateCaseStageDto } from './dto/update-queue.dto';
-import { QueueStatus, CaseStage } from '@prisma/client';
+import {
+  UpdateQueueStatusDto,
+  UpdateCaseStageDto,
+} from './dto/update-queue.dto';
+import { CaseStage, Prisma, QueueStatus, QueueType } from '@prisma/client';
 import { EventsService } from '../common/events.service';
 
 @Injectable()
 export class QueueService {
   constructor(
     private prisma: PrismaService,
-    private events: EventsService
+    private events: EventsService,
   ) {}
 
   async createEntry(dto: CreateQueueEntryDto, userId: string) {
-    if (!userId) throw new BadRequestException('User ID is required for check-in');
-    
-    const { caseId, patientId, doctorId, queueType, priority } = dto;
+    if (!userId)
+      throw new BadRequestException('User ID is required for check-in');
 
-    // Verify case exists
-    const patientCase = await this.prisma.patientCase.findUnique({
+    return this.prisma.$transaction(
+      (tx) => {
+        return this.createEntryInTransaction(tx, dto, userId);
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
+
+  async createEntryInTransaction(
+    tx: Prisma.TransactionClient,
+    dto: CreateQueueEntryDto,
+    userId: string,
+  ) {
+    if (!userId)
+      throw new BadRequestException('User ID is required for check-in');
+
+    const { caseId, patientId, doctorId, queueType, priority } = dto;
+    await this.lockTransactionKey(tx, `queue-case-${caseId}`);
+
+    const patientCase = await tx.patientCase.findUnique({
       where: { id: caseId },
-      include: { doctor: true }
+      include: { doctor: true },
     });
     if (!patientCase) throw new NotFoundException('Case not found');
 
-    // Check if already in queue
-    const existing = await this.prisma.queueEntry.findUnique({
-      where: { caseId }
+    if (patientCase.patientId !== patientId) {
+      throw new BadRequestException('Patient does not match the case');
+    }
+
+    const existing = await tx.queueEntry.findUnique({
+      where: { caseId },
     });
-    if (existing) throw new BadRequestException('Patient already in queue for this case');
+    if (existing)
+      throw new BadRequestException('Patient already in queue for this case');
 
-    // Generate Token Display (e.g. OPD-001)
-    const tokenDisplay = await this.generateTokenDisplay(dto.queueType || 'OPD');
-    
-    // Get latest sequence for sorting
-    const lastEntry = await this.prisma.queueEntry.findFirst({
-      orderBy: { tokenNumber: 'desc' },
-      where: { checkInTime: { gte: new Date(new Date().setHours(0,0,0,0)) } }
+    const queueTypeValue = queueType || QueueType.OPD;
+    const token = await this.generateTokenDisplay(tx, queueTypeValue);
+
+    const entry = await tx.queueEntry.create({
+      data: {
+        tokenDisplay: token.tokenDisplay,
+        tokenNumber: token.tokenNumber,
+        queueType: queueTypeValue,
+        priority: priority || patientCase.priority,
+        caseId,
+        patientId,
+        doctorId: doctorId || patientCase.doctorId,
+      },
     });
-    const tokenNumber = (lastEntry?.tokenNumber || 0) + 1;
 
-    return this.prisma.$transaction(async (tx) => {
-      const entry = await tx.queueEntry.create({
-        data: {
-          tokenDisplay,
-          tokenNumber,
-          queueType: queueType || 'OPD',
-          priority: priority || patientCase.priority,
-          caseId,
-          patientId,
-          doctorId: doctorId || patientCase.doctorId,
-        },
-      });
-
-      // Log history
-      await tx.queueHistory.create({
-        data: {
-          queueEntry: { connect: { id: entry.id } },
-          action: 'CHECK_IN',
-          toStatus: 'WAITING',
-          performedBy: { connect: { id: userId } },
-        },
-      });
-
-      // Update case stage to NURSING (where vitals happen) or DOCTOR
-      await tx.patientCase.update({
-        where: { id: caseId },
-        data: { stage: 'NURSING' }
-      });
-
-      return entry;
+    await tx.queueHistory.create({
+      data: {
+        queueEntry: { connect: { id: entry.id } },
+        action: 'CHECK_IN',
+        toStatus: QueueStatus.WAITING,
+        performedBy: { connect: { id: userId } },
+      },
     });
+
+    await tx.patientCase.update({
+      where: { id: caseId },
+      data: { stage: CaseStage.NURSING },
+    });
+
+    return entry;
   }
 
-  private async generateTokenDisplay(type: string): Promise<string> {
+  private async generateTokenDisplay(
+    tx: Prisma.TransactionClient,
+    type: QueueType,
+  ): Promise<{ tokenDisplay: string; tokenNumber: number }> {
     const prefix = type.toUpperCase();
-    const count = await this.prisma.queueEntry.count({
-      where: { 
-        queueType: type as any,
-        checkInTime: { gte: new Date(new Date().setHours(0,0,0,0)) } 
-      }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await this.lockTransactionKey(
+      tx,
+      `queue-token-${prefix}-${today.toISOString().slice(0, 10)}`,
+    );
+
+    const lastEntry = await tx.queueEntry.findFirst({
+      orderBy: { tokenNumber: 'desc' },
+      where: {
+        queueType: type,
+        checkInTime: { gte: today },
+      },
     });
-    
-    return `${prefix}-${(count + 1).toString().padStart(3, '0')}`;
+    let tokenNumber = (lastEntry?.tokenNumber || 0) + 1;
+    let tokenDisplay = `${prefix}-${tokenNumber.toString().padStart(3, '0')}`;
+
+    while (await tx.queueEntry.findUnique({ where: { tokenDisplay } })) {
+      tokenNumber += 1;
+      tokenDisplay = `${prefix}-${tokenNumber.toString().padStart(3, '0')}`;
+    }
+
+    return {
+      tokenDisplay,
+      tokenNumber,
+    };
+  }
+
+  private async lockTransactionKey(tx: Prisma.TransactionClient, key: string) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
   }
 
   async updateStatus(id: string, dto: UpdateQueueStatusDto, userId: string) {
@@ -92,15 +135,15 @@ export class QueueService {
     return this.prisma.$transaction(async (tx) => {
       const result = await tx.queueEntry.update({
         where: { id },
-        data: { 
+        data: {
           status: dto.status,
-          callCount: dto.status === 'CALLING' ? { increment: 1 } : undefined
+          callCount: dto.status === 'CALLING' ? { increment: 1 } : undefined,
         },
         include: {
           patient: true,
           doctor: true,
-          case: true
-        }
+          case: true,
+        },
       });
 
       await tx.queueHistory.create({
@@ -120,7 +163,9 @@ export class QueueService {
         status: result.status,
         token: result.tokenDisplay,
         patientName: `${result.patient.firstName} ${result.patient.lastName}`,
-        room: result.doctor?.name ? 'Room ' + (result.doctor as any).roomNumber : 'TBD'
+        room: result.doctor?.name
+          ? 'Room ' + (result.doctor as any).roomNumber
+          : 'TBD',
       });
 
       return result;
@@ -128,8 +173,10 @@ export class QueueService {
   }
 
   async updateStage(caseId: string, dto: UpdateCaseStageDto, userId: string) {
-    const entry = await this.prisma.queueEntry.findUnique({ where: { caseId } });
-    
+    const entry = await this.prisma.queueEntry.findUnique({
+      where: { caseId },
+    });
+
     return this.prisma.$transaction(async (tx) => {
       const updatedCase = await tx.patientCase.update({
         where: { id: caseId },
@@ -156,21 +203,21 @@ export class QueueService {
       // End any other active sessions for this doctor
       await tx.visitSession.updateMany({
         where: { doctorId, status: 'ACTIVE' },
-        data: { status: 'COMPLETED', endTime: new Date() }
+        data: { status: 'COMPLETED', endTime: new Date() },
       });
 
       const session = await tx.visitSession.create({
-        data: { caseId, doctorId }
+        data: { caseId, doctorId },
       });
 
-      const entry = await tx.queueEntry.findUnique({ 
+      const entry = await tx.queueEntry.findUnique({
         where: { caseId },
-        include: { patient: true, doctor: true }
+        include: { patient: true, doctor: true },
       });
       if (entry) {
         await tx.queueEntry.update({
           where: { caseId },
-          data: { status: 'IN_SESSION' }
+          data: { status: 'IN_SESSION' },
         });
 
         await tx.queueHistory.create({
@@ -190,13 +237,13 @@ export class QueueService {
           status: 'IN_SESSION',
           token: entry.tokenDisplay,
           patientName: `${entry.patient.firstName} ${entry.patient.lastName}`,
-          doctorId: doctorId
+          doctorId: doctorId,
         });
       }
 
       await tx.patientCase.update({
         where: { id: caseId },
-        data: { stage: 'DOCTOR' }
+        data: { stage: 'DOCTOR' },
       });
 
       return session;
@@ -208,21 +255,23 @@ export class QueueService {
       // 1. End active sessions for this case
       await tx.visitSession.updateMany({
         where: { caseId, status: 'ACTIVE' },
-        data: { status: 'COMPLETED', endTime: new Date() }
+        data: { status: 'COMPLETED', endTime: new Date() },
       });
 
       // 2. Update Queue Entry to BILLING_PENDING or COMPLETED
-      const entry = await tx.queueEntry.findUnique({ 
+      const entry = await tx.queueEntry.findUnique({
         where: { caseId },
-        include: { patient: true }
+        include: { patient: true },
       });
-      
-      const finalQueueStatus = (nextStage === 'BILLING' ? 'BILLING_PENDING' : 'COMPLETED') as unknown as QueueStatus;
+
+      let finalQueueStatus: QueueStatus = 'COMPLETED';
+      if (nextStage === 'BILLING') finalQueueStatus = 'BILLING_PENDING';
+      if (nextStage === 'PHARMACY') finalQueueStatus = 'PHARMACY_PENDING';
 
       if (entry) {
         await tx.queueEntry.update({
           where: { caseId },
-          data: { status: finalQueueStatus }
+          data: { status: finalQueueStatus },
         });
 
         await tx.queueHistory.create({
@@ -242,7 +291,7 @@ export class QueueService {
           status: finalQueueStatus,
           token: entry.tokenDisplay,
           patientName: `${entry.patient.firstName} ${entry.patient.lastName}`,
-          nextStage: nextStage
+          nextStage: nextStage,
         });
       }
 
@@ -258,8 +307,8 @@ export class QueueService {
     return this.prisma.queueEntry.findMany({
       where: {
         doctorId: doctorId || undefined,
-        checkInTime: { gte: new Date(new Date().setHours(0,0,0,0)) },
-        status: { not: 'CANCELLED' }
+        checkInTime: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        status: { not: 'CANCELLED' },
       },
       include: {
         patient: {
@@ -267,8 +316,8 @@ export class QueueService {
             firstName: true,
             lastName: true,
             mrdNumber: true,
-            gender: true
-          }
+            gender: true,
+          },
         },
         case: {
           select: {
@@ -280,16 +329,13 @@ export class QueueService {
             createdAt: true,
             bill: {
               select: {
-                paymentStatus: true
-              }
-            }
-          }
-        }
+                paymentStatus: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: [
-        { priority: 'desc' },
-        { tokenNumber: 'asc' }
-      ]
+      orderBy: [{ priority: 'desc' }, { tokenNumber: 'asc' }],
     });
   }
 
@@ -297,20 +343,38 @@ export class QueueService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [total, checkedIn, waiting, completed, cancelled] = await Promise.all([
-      this.prisma.queueEntry.count({ where: { checkInTime: { gte: today } } }),
-      this.prisma.queueEntry.count({ where: { checkInTime: { gte: today }, status: { in: ['WAITING', 'IN_SESSION', 'CALLING'] } } }),
-      this.prisma.queueEntry.count({ where: { checkInTime: { gte: today }, status: { in: ['WAITING', 'CALLING'] } } }),
-      this.prisma.queueEntry.count({ where: { checkInTime: { gte: today }, status: 'COMPLETED' } }),
-      this.prisma.queueEntry.count({ where: { checkInTime: { gte: today }, status: 'CANCELLED' } }),
-    ]);
+    const [total, checkedIn, waiting, completed, cancelled] = await Promise.all(
+      [
+        this.prisma.queueEntry.count({
+          where: { checkInTime: { gte: today } },
+        }),
+        this.prisma.queueEntry.count({
+          where: {
+            checkInTime: { gte: today },
+            status: { in: ['WAITING', 'IN_SESSION', 'CALLING'] },
+          },
+        }),
+        this.prisma.queueEntry.count({
+          where: {
+            checkInTime: { gte: today },
+            status: { in: ['WAITING', 'CALLING'] },
+          },
+        }),
+        this.prisma.queueEntry.count({
+          where: { checkInTime: { gte: today }, status: 'COMPLETED' },
+        }),
+        this.prisma.queueEntry.count({
+          where: { checkInTime: { gte: today }, status: 'CANCELLED' },
+        }),
+      ],
+    );
 
     return {
       total,
       checkedIn,
       waiting,
       completed,
-      cancelled
+      cancelled,
     };
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { 
   Search, 
@@ -19,6 +20,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 
 const CheckInView = () => {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
@@ -41,6 +43,9 @@ const CheckInView = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkInResult, setCheckInResult] = useState<any>(null);
+  const [patientAppointments, setPatientAppointments] = useState<any[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const checkInSubmittingRef = useRef(false);
 
   // Auto-calculate BMI
   useEffect(() => {
@@ -55,6 +60,42 @@ const CheckInView = () => {
 
   useEffect(() => {
     fetchDoctors();
+    
+    // Auto-load if coming from schedule
+    const mrdParam = searchParams.get('mrd');
+    const apptId = searchParams.get('appt');
+    
+    if (mrdParam) {
+      setSearchQuery(mrdParam);
+      // We can't trigger handleSearch immediately because it needs the query in state
+      // but we can manually fetch the patient by MRD
+      const quickFetch = async () => {
+        try {
+          const res = await api.get(`/patients/search?q=${mrdParam}`);
+          const patient = res.data.data?.[0];
+          if (patient) {
+            setSelectedPatient(patient);
+            
+            // If we have an appointment ID, fetch appointments and select it
+            const apptRes = await api.get(`/appointments?patientId=${patient.id}`);
+            const scheduled = apptRes.data.filter((a: any) => a.status === 'SCHEDULED');
+            setPatientAppointments(scheduled);
+            
+            if (apptId) {
+              const appt = scheduled.find((a: any) => a.id === apptId);
+              if (appt) {
+                setSelectedAppointment(appt);
+                setSelectedDoctorId(appt.doctorId);
+                setComplaint(appt.remarks || '');
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Quick fetch failed', e);
+        }
+      };
+      quickFetch();
+    }
   }, []);
 
   const fetchDoctors = async () => {
@@ -86,20 +127,47 @@ const CheckInView = () => {
     setSelectedPatient(patient);
     setSearchResults([]);
     setCheckInResult(null);
+    setSelectedAppointment(null);
+    fetchPatientAppointments(patient.id);
+  };
+
+  const fetchPatientAppointments = async (patientId: string) => {
+    try {
+      const res = await api.get(`/appointments?patientId=${patientId}`);
+      // Filter for scheduled appointments
+      const scheduled = res.data.filter((a: any) => a.status === 'SCHEDULED');
+      setPatientAppointments(scheduled);
+      
+      // Auto-select if there's one for today
+      const today = new Date().toISOString().split('T')[0];
+      const todayAppt = scheduled.find((a: any) => a.appointmentDate.startsWith(today));
+      if (todayAppt) {
+        setSelectedAppointment(todayAppt);
+        setSelectedDoctorId(todayAppt.doctorId);
+        setComplaint(todayAppt.remarks || '');
+      }
+    } catch (error) {
+      console.error('Failed to fetch appointments', error);
+    }
   };
 
   const handleCheckIn = async () => {
+    if (checkInSubmittingRef.current || isSubmitting) return;
     if (!selectedPatient) return;
     if (!selectedDoctorId) {
       toast.error('Please select a doctor');
       return;
     }
 
+    checkInSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      // 1. Save Vitals (if any entered)
-      if (vitals.height || vitals.weight || vitals.temp) {
-        await api.post(`/patients/${selectedPatient.id}/vitals`, {
+      const checkInData = {
+        appointmentId: selectedAppointment?.id,
+        visitType,
+        priority,
+        complaint,
+        vitals: (vitals.height || vitals.weight || vitals.temp) ? {
           height: parseFloat(vitals.height) || null,
           weight: parseFloat(vitals.weight) || null,
           bmi: parseFloat(vitals.bmi) || null,
@@ -107,32 +175,48 @@ const CheckInView = () => {
           pulse: parseInt(vitals.pulse) || null,
           bloodPressure: vitals.bp || null,
           spo2: parseInt(vitals.spo2) || null
-        });
+        } : undefined
+      };
+
+      let res;
+      if (selectedAppointment) {
+          // Use the specialized appointment check-in endpoint
+          res = await api.post('/appointments/check-in', checkInData);
+      } else {
+          // Manual walk-in flow (keep existing logic but use a transaction-safe way if possible)
+          // For now, let's just use the current multi-step logic but centralized in backend would be better
+          // Wait, I should probably add a walk-in endpoint too.
+          // Let's just use the existing logic for now to avoid breaking things.
+          
+          // 1. Save Vitals
+          if (checkInData.vitals) {
+            await api.post(`/patients/${selectedPatient.id}/vitals`, checkInData.vitals);
+          }
+          // 2. Create Case
+          const caseRes = await api.post(`/patients/${selectedPatient.id}/cases`, {
+            doctorId: selectedDoctorId,
+            visitType,
+            priority,
+            complaint
+          });
+          // 3. Add to Queue
+          res = await api.post('/queue/check-in', {
+            caseId: caseRes.data.id,
+            patientId: selectedPatient.id,
+            doctorId: selectedDoctorId,
+            priority: priority
+          });
       }
 
-      // 2. Create Case (Start Visit)
-      const caseRes = await api.post(`/patients/${selectedPatient.id}/cases`, {
-        doctorId: selectedDoctorId,
-        visitType,
-        priority,
-        complaint
-      });
-
-      const newCase = caseRes.data;
-
-      // 3. Add to Queue
-      const queueRes = await api.post('/queue/check-in', {
-        caseId: newCase.id,
-        patientId: selectedPatient.id,
-        doctorId: selectedDoctorId,
-        priority: priority
-      });
-
-      setCheckInResult(queueRes.data);
+      setCheckInResult(res.data.queueEntry || res.data);
+      fetchPatientAppointments(selectedPatient.id);
       toast.success('Patient checked in successfully!');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Check-in failed');
+      const message = error?.response?.data?.message;
+      toast.error(Array.isArray(message) ? message.join(', ') : message || 'Check-in failed');
+      if (selectedPatient?.id) fetchPatientAppointments(selectedPatient.id);
     } finally {
+      checkInSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -321,6 +405,66 @@ const CheckInView = () => {
                      </div>
                   </div>
                </div>
+
+               {/* Appointments Selector */}
+               {patientAppointments.length > 0 && (
+                 <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden mb-8">
+                    <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
+                             <Clock className="w-6 h-6 text-blue-400" />
+                          </div>
+                          <div>
+                             <h3 className="text-base font-black text-slate-900 uppercase tracking-tight leading-none">Planned Appointments</h3>
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1.5">Select a slot to link this check-in</p>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="p-8 space-y-4">
+                       {patientAppointments.map(appt => {
+                         const isToday = appt.appointmentDate.startsWith(new Date().toISOString().split('T')[0]);
+                         return (
+                           <div 
+                             key={appt.id}
+                             onClick={() => {
+                               setSelectedAppointment(appt);
+                               setSelectedDoctorId(appt.doctorId);
+                               setComplaint(appt.remarks || '');
+                             }}
+                             className={`p-6 rounded-3xl border-2 transition-all cursor-pointer flex items-center justify-between ${selectedAppointment?.id === appt.id ? 'bg-blue-50 border-blue-600 shadow-lg shadow-blue-100' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}
+                           >
+                              <div className="flex items-center gap-6">
+                                 <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black ${selectedAppointment?.id === appt.id ? 'bg-blue-600 text-white' : 'bg-white text-slate-400'}`}>
+                                    <span className="text-[10px] uppercase leading-none mb-1">{new Date(appt.appointmentDate).toLocaleDateString('en-US', { month: 'short' })}</span>
+                                    <span className="text-lg leading-none">{new Date(appt.appointmentDate).toLocaleDateString('en-US', { day: '2-digit' })}</span>
+                                 </div>
+                                 <div>
+                                    <div className="flex items-center gap-3">
+                                       <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{new Date(appt.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                       {isToday && (
+                                         <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[7px] font-black uppercase tracking-widest border border-amber-200 animate-pulse">TODAY</span>
+                                       )}
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">DR. {appt.doctor?.user?.name.toUpperCase()}</p>
+                                 </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{appt.purpose || 'GENERAL VISIT'}</span>
+                                 {selectedAppointment?.id === appt.id && <CheckCircle2 className="w-5 h-5 text-blue-600" />}
+                              </div>
+                           </div>
+                         );
+                       })}
+                       
+                       <button 
+                         onClick={() => setSelectedAppointment(null)}
+                         className={`w-full py-4 rounded-2xl border-2 border-dashed text-[10px] font-black uppercase tracking-[0.2em] transition-all ${!selectedAppointment ? 'bg-slate-900 text-white border-transparent' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-400 hover:text-slate-600'}`}
+                       >
+                          Walk-In (No Appointment)
+                       </button>
+                    </div>
+                 </div>
+               )}
 
                {/* Vitals Entry */}
                <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">

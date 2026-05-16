@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import LabReportManagementView from "@/views/nursing/lab-reports/page";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function LabReportsPage() {
-  return <LabReportManagementView />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LabReportManagementView />
+    </Suspense>
+  );
 }

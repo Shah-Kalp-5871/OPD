@@ -23,23 +23,24 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
+import { ROUTES, buildAppUrl } from '@/constants/routes';
 
 const menuItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' },
-  { label: 'Patient Mgmt', icon: Users, href: '/admin/patients' },
-  { label: 'Appointment Mgmt', icon: Calendar, href: '/admin/appointments' },
-  { label: 'Doctor Mgmt', icon: UserRound, href: '/admin/doctors' },
-  { label: 'Staff Mgmt', icon: BriefcaseMedical, href: '/admin/staff' },
-  { label: 'Billing', icon: ReceiptIndianRupee, href: '/admin/billing' },
-  { label: 'Drug Master', icon: Pill, href: '/admin/drugs' },
-  { label: 'Lab Master', icon: FlaskConical, href: '/admin/lab' },
-  { label: 'Procedure Master', icon: Stethoscope, href: '/admin/procedures' },
-  { label: 'Discounts', icon: Percent, href: '/admin/discounts' },
-  { label: 'Notifications', icon: Bell, href: '/admin/notifications' },
-  { label: 'Reports', icon: BarChart3, href: '/admin/reports' },
-  { label: 'Settings', icon: Settings, href: '/admin/settings' },
-  { label: 'Support', icon: LifeBuoy, href: '/admin/support' },
-  { label: 'My Profile', icon: UserCircle, href: '/admin/profile' },
+  { label: 'Dashboard', icon: LayoutDashboard, href: ROUTES.ADMIN_DASHBOARD },
+  { label: 'Patient Mgmt', icon: Users, href: ROUTES.ADMIN_PATIENTS },
+  { label: 'Appointment Mgmt', icon: Calendar, href: ROUTES.ADMIN_APPOINTMENTS },
+  { label: 'Doctor Mgmt', icon: UserRound, href: ROUTES.ADMIN_DOCTORS },
+  { label: 'Staff Mgmt', icon: BriefcaseMedical, href: ROUTES.ADMIN_STAFF },
+  { label: 'Billing', icon: ReceiptIndianRupee, href: ROUTES.ADMIN_BILLING },
+  { label: 'Drug Master', icon: Pill, href: ROUTES.ADMIN_DRUGS },
+  { label: 'Lab Master', icon: FlaskConical, href: ROUTES.ADMIN_LAB },
+  { label: 'Procedure Master', icon: Stethoscope, href: ROUTES.ADMIN_PROCEDURES },
+  { label: 'Discounts', icon: Percent, href: ROUTES.ADMIN_DISCOUNTS },
+  { label: 'Notifications', icon: Bell, href: ROUTES.ADMIN_NOTIFICATIONS },
+  { label: 'Reports', icon: BarChart3, href: ROUTES.ADMIN_REPORTS },
+  { label: 'Settings', icon: Settings, href: ROUTES.ADMIN_SETTINGS },
+  { label: 'Support', icon: LifeBuoy, href: ROUTES.ADMIN_SUPPORT },
+  { label: 'My Profile', icon: UserCircle, href: ROUTES.ADMIN_PROFILE },
 ];
 
 const AdminSidebar = () => {
@@ -49,7 +50,7 @@ const AdminSidebar = () => {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push(ROUTES.LOGIN);
   };
 
   return (

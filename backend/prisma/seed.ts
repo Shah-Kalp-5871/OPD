@@ -4,20 +4,48 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Starting seeding...');
+  console.log('Starting Master Database Reset & Seed...');
 
-  const password = await bcrypt.hash('password123', 10);
+  // 0. Clear Database (Reverse order of dependencies)
+  console.log('Cleaning existing data...');
+  await prisma.auditLog.deleteMany();
+  await prisma.activityLog.deleteMany();
+  await prisma.queueHistory.deleteMany();
+  await prisma.queueCall.deleteMany();
+  await prisma.queueEntry.deleteMany();
+  await prisma.billPayment.deleteMany();
+  await prisma.billItem.deleteMany();
+  await prisma.bill.deleteMany();
+  await prisma.prescriptionItem.deleteMany();
+  await prisma.prescription.deleteMany();
+  await prisma.investigationOrder.deleteMany();
+  await prisma.patientVitals.deleteMany();
+  await prisma.patientCase.deleteMany();
+  await prisma.patient.deleteMany();
+  await prisma.doctorProfile.deleteMany();
+  await prisma.nurseProfile.deleteMany();
+  await prisma.medicalProfile.deleteMany();
+  await prisma.adminProfile.deleteMany();
+  await prisma.receptionProfile.deleteMany();
+  await prisma.user.deleteMany();
+
+  const password = await bcrypt.hash('123456', 10);
 
   // 1. Create Users & Profiles
-  console.log('Creating users and profiles...');
+  console.log('Creating fresh users and profiles...');
 
   // Admin
   await prisma.user.upsert({
-    where: { email: 'admin@opd.com' },
-    update: {},
+    where: { email: 'admin@clinic.com' },
+    update: {
+      isActive: true,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      password: password,
+    },
     create: {
       name: 'System Admin',
-      email: 'admin@opd.com',
+      email: 'admin@clinic.com',
       password: password,
       role: Role.ADMIN,
       adminProfile: { create: { notes: 'Global System Administrator' } },
@@ -26,26 +54,30 @@ async function main() {
 
   // Reception
   await prisma.user.upsert({
-    where: { email: 'reception@opd.com' },
-    update: {},
+    where: { email: 'reception@clinic.com' },
+    update: {
+      isActive: true,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      password: password,
+    },
     create: {
       name: 'Riya Patel',
-      email: 'reception@opd.com',
+      email: 'reception@clinic.com',
       password: password,
       role: Role.RECEPTION,
       mobile: '+91 9876543210',
       receptionProfile: { create: { salary: 25000, overtimeRate: 150 } },
     },
-
   });
 
   // Doctors
   const drShah = await prisma.user.upsert({
-    where: { email: 'doctor.shah@opd.com' },
+    where: { email: 'doctor.shah@clinic.com' },
     update: {},
     create: {
       name: 'Dr. Arvind Shah',
-      email: 'doctor.shah@opd.com',
+      email: 'doctor.shah@clinic.com',
       password: password,
       role: Role.DOCTOR,
       doctorProfile: {
@@ -64,11 +96,11 @@ async function main() {
   });
 
   const drMehta = await prisma.user.upsert({
-    where: { email: 'doctor.mehta@opd.com' },
+    where: { email: 'doctor.mehta@clinic.com' },
     update: {},
     create: {
       name: 'Dr. Sneha Mehta',
-      email: 'doctor.mehta@opd.com',
+      email: 'doctor.mehta@clinic.com',
       password: password,
       role: Role.DOCTOR,
       doctorProfile: {
@@ -86,26 +118,49 @@ async function main() {
 
   // Nurse
   await prisma.user.upsert({
-    where: { email: 'nurse.jane@opd.com' },
+    where: { email: 'nurse.jane@clinic.com' },
     update: {},
     create: {
       name: 'Nurse Jane Doe',
-      email: 'nurse.jane@opd.com',
+      email: 'nurse.jane@clinic.com',
       password: password,
       role: Role.NURSING,
       nurseProfile: { create: { department: 'OPD', salary: 30000, overtimeRate: 200 } },
     },
   });
 
-  // Pharmacist/Medical
+  // Generic Doctor for testing
   await prisma.user.upsert({
-    where: { email: 'pharmacist@opd.com' },
+    where: { email: 'doctor@clinic.com' },
     update: {},
     create: {
-      name: 'Rahul Sharma',
-      email: 'pharmacist@opd.com',
+      name: 'Dr. Test User',
+      email: 'doctor@clinic.com',
+      password: password,
+      role: Role.DOCTOR,
+      doctorProfile: {
+        create: {
+          specialization: 'General Practice',
+          consultationFee: 300,
+          licenseNumber: 'GMC-TEST',
+          availableDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
+          morningStart: '08:00',
+          morningEnd: '20:00',
+        },
+      },
+    },
+  });
+
+  // Pharmacist/Medical
+  await prisma.user.upsert({
+    where: { email: 'medical@clinic.com' },
+    update: {},
+    create: {
+      name: 'Pharmacist John',
+      email: 'medical@clinic.com',
       password: password,
       role: Role.MEDICAL,
+      mobile: '+91 8888888888',
       medicalProfile: { create: { isPharmacist: true, salary: 28000, overtimeRate: 180 } },
     },
   });
@@ -227,6 +282,72 @@ async function main() {
       }
     }
   });
+
+  // 4. Create Lab Masters
+  console.log('Creating lab masters...');
+  const hematology = await prisma.labCategory.upsert({
+    where: { name: 'HEMATOLOGY' },
+    update: {},
+    create: {
+      name: 'HEMATOLOGY',
+      parameters: {
+        create: [
+          { name: 'Complete Blood Count (CBC)', code: 'CBC', basePrice: 450 },
+          { name: 'Hemoglobin (Hb)', code: 'HB', basePrice: 150 },
+          { name: 'ESR', code: 'ESR', basePrice: 100 },
+        ]
+      }
+    }
+  });
+
+  const biochemistry = await prisma.labCategory.upsert({
+    where: { name: 'BIOCHEMISTRY' },
+    update: {},
+    create: {
+      name: 'BIOCHEMISTRY',
+      parameters: {
+        create: [
+          { name: 'Liver Function Test (LFT)', code: 'LFT', basePrice: 850 },
+          { name: 'Kidney Function Test (KFT)', code: 'KFT', basePrice: 750 },
+          { name: 'Blood Sugar (Fasting)', code: 'BSF', basePrice: 120 },
+          { name: 'Lipid Profile', code: 'LIPID', basePrice: 1200 },
+        ]
+      }
+    }
+  });
+
+  const radiology = await prisma.labCategory.upsert({
+    where: { name: 'RADIOLOGY' },
+    update: {},
+    create: {
+      name: 'RADIOLOGY',
+      parameters: {
+        create: [
+          { name: 'Chest X-Ray PA View', code: 'XRAY-CHEST', basePrice: 600 },
+          { name: 'USG Abdomen', code: 'USG-ABD', basePrice: 1500 },
+        ]
+      }
+    }
+  });
+  
+  // 5. Create Procedure Masters
+  console.log('Creating procedure masters...');
+  const procedures = [
+    { name: 'Wound Dressing (Minor)', category: 'GENERAL', code: 'PROC-WD-01', basePrice: 200, estimatedDuration: 15 },
+    { name: 'Wound Dressing (Major)', category: 'GENERAL', code: 'PROC-WD-02', basePrice: 500, estimatedDuration: 30 },
+    { name: 'Suturing (Small)', category: 'MINOR_SURGERY', code: 'PROC-SUT-01', basePrice: 1200, estimatedDuration: 20 },
+    { name: 'Incision & Drainage', category: 'MINOR_SURGERY', code: 'PROC-ID', basePrice: 2500, estimatedDuration: 45 },
+    { name: 'Nebulization', category: 'RESPIRATORY', code: 'PROC-NEB', basePrice: 150, estimatedDuration: 15 },
+    { name: 'ECG', category: 'DIAGNOSTIC', code: 'PROC-ECG', basePrice: 350, estimatedDuration: 10 },
+  ];
+
+  for (const proc of procedures) {
+    await prisma.procedure.upsert({
+      where: { code: proc.code },
+      update: proc,
+      create: proc
+    });
+  }
 
   console.log('Seeding completed successfully!');
 }

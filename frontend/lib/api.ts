@@ -1,11 +1,31 @@
 import axios from 'axios';
+import { ROUTES, buildAppUrl } from '@/constants/routes';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
+
+export const secureFileUrl = (url: string) => {
+  if (!url) return url;
+  let resolvedUrl = url;
+
+  if (typeof window !== 'undefined') {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+
+    if (url.startsWith('/')) {
+      resolvedUrl = `${baseUrl.replace(/\/$/, '')}${url}`;
+    } else if (!/^https?:\/\//i.test(url)) {
+      resolvedUrl = `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\/+/, '')}`;
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      return `${resolvedUrl}${resolvedUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+    }
+  }
+
+  return resolvedUrl;
+};
 
 // Add a request interceptor to include the JWT token
 api.interceptors.request.use((config) => {
@@ -33,8 +53,10 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('auth-storage'); // Zustand persist key
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+        
+        const loginUrl = buildAppUrl(ROUTES.LOGIN);
+        if (!window.location.pathname.includes(loginUrl)) {
+          window.location.href = loginUrl;
         }
       }
     }

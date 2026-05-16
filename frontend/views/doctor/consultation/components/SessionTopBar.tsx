@@ -6,23 +6,32 @@ import {
   Shield, 
   RefreshCcw,
   MoreVertical,
-  ChevronLeft
+  ChevronLeft,
+  Calendar,
+  User
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { Button, Badge } from './ClinicalDesignSystem';
 
 interface SessionTopBarProps {
   caseNumber: string;
   doctorName: string;
   saving: boolean;
   lastSaved: Date | null;
+  patientName?: string;
+  mrdNumber?: string;
+  visitType?: string;
 }
 
 const SessionTopBar: React.FC<SessionTopBarProps> = ({ 
   caseNumber, 
   doctorName, 
   saving, 
-  lastSaved 
+  lastSaved,
+  patientName,
+  mrdNumber,
+  visitType = 'Consultation'
 }) => {
   const router = useRouter();
   const [timer, setTimer] = useState(0);
@@ -41,57 +50,74 @@ const SessionTopBar: React.FC<SessionTopBarProps> = ({
   };
 
   return (
-    <div className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 sticky top-0 z-50">
-      <div className="flex items-center gap-6">
+    <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-50 shadow-sm">
+      <div className="flex items-center gap-8">
         <button 
           onClick={() => router.back()}
-          className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors"
+          className="p-2.5 hover:bg-slate-50 border border-slate-100 rounded-xl text-slate-400 transition-all active:scale-95"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
         
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-400/10 px-2 py-0.5 rounded">Case Active</span>
-            <h1 className="text-white font-mono text-lg font-bold">{caseNumber}</h1>
+        <div className="flex items-center gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-slate-900 font-extrabold text-xl tracking-tight leading-none">{patientName || 'Patient Name'}</h1>
+              <Badge variant="blue">{visitType}</Badge>
+            </div>
+            <div className="flex items-center gap-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              <span className="flex items-center gap-1.5"><User className="w-3 h-3" /> {mrdNumber || 'MRD-0000'}</span>
+              <span className="flex items-center gap-1.5 text-blue-600/70"><Calendar className="w-3 h-3" /> Case: {caseNumber}</span>
+            </div>
           </div>
-          <p className="text-slate-500 text-[10px] uppercase font-bold tracking-tighter">Dr. {doctorName}</p>
         </div>
       </div>
 
       <div className="flex items-center gap-8">
-        {/* Consultation Timer */}
-        <div className="flex items-center gap-3 px-4 py-2 bg-slate-800/50 rounded-xl border border-slate-700">
-          <Clock className="w-4 h-4 text-indigo-400" />
-          <span className="text-white font-mono font-bold text-lg tabular-nums">
-            {formatTime(timer)}
-          </span>
-        </div>
-
-        {/* Status Indicators */}
-        <div className="flex items-center gap-4 border-l border-slate-800 pl-8">
-          <div className="flex items-center gap-2">
-            {saving ? (
-              <RefreshCcw className="w-4 h-4 text-amber-400 animate-spin" />
-            ) : (
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-            )}
-            <span className="text-xs text-slate-400">
-              {saving ? 'Autosaving...' : lastSaved ? `Synced at ${format(lastSaved, 'HH:mm:ss')}` : 'Draft Saved'}
+        {/* Sync Status */}
+        <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl">
+          {saving ? (
+            <RefreshCcw className="w-3.5 h-3.5 text-blue-500 animate-spin" />
+          ) : (
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+          )}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-0.5">
+              {saving ? 'Syncing...' : 'Encrypted & Synced'}
+            </span>
+            <span className="text-[11px] font-bold text-slate-600 tabular-nums leading-none">
+              {lastSaved ? format(lastSaved, 'HH:mm:ss') : '--:--:--'}
             </span>
           </div>
+        </div>
 
-          <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20 active:scale-95">
-            <Shield className="w-4 h-4" />
-            Finalize Consultation
-          </button>
+        {/* Timer */}
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-blue-50/50 border border-blue-100 rounded-2xl group transition-all hover:bg-blue-50">
+          <Clock className="w-4 h-4 text-blue-600 animate-pulse" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-blue-600/50 uppercase tracking-tighter leading-none mb-0.5">Duration</span>
+            <span className="text-blue-700 font-mono font-black text-lg tabular-nums leading-none tracking-tight">
+              {formatTime(timer)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 border-l border-slate-100 pl-8">
+          <Button 
+            variant="primary" 
+            size="lg" 
+            className="rounded-2xl h-12 px-8"
+            icon={<Shield className="w-4 h-4" />}
+          >
+            Finalize Visit
+          </Button>
           
-          <button className="p-2 text-slate-500 hover:bg-slate-800 rounded-lg">
+          <button className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-2xl transition-all active:scale-95">
             <MoreVertical className="w-5 h-5" />
           </button>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 

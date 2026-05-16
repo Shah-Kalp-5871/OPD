@@ -20,23 +20,33 @@ import {
   PhoneForwarded,
   ArrowRight
 } from 'lucide-react';
+import { useQueueSSE } from '@/hooks/useQueueSSE';
+import api from '@/lib/api';
+import Link from 'next/link';
 
 const NursingDashboard = () => {
   const [activeTab, setActiveTab] = useState('all');
+  const { entries: liveQueue, stats: liveStats } = useQueueSSE();
 
   const summaryCards = [
-    { label: "Today's Patients", value: '34', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: "Vitals Pending", value: '8', icon: Activity, color: 'text-rose-600', bg: 'bg-rose-50' },
-    { label: "F/U Calls Due", value: '5', icon: PhoneCall, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: "Reports to Upload", value: '3', icon: FileUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
+    { label: "Today's Patients", value: liveStats?.total || '0', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: "Vitals Pending", value: liveQueue.filter(e => e.case?.stage === 'NURSING').length.toString(), icon: Activity, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { label: "F/U Calls Due", value: '0', icon: PhoneCall, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: "Reports to Upload", value: '0', icon: FileUp, color: 'text-emerald-600', bg: 'bg-emerald-50' }
   ];
 
-  const todayPatients = [
-    { id: 'C001-001', name: 'Rameshbhai Patel', time: '09:00', vitals: 'Entered', fu: 'Completed', status: 'Completed', type: 'Consultation' },
-    { id: 'C002-001', name: 'Sneha Shah', time: '09:10', vitals: 'Entered', fu: 'In Progress', status: 'In Progress', type: 'Procedure' },
-    { id: 'C003-001', name: 'Mahesh Kumar', time: '09:20', vitals: 'Pending', fu: 'Waiting', status: 'Waiting', type: 'Consultation' },
-    { id: 'C004-001', name: 'Priya Desai', time: '09:30', vitals: 'Waiting', fu: '—', status: 'Waiting', type: 'New Case' },
-  ];
+  // Map backend entries to frontend display format
+  const todayPatients = liveQueue.map(entry => ({
+    id: entry.case?.caseNumber || 'N/A',
+    caseId: entry.caseId,
+    mrdNumber: entry.patient?.mrdNumber,
+    name: `${entry.patient?.firstName} ${entry.patient?.lastName}`,
+    time: new Date(entry.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    vitals: entry.case?.stage === 'NURSING' ? 'Pending' : 'Entered',
+    fu: '—',
+    status: entry.status,
+    type: entry.case?.visitType || 'Consultation'
+  }));
 
   const followUpCalls = [
     { priority: 1, name: 'Rameshbhai Patel', type: 'Consultation', lastVisit: '01/04/2026', status: 'Pending' },
@@ -162,10 +172,13 @@ const NursingDashboard = () => {
                          <td className="px-8 py-6 text-right">
                             <div className="flex items-center justify-end gap-2">
                                {patient.vitals === 'Pending' || patient.vitals === 'Waiting' ? (
-                                 <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-md shadow-blue-100 flex items-center gap-2">
+                                 <Link 
+                                   href={`/nursing/vitals?mrd=${patient.mrdNumber}&caseId=${patient.caseId}`}
+                                   className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-md shadow-blue-100 flex items-center gap-2"
+                                 >
                                     <Activity className="w-3.5 h-3.5" />
                                     Enter Vitals
-                                 </button>
+                                 </Link>
                                ) : (
                                  <button className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2">
                                     <FileUp className="w-3.5 h-3.5" />

@@ -1,6 +1,10 @@
-import { IsString, IsOptional, IsNumber, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsInt, IsUUID } from 'class-validator';
 
 export class AddVitalsDto {
+  @IsUUID()
+  @IsOptional()
+  caseId?: string;
+
   @IsNumber()
   @IsOptional()
   height?: number;

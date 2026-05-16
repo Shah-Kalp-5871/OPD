@@ -56,3 +56,11 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Local file uploads
+/uploads/*
+!/uploads/lab/
+!/uploads/clinical/
+!/uploads/consent/
+!/uploads/temp/
+!/uploads/*/.gitkeep

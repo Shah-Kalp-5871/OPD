@@ -1,0 +1,1365 @@
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+// ==========================================
+// GLOBAL ENUMS
+// ==========================================
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  RECEPTION
+  DOCTOR
+  NURSING
+  PHARMACY
+  LAB_TECHNICIAN
+  ACCOUNTANT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+}
+
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+  UNKNOWN
+}
+
+enum CasePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  EMERGENCY
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum QueueStatus {
+  WAITING
+  CALLED
+  IN_SESSION
+  SUSPENDED
+  COMPLETED
+  SKIPPED
+  BILLING_PENDING
+  PHARMACY_PENDING
+}
+
+enum BillStatus {
+  DRAFT
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  REFUNDED
+  CANCELLED
+  FOC
+}
+
+enum PaymentMode {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  UPI
+  BANK_TRANSFER
+  WALLET
+  INSURANCE
+  SPLIT
+}
+
+enum PaymentStatus {
+  SUCCESS
+  PENDING
+  FAILED
+  REFUNDED
+}
+
+enum ConsultationStatus {
+  DRAFT
+  IN_PROGRESS
+  PENDING_LAB
+  FINALIZED
+  SIGNED
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  EXPIRED
+  RECALLED
+}
+
+enum FollowupStatus {
+  SCHEDULED
+  COMPLETED
+  MISSED
+  RESCHEDULED
+  CANCELLED
+}
+
+enum InvestigationStatus {
+  ORDERED
+  SAMPLE_COLLECTED
+  IN_PROGRESS
+  RESULT_READY
+  VERIFIED
+  CANCELLED
+}
+
+enum ProcedureStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  COMPLICATION
+  CANCELLED
+}
+
+enum NotificationType {
+  SMS
+  WHATSAPP
+  EMAIL
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum ConsentStatus {
+  PENDING
+  SIGNED
+  REVOKED
+}
+
+enum Severity {
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+enum OnsetStatus {
+  SUDDEN
+  GRADUAL
+  CHRONIC
+}
+
+// ==========================================
+// A. SYSTEM & AUTH DOMAIN
+// ==========================================
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String
+  role               Role      @default(RECEPTION)
+  firstName          String
+  lastName           String
+  mobile             String?   @unique
+  isActive           Boolean   @default(true)
+  lastLoginAt        DateTime?
+  failedLoginAttempts Int      @default(0)
+  lockedUntil        DateTime?
+  
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime? // Soft Delete
+
+  // Relations
+  userSessions       UserSession[]
+  authorizedDevices  AuthorizedDevice[]
+  loginHistory       LoginHistory[]
+  activityLogs       ActivityLog[]
+  auditLogs          AuditLog[]
+  createdPatients    Patient[] @relation("PatientCreatedBy")
+  doctorProfile      DoctorProfile?
+  staffProfile       StaffProfile?
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  deviceInfo   String?
+  ipAddress    String?
+  expiresAt    DateTime
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model AuthorizedDevice {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceUuid   String   @unique
+  deviceName   String?
+  isTrusted    Boolean  @default(false)
+  lastUsedAt   DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model LoginHistory {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress    String?
+  userAgent    String?
+  status       String   // SUCCESS, FAILED, BLOCKED
+  attemptedAt  DateTime @default(now())
+}
+
+model OtpVerification {
+  id           String   @id @default(uuid())
+  mobile       String
+  otp          String
+  purpose      String   // LOGIN, PROFILE_EDIT, PAYMENT
+  expiresAt    DateTime
+  isUsed       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([mobile])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  entityType   String   // Patient, Bill, Prescription
+  entityId     String
+  action       String   // CREATE, UPDATE, DELETE
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model ActivityLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action       String
+  description  String?
+  createdAt    DateTime @default(now())
+}
+
+// ==========================================
+// B. CLINIC & ORGANIZATION DOMAIN
+// ==========================================
+
+model Clinic {
+  id           String   @id @default(uuid())
+  name         String
+  registrationNo String?
+  taxId        String?
+  logoUrl      String?
+  email        String?
+  phone        String?
+  address      String?
+  city         String?
+  state        String?
+  country      String?
+  zipCode      String?
+  isActive     Boolean  @default(true)
+  
+  branches     Branch[]
+  settings     ClinicSetting[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Branch {
+  id           String   @id @default(uuid())
+  clinicId     String
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name         String
+  branchCode   String   @unique
+  address      String?
+  phone        String?
+  isActive     Boolean  @default(true)
+  
+  departments  Department[]
+  rooms        Room[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Department {
+  id           String   @id @default(uuid())
+  branchId     String
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name         String
+  code         String?
+  isActive     Boolean  @default(true)
+
+  doctorProfiles DoctorProfile[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Room {
+  id           String   @id @default(uuid())
+  branchId     String
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name         String   // e.g. "Consultation Room 1"
+  roomType     String   // CONSULTATION, PROCEDURE, LAB
+  isActive     Boolean  @default(true)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model DoctorProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId      String?
+  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  
+  specialization    String?
+  licenseNumber     String?  @unique
+  baseConsultationFee Float  @default(0.0)
+  
+  appointmentGap    Int      @default(10) // minutes
+  slotDuration      Int      @default(15) // minutes
+  
+  schedules         DoctorSchedule[]
+  cases             PatientCase[]
+  appointments      Appointment[]
+  consultations     ConsultationRecord[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model StaffProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeCode      String?  @unique
+  designation       String?
+  baseSalary        Float    @default(0.0)
+  overtimeRate      Float    @default(0.0)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model DoctorSchedule {
+  id                String   @id @default(uuid())
+  doctorId          String
+  doctor            DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  dayOfWeek         Int      // 0 = Sunday, 1 = Monday
+  startTime         DateTime @db.Time
+  endTime           DateTime @db.Time
+  shiftType         String   // MORNING, EVENING
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ClinicSetting {
+  id                String   @id @default(uuid())
+  clinicId          String
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  settingKey        String   // e.g. "PRESCRIPTION_TEMPLATE", "TIMEZONE"
+  settingValue      String   // Stored as JSON or text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([clinicId, settingKey])
+}
+
+model Holiday {
+  id                String   @id @default(uuid())
+  date              DateTime @db.Date
+  name              String
+  isRecurring       Boolean  @default(false)
+  branchId          String? // Null implies all branches
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// C. PATIENT DOMAIN
+// ==========================================
+
+model Patient {
+  id                String   @id @default(uuid())
+  mrdNumber         String   @unique // e.g. P03-260001
+  firstName         String
+  middleName        String?
+  lastName          String
+  gender            Gender
+  dob               DateTime? @db.Date
+  bloodGroup        BloodGroup @default(UNKNOWN)
+  
+  mobile            String   @unique
+  email             String?
+  preferredLanguage String   @default("English")
+  
+  isFoc             Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  
+  createdById       String?
+  createdBy         User?    @relation("PatientCreatedBy", fields: [createdById], references: [id])
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime? // Soft Delete
+
+  // Sub-domains
+  profile           PatientProfile?
+  addresses         PatientAddress[]
+  guardians         PatientGuardian[]
+  documents         PatientDocument[]
+  flags             PatientFlag[]
+  allergies         PatientAllergy[]
+  history           PatientHistory?
+  insurance         PatientInsurance[]
+  notes             PatientNote[]
+
+  // Operations
+  appointments      Appointment[]
+  cases             PatientCase[]
+  vitals            PatientVital[]
+  bills             Bill[]
+  queueEntries      QueueEntry[]
+
+  @@index([firstName, lastName])
+  @@index([mobile])
+}
+
+model PatientProfile {
+  id                String   @id @default(uuid())
+  patientId         String   @unique
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  occupation        String?
+  maritalStatus     MaritalStatus @default(SINGLE)
+  emergencyContactName String?
+  emergencyContactNo String?
+  photoUrl          String?
+  profileCompletion Int      @default(20)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientAddress {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  addressLine1      String
+  addressLine2      String?
+  city              String
+  state             String
+  country           String   @default("India")
+  zipCode           String?
+  isPrimary         Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientGuardian {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  name              String
+  relationship      String
+  mobile            String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientDocument {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  documentType      String   // AADHAR, PAN, PASSPORT, OTHER
+  documentNumber    String?
+  fileUrl           String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientFlag {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  flagType          String   // VIP, CHRONIC_DEFAULTER, ALLERGIC, etc.
+  description       String?
+  colorCode         String?
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientAllergy {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  allergen          String
+  reaction          String?
+  severity          Severity @default(MODERATE)
+  isVerified        Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientHistory {
+  id                String   @id @default(uuid())
+  patientId         String   @unique
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  pastMedical       String?  @db.Text
+  pastSurgical      String?  @db.Text
+  familyHistory     String?  @db.Text
+  personalHistory   String?  @db.Text
+  obstetricHistory  String?  @db.Text // Female patients
+  currentMedications String? @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientInsurance {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  provider          String
+  policyNumber      String
+  validFrom         DateTime? @db.Date
+  validTill         DateTime? @db.Date
+  coverageAmount    Float?
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PatientNote {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  noteText          String   @db.Text
+  noteType          String   // CLINICAL, ADMINISTRATIVE, WARNING
+  createdById       String
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// D. APPOINTMENT DOMAIN
+// ==========================================
+
+model Appointment {
+  id                String   @id @default(uuid())
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId          String
+  doctor            DoctorProfile @relation(fields: [doctorId], references: [id])
+  
+  appointmentDate   DateTime @db.Date
+  appointmentTime   DateTime @db.Time
+  
+  purpose           String   // NEW_CONSULTATION, FOLLOW_UP, PROCEDURE, REPORT_REVIEW
+  status            AppointmentStatus @default(SCHEDULED)
+  
+  cancelReason      String?
+  remarks           String?
+  
+  // Link to generated Case when checked-in
+  caseId            String?  @unique
+  patientCase       PatientCase? @relation(fields: [caseId], references: [id])
+  
+  statusHistory     AppointmentStatusHistory[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model AppointmentStatusHistory {
+  id                String   @id @default(uuid())
+  appointmentId     String
+  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  
+  status            AppointmentStatus
+  changedById       String?
+  remarks           String?
+  
+  createdAt         DateTime @default(now())
+}
+
+model Followup {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  patientId         String
+  
+  dueDate           DateTime @db.Date
+  reason            String?
+  status            FollowupStatus @default(SCHEDULED)
+  priority          CasePriority @default(NORMAL)
+  
+  callOutcome       String?  // RESCHEDULED, NO_ANSWER, NOT_INTERESTED
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Reminder {
+  id                String   @id @default(uuid())
+  targetId          String   // e.g. Appointment ID or Followup ID
+  targetType        String   // APPOINTMENT, FOLLOWUP
+  
+  reminderTime      DateTime
+  type              NotificationType
+  status            NotificationStatus @default(PENDING)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// E. CLINICAL CASE DOMAIN (Visit Session)
+// ==========================================
+
+model PatientCase {
+  id                String   @id @default(uuid())
+  caseNumber        String   @unique // e.g. C001-001-130326
+  
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId          String
+  doctor            DoctorProfile @relation(fields: [doctorId], references: [id])
+  
+  appointment       Appointment?
+  
+  priority          CasePriority @default(NORMAL)
+  status            String   // OPEN, SUSPENDED, CLOSED
+  
+  checkInTime       DateTime?
+  closeTime         DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Sub-domains
+  statusHistory     CaseStatusHistory[]
+  notes             CaseNote[]
+  tags              CaseTag[]
+  
+  consultation      ConsultationRecord?
+  queueEntry        QueueEntry?
+  vitals            PatientVital[]
+  investigationOrders InvestigationOrder[]
+  prescriptions     Prescription[]
+  procedureSessions ProcedureSession[]
+  bills             Bill[]
+  followups         Followup[]
+}
+
+model CaseStatusHistory {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  status            String
+  changedById       String?
+  remarks           String?
+  
+  createdAt         DateTime @default(now())
+}
+
+model CaseNote {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  noteText          String   @db.Text
+  isInternal        Boolean  @default(true) // Hidden from print
+  authorId          String
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model CaseTag {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  tagName           String   // e.g. ASTHMA_RISK
+  
+  createdAt         DateTime @default(now())
+}
+
+// ==========================================
+// F. QUEUE ENGINE DOMAIN
+// ==========================================
+
+model QueueEntry {
+  id                String   @id @default(uuid())
+  caseId            String   @unique
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  tokenNumber       Int
+  tokenDisplay      String   // e.g. T-014
+  
+  status            QueueStatus @default(WAITING)
+  expectedTime      DateTime?
+  
+  callCount         Int      @default(0)
+  
+  history           QueueHistory[]
+  calls             QueueCall[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model QueueHistory {
+  id                String   @id @default(uuid())
+  queueId           String
+  queueEntry        QueueEntry @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  
+  fromStatus        QueueStatus?
+  toStatus          QueueStatus
+  action            String   // CHECK_IN, CALL, SKIP
+  performedById     String?
+  
+  createdAt         DateTime @default(now())
+}
+
+model QueueCall {
+  id                String   @id @default(uuid())
+  queueId           String
+  queueEntry        QueueEntry @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  
+  calledAt          DateTime @default(now())
+  roomName          String?
+  isResponded       Boolean  @default(false)
+}
+
+// ==========================================
+// G. NURSING & VITALS DOMAIN
+// ==========================================
+
+model PatientVital {
+  id                String   @id @default(uuid())
+  caseId            String?
+  patientCase       PatientCase? @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  height            Float?   // cm
+  weight            Float?   // kg
+  bmi               Float?
+  temperature       Float?   // F or C
+  pulse             Int?     // bpm
+  systolic          Int?     // mmHg
+  diastolic         Int?     // mmHg
+  spo2              Int?     // %
+  respiratoryRate   Int?
+  
+  takenById         String?
+  takenAt           DateTime @default(now())
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model TriageAssessment {
+  id                String   @id @default(uuid())
+  caseId            String   @unique
+  
+  painScore         Int?     // 1-10
+  consciousnessLevel String? // ALERT, VERBAL, PAIN, UNRESPONSIVE
+  triageCategory    String?  // RED, YELLOW, GREEN
+  notes             String?  @db.Text
+  
+  assessedById      String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// H. INVESTIGATION DOMAIN
+// ==========================================
+
+model LabCategory {
+  id                String   @id @default(uuid())
+  name              String   // CBC, LFT, RFT
+  description       String?
+  isActive          Boolean  @default(true)
+  
+  parameters        LabParameter[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model LabParameter {
+  id                String   @id @default(uuid())
+  categoryId        String
+  category          LabCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  name              String   // Haemoglobin, SGPT
+  unit              String?  // g/dL, U/L
+  displayOrder      Int      @default(0)
+  isActive          Boolean  @default(true)
+  
+  referenceRanges   LabReferenceRange[]
+  results           InvestigationResult[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model LabReferenceRange {
+  id                String   @id @default(uuid())
+  parameterId       String
+  parameter         LabParameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+  
+  gender            Gender?
+  minAgeDays        Int?
+  maxAgeDays        Int?
+  
+  normalMin         Float?
+  normalMax         Float?
+  criticalMin       Float?
+  criticalMax       Float?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model InvestigationOrder {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  orderedById       String
+  status            InvestigationStatus @default(ORDERED)
+  remarks           String?  @db.Text
+  
+  results           InvestigationResult[]
+  files             InvestigationFile[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model InvestigationResult {
+  id                String   @id @default(uuid())
+  orderId           String
+  order             InvestigationOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  parameterId       String
+  parameter         LabParameter @relation(fields: [parameterId], references: [id])
+  
+  numericValue      Float?
+  stringValue       String?
+  isAbnormal        Boolean  @default(false)
+  isCritical        Boolean  @default(false)
+  
+  enteredById       String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model InvestigationFile {
+  id                String   @id @default(uuid())
+  orderId           String
+  order             InvestigationOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  fileUrl           String
+  fileName          String?
+  uploadedById      String?
+  
+  createdAt         DateTime @default(now())
+}
+
+// ==========================================
+// I. PRESCRIPTION DOMAIN
+// ==========================================
+
+model Prescription {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  prescribedById    String
+  notes             String?  @db.Text
+  
+  items             PrescriptionItem[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PrescriptionItem {
+  id                String   @id @default(uuid())
+  prescriptionId    String
+  prescription      Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  
+  drugId            String?  // Link to Drug master if available
+  drugName          String   // Generic or Brand name
+  
+  dose              String   // e.g. 1 Tab, 5ml
+  frequency         String   // OD, BD, TDS
+  timing            String   // Before Food, After Food
+  route             String   // Oral, IV, Topical
+  durationDays      Int      // e.g. 5
+  totalQuantity     Int      // Auto calculated
+  
+  isSample          Boolean  @default(false) // If drug comes from Sample inventory
+  dispenseStatus    String   @default("PENDING") // PENDING, TAKEN, NOT_TAKEN, UNAVAILABLE
+  dispenseRemarks   String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// J. PROCEDURE DOMAIN
+// ==========================================
+
+model Procedure {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  code              String?  @unique
+  basePrice         Float    @default(0.0)
+  isActive          Boolean  @default(true)
+  
+  defaultConsentId  String?
+  
+  sessions          ProcedureSession[]
+  consumables       ProcedureConsumable[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ProcedureSession {
+  id                String   @id @default(uuid())
+  caseId            String
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  procedureId       String
+  procedure         Procedure @relation(fields: [procedureId], references: [id])
+  
+  sessionNumber     Int      @default(1)
+  totalSessions     Int      @default(1)
+  status            ProcedureStatus @default(SCHEDULED)
+  
+  notes             String?  @db.Text
+  performedById     String
+  
+  parameters        ProcedureParameter[]
+  images            ProcedureImage[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ProcedureParameter {
+  id                String   @id @default(uuid())
+  sessionId         String
+  session           ProcedureSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  key               String   // e.g. "Laser Power", "Spot Size"
+  value             String
+  
+  createdAt         DateTime @default(now())
+}
+
+model ProcedureConsumable {
+  id                String   @id @default(uuid())
+  procedureId       String
+  procedure         Procedure @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+  
+  itemId            String   // Link to Inventory
+  quantity          Float
+  
+  createdAt         DateTime @default(now())
+}
+
+model ProcedureImage {
+  id                String   @id @default(uuid())
+  sessionId         String
+  session           ProcedureSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  fileUrl           String
+  imageType         String   // BEFORE, AFTER, INTRA_OP
+  annotations       Json?
+  
+  createdAt         DateTime @default(now())
+}
+
+// ==========================================
+// K. IMAGE MANAGEMENT DOMAIN
+// ==========================================
+
+model ImageFolder {
+  id                String   @id @default(uuid())
+  patientId         String
+  name              String   // e.g. "Laser Treatment 2026"
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ComparisonSession {
+  id                String   @id @default(uuid())
+  patientId         String
+  beforeImageId     String
+  afterImageId      String
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+}
+
+// ==========================================
+// L. BILLING DOMAIN
+// ==========================================
+
+model Bill {
+  id                String   @id @default(uuid())
+  billNumber        String   @unique // e.g. RCP-0413-003
+  
+  patientId         String
+  patient           Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  caseId            String?
+  patientCase       PatientCase? @relation(fields: [caseId], references: [id])
+  
+  status            BillStatus @default(DRAFT)
+  
+  grossAmount       Float    @default(0.0)
+  discountAmount    Float    @default(0.0)
+  discountReason    String?
+  taxAmount         Float    @default(0.0)
+  netAmount         Float    @default(0.0)
+  
+  paidAmount        Float    @default(0.0)
+  balanceAmount     Float    @default(0.0)
+  
+  createdById       String
+  
+  items             BillItem[]
+  payments          BillPayment[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model BillItem {
+  id                String   @id @default(uuid())
+  billId            String
+  bill              Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  itemType          String   // CONSULTATION, PROCEDURE, LAB, DRUG, OTHER
+  referenceId       String?  // ID of the specific service/product
+  itemName          String
+  
+  quantity          Int      @default(1)
+  unitPrice         Float    @default(0.0)
+  discountAmount    Float    @default(0.0)
+  totalPrice        Float    @default(0.0)
+  
+  createdAt         DateTime @default(now())
+}
+
+model BillPayment {
+  id                String   @id @default(uuid())
+  billId            String
+  bill              Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  transactionId     String   @unique
+  paymentMode       PaymentMode
+  amount            Float
+  status            PaymentStatus @default(PENDING)
+  
+  referenceNumber   String?  // e.g. UPI Ref, Card last 4
+  gatewayResponse   Json?
+  
+  collectedById     String
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// M. PHARMACY DOMAIN
+// ==========================================
+
+model Drug {
+  id                String   @id @default(uuid())
+  genericName       String
+  brandName         String?
+  form              String   // Tablet, Syrup, Cream
+  strength          String?  // 500mg, 2%
+  
+  unitPrice         Float    @default(0.0)
+  taxRate           Float    @default(0.0)
+  
+  isSimpleDrug      Boolean  @default(false) // For (S) Samples
+  isActive          Boolean  @default(true)
+  
+  inventory         DrugInventory?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model DrugInventory {
+  id                String   @id @default(uuid())
+  drugId            String   @unique
+  drug              Drug     @relation(fields: [drugId], references: [id], onDelete: Cascade)
+  
+  currentStock      Int      @default(0)
+  minStockLevel     Int      @default(10)
+  maxStockLevel     Int?
+  
+  stockStatus       StockStatus @default(IN_STOCK)
+  
+  batches           DrugBatch[]
+  movements         StockMovement[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model DrugBatch {
+  id                String   @id @default(uuid())
+  inventoryId       String
+  inventory         DrugInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  
+  batchNumber       String
+  manufactureDate   DateTime? @db.Date
+  expiryDate        DateTime @db.Date
+  quantity          Int
+  costPrice         Float
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model StockMovement {
+  id                String   @id @default(uuid())
+  inventoryId       String
+  inventory         DrugInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  
+  movementType      String   // PURCHASE, DISPENSE, RETURN, EXPIRED, ADJUSTMENT
+  quantity          Int      // Positive or Negative
+  referenceId       String?  // Link to Bill, Prescription, or PO
+  remarks           String?
+  
+  performedById     String
+  
+  createdAt         DateTime @default(now())
+}
+
+// ==========================================
+// N. NOTIFICATION DOMAIN
+// ==========================================
+
+model Notification {
+  id                String   @id @default(uuid())
+  recipientId       String?  // Patient ID or User ID
+  type              NotificationType
+  status            NotificationStatus @default(PENDING)
+  
+  subject           String?
+  body              String   @db.Text
+  targetContact     String   // Phone or Email
+  
+  sentAt            DateTime?
+  errorResponse     String?  @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model NotificationTemplate {
+  id                String   @id @default(uuid())
+  name              String   @unique // e.g. APPOINTMENT_CONFIRMATION
+  type              NotificationType
+  contentTemplate   String   @db.Text // Uses placeholders like {PatientName}
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// O. CONSENT & DOCUMENT DOMAIN
+// ==========================================
+
+model ConsentTemplate {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  language          String   @default("English")
+  bodyContent       String   @db.Text
+  isActive          Boolean  @default(true)
+  
+  forms             ConsentForm[]
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ConsentForm {
+  id                String   @id @default(uuid())
+  templateId        String
+  template          ConsentTemplate @relation(fields: [templateId], references: [id])
+  
+  caseId            String
+  patientId         String
+  
+  status            ConsentStatus @default(PENDING)
+  signedDocumentUrl String?
+  signedAt          DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// P. REPORTING & ANALYTICS DOMAIN
+// ==========================================
+
+model DailyStatistic {
+  id                String   @id @default(uuid())
+  date              DateTime @db.Date @unique
+  
+  totalPatients     Int      @default(0)
+  newRegistrations  Int      @default(0)
+  totalAppointments Int      @default(0)
+  completedCases    Int      @default(0)
+  
+  totalRevenue      Float    @default(0.0)
+  consultationRevenue Float  @default(0.0)
+  procedureRevenue  Float    @default(0.0)
+  totalDiscounts    Float    @default(0.0)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ClinicExpense {
+  id                String   @id @default(uuid())
+  expenseDate       DateTime @db.Date
+  category          String   // RENT, SALARY, ELECTRICITY, SUPPLIES
+  amount            Float
+  description       String?
+  loggedById        String
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ==========================================
+// Q. SYSTEM SETTINGS DOMAIN
+// ==========================================
+
+model MasterSetting {
+  id                String   @id @default(uuid())
+  key               String   @unique // e.g. MAX_FILE_UPLOAD_SIZE, CLINIC_NAME
+  value             String   @db.Text
+  description       String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// EMR Models (The 7-Tab specifics)
+model ConsultationRecord {
+  id                String   @id @default(uuid())
+  caseId            String   @unique
+  patientCase       PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  
+  doctorId          String
+  doctor            DoctorProfile @relation(fields: [doctorId], references: [id])
+  
+  status            ConsultationStatus @default(DRAFT)
+  
+  chiefComplaint    String?  @db.Text
+  duration          Int?
+  durationType      String?  // DAYS, MONTHS, YEARS
+  severity          Severity?
+  onset             OnsetStatus?
+  aggravatingFactors String? @db.Text
+  relievingFactors  String?  @db.Text
+  
+  provisionalDiagnosis String? @db.Text
+  confirmedDiagnosis   String? @db.Text
+  clinicalAdvice       String? @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}

@@ -1,7 +1,20 @@
-import { Controller, Post, Patch, Get, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Patch,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { QueueService } from './queue.service';
 import { CreateQueueEntryDto } from './dto/create-queue-entry.dto';
-import { UpdateQueueStatusDto, UpdateCaseStageDto } from './dto/update-queue.dto';
+import {
+  UpdateQueueStatusDto,
+  UpdateCaseStageDto,
+} from './dto/update-queue.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -18,19 +31,21 @@ export class QueueController {
   }
 
   @Patch(':id/status')
+  @Roles('RECEPTION', 'DOCTOR', 'ADMIN')
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateQueueStatusDto,
-    @Request() req
+    @Request() req,
   ) {
     return this.queueService.updateStatus(id, dto, req.user.id);
   }
 
   @Patch('case/:caseId/stage')
+  @Roles('DOCTOR', 'ADMIN')
   async updateStage(
     @Param('caseId') caseId: string,
     @Body() dto: UpdateCaseStageDto,
-    @Request() req
+    @Request() req,
   ) {
     return this.queueService.updateStage(caseId, dto, req.user.id);
   }
@@ -46,17 +61,23 @@ export class QueueController {
   async endSession(
     @Body('caseId') caseId: string,
     @Body('nextStage') nextStage: any,
-    @Request() req
+    @Request() req,
   ) {
-    return this.queueService.endSession(caseId, req.user.id, nextStage || 'BILLING');
+    return this.queueService.endSession(
+      caseId,
+      req.user.id,
+      nextStage || 'BILLING',
+    );
   }
 
   @Get('live')
+  @Roles('RECEPTION', 'DOCTOR', 'ADMIN')
   async getLiveQueue(@Query('doctorId') doctorId?: string) {
     return this.queueService.getLiveQueue(doctorId);
   }
 
   @Get('stats')
+  @Roles('RECEPTION', 'DOCTOR', 'ADMIN')
   async getStats() {
     return this.queueService.getStats();
   }

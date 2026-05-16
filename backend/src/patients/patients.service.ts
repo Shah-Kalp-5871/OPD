@@ -1,14 +1,23 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventsService } from '../common/events.service';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 import { UpdatePatientProfileDto } from './dto/update-patient-profile.dto';
 import { AddVitalsDto } from './dto/add-vitals.dto';
 import { CreateCaseDto } from './dto/create-case.dto';
+import { PatientQueryDto } from './dto/patient-query.dto';
 
 @Injectable()
 export class PatientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private events: EventsService,
+  ) {}
 
   async create(createPatientDto: CreatePatientDto) {
     // Check if patient with same mobile already exists
@@ -17,7 +26,9 @@ export class PatientsService {
     });
 
     if (existingPatient) {
-      throw new ConflictException('Patient with this mobile number already exists');
+      throw new ConflictException(
+        'Patient with this mobile number already exists',
+      );
     }
 
     // Generate MRD Number: MRD-YYYY-NNNN
@@ -44,7 +55,9 @@ export class PatientsService {
     if (!patient) throw new NotFoundException('Patient not found');
 
     if (updateDto.mobile && updateDto.mobile !== patient.mobile) {
-      const existing = await this.prisma.patient.findUnique({ where: { mobile: updateDto.mobile } });
+      const existing = await this.prisma.patient.findUnique({
+        where: { mobile: updateDto.mobile },
+      });
       if (existing) throw new ConflictException('Mobile number already in use');
     }
 
@@ -57,7 +70,7 @@ export class PatientsService {
   public async generateMrdNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const prefix = `MRD-${year}-`;
-    
+
     const lastPatient = await this.prisma.patient.findFirst({
       where: {
         mrdNumber: {
@@ -78,29 +91,89 @@ export class PatientsService {
     return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
   }
 
-  async findAll(query: string = '', page: number = 1, limit: number = 20) {
-    const skip = (page - 1) * limit;
+  async findAll(queryDto: PatientQueryDto) {
+    const { 
+      q, 
+      page = 1, 
+      limit = 20, 
+      gender, 
+      minAge, 
+      maxAge, 
+      startDate, 
+      endDate, 
+      isActive,
+      doctorId
+    } = queryDto;
     
-    const where: any = query ? {
-      OR: [
-        { mrdNumber: { contains: query, mode: 'insensitive' } },
-        { mobile: { contains: query, mode: 'insensitive' } },
-        { firstName: { contains: query, mode: 'insensitive' } },
-        { lastName: { contains: query, mode: 'insensitive' } },
-      ],
-    } : {};
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      AND: []
+    };
+
+    if (q) {
+      where.AND.push({
+        OR: [
+          { mrdNumber: { contains: q, mode: 'insensitive' } },
+          { mobile: { contains: q, mode: 'insensitive' } },
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (gender) {
+      where.AND.push({ gender: { equals: gender, mode: 'insensitive' } });
+    }
+
+    if (isActive !== undefined) {
+      where.AND.push({ isActive });
+    }
+
+    if (minAge !== undefined || maxAge !== undefined) {
+      where.AND.push({
+        profile: {
+          age: {
+            gte: minAge,
+            lte: maxAge,
+          },
+        },
+      });
+    }
+
+    if (startDate || endDate) {
+      where.AND.push({
+        createdAt: {
+          gte: startDate ? new Date(startDate) : undefined,
+          lte: endDate ? new Date(endDate) : undefined,
+        },
+      });
+    }
+
+    if (doctorId) {
+      where.AND.push({
+        cases: {
+          some: {
+            doctorId: doctorId
+          }
+        }
+      });
+    }
+
+    // If AND is empty, remove it to avoid Prisma issues or just use {}
+    const finalWhere = where.AND.length > 0 ? where : {};
 
     const [total, patients] = await Promise.all([
-      this.prisma.patient.count({ where }),
+      this.prisma.patient.count({ where: finalWhere }),
       this.prisma.patient.findMany({
-        where,
+        where: finalWhere,
         include: {
           profile: true,
           cases: {
             orderBy: { createdAt: 'desc' },
             take: 1,
-            select: { createdAt: true }
-          }
+            select: { createdAt: true, doctor: { select: { name: true } } },
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -111,13 +184,11 @@ export class PatientsService {
     ]);
 
     return {
-      data: patients,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      }
+      items: patients,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
@@ -139,13 +210,13 @@ export class PatientsService {
                 name: true,
                 doctorProfile: {
                   select: {
-                    specialization: true
-                  }
-                }
-              }
+                    specialization: true,
+                  },
+                },
+              },
             },
-            queueEntry: true
-          }
+            queueEntry: true,
+          },
         },
       },
     });
@@ -157,16 +228,52 @@ export class PatientsService {
     return patient;
   }
 
+  async findByMrd(mrd: string) {
+    const patient = await this.prisma.patient.findUnique({
+      where: { mrdNumber: mrd },
+      include: {
+        profile: true,
+        vitals: {
+          orderBy: { takenAt: 'desc' },
+          take: 10,
+        },
+        cases: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            doctor: {
+              select: {
+                id: true,
+                name: true,
+                doctorProfile: {
+                  select: {
+                    specialization: true,
+                  },
+                },
+              },
+            },
+            queueEntry: true,
+          },
+        },
+      },
+    });
+
+    if (!patient) {
+      throw new NotFoundException(`Patient with MRD ${mrd} not found`);
+    }
+
+    return patient;
+  }
+
   async updateProfile(id: string, updateDto: UpdatePatientProfileDto) {
     const patient = await this.prisma.patient.findUnique({ where: { id } });
     if (!patient) throw new NotFoundException('Patient not found');
 
     const updateData: any = { ...updateDto };
-    
+
     // Handle Date conversion
     if (updateDto.dob) {
       updateData.dob = new Date(updateDto.dob);
-      
+
       // Auto-calculate age if not provided
       if (!updateDto.age) {
         const birthDate = new Date(updateDto.dob);
@@ -188,17 +295,25 @@ export class PatientsService {
     // Simple completion logic
     // Fields to check for completion (excluding notes and photo)
     const fieldsToCheck = [
-      'dob', 'age', 'bloodGroup', 'address', 'city', 
-      'state', 'occupation', 'maritalStatus', 'allergies', 'emergencyContact'
+      'dob',
+      'age',
+      'bloodGroup',
+      'address',
+      'city',
+      'state',
+      'occupation',
+      'maritalStatus',
+      'allergies',
+      'emergencyContact',
     ];
-    
+
     let completedFields = 0;
     for (const field of fieldsToCheck) {
       if (profile[field]) completedFields++;
     }
-    
+
     // Base 20% (registration) + up to 80% more (8% per field for 10 fields)
-    const completion = Math.min(100, 20 + (completedFields * 8));
+    const completion = Math.min(100, 20 + completedFields * 8);
 
     await this.prisma.patient.update({
       where: { id },
@@ -216,16 +331,47 @@ export class PatientsService {
     let bmi: number | undefined = undefined;
     if (vitalsDto.height && vitalsDto.weight) {
       const heightInMeters = vitalsDto.height / 100;
-      bmi = parseFloat((vitalsDto.weight / (heightInMeters * heightInMeters)).toFixed(2));
+      bmi = parseFloat(
+        (vitalsDto.weight / (heightInMeters * heightInMeters)).toFixed(2),
+      );
     }
 
-    return this.prisma.patientVitals.create({
-      data: {
-        ...vitalsDto,
-        bmi: bmi || vitalsDto.bmi,
-        patientId: id,
-        takenById: userId,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const vitals = await tx.patientVitals.create({
+        data: {
+          ...vitalsDto,
+          bmi: bmi || vitalsDto.bmi,
+          patientId: id,
+          takenById: userId,
+        },
+      });
+
+      if (vitalsDto.caseId) {
+        // Update case stage to DOCTOR as vitals are now taken
+        await tx.patientCase.update({
+          where: { id: vitalsDto.caseId },
+          data: { stage: 'DOCTOR' },
+        });
+
+        // Also update queue entry if exists
+        const queueEntry = await tx.queueEntry.findUnique({
+          where: { caseId: vitalsDto.caseId },
+          include: { patient: true },
+        });
+
+        if (queueEntry) {
+          // Notify via SSE
+          this.events.emitClinicalUpdate({
+            type: 'VITALS_SAVED',
+            patientId: id,
+            caseId: vitalsDto.caseId,
+            patientName: `${queueEntry.patient.firstName} ${queueEntry.patient.lastName}`,
+            vitals: vitals,
+          });
+        }
+      }
+
+      return vitals;
     });
   }
 
@@ -241,15 +387,64 @@ export class PatientsService {
     });
   }
 
+  async getHistory(id: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.patientCase.findMany({
+      where: { patientId: id },
+      include: {
+        doctor: { select: { name: true } },
+        consultation: true,
+        vitalsList: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getBilling(id: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.bill.findMany({
+      where: { patientId: id },
+      include: {
+        items: true,
+        payments: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getAppointments(id: string) {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.appointment.findMany({
+      where: { patientId: id },
+      include: {
+        doctor: {
+          select: {
+            user: { select: { name: true } },
+            specialization: true,
+          },
+        },
+      },
+      orderBy: { appointmentDate: 'desc' },
+    });
+  }
+
   async createCase(patientId: string, createCaseDto: CreateCaseDto) {
-    const patient = await this.prisma.patient.findUnique({ where: { id: patientId } });
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: patientId },
+    });
     if (!patient) throw new NotFoundException('Patient not found');
 
     // Check for existing OPEN case
     const activeCase = await this.prisma.patientCase.findFirst({
       where: { patientId, status: 'OPEN' },
     });
-    
+
     if (activeCase) {
       return activeCase;
     }
@@ -266,27 +461,24 @@ export class PatientsService {
     });
   }
 
-  private async generateCaseNumber(): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `CASE-${year}-`;
-    
-    const lastCase = await this.prisma.patientCase.findFirst({
+  /**
+   * GENERATE UNIQUE CASE NUMBER
+   */
+  async generateCaseNumber(): Promise<string> {
+    const today = new Date();
+    const dateStr =
+      today.getFullYear().toString().slice(-2) +
+      (today.getMonth() + 1).toString().padStart(2, '0') +
+      today.getDate().toString().padStart(2, '0');
+
+    const count = await this.prisma.patientCase.count({
       where: {
         caseNumber: {
-          startsWith: prefix,
+          startsWith: `C${dateStr}`,
         },
-      },
-      orderBy: {
-        caseNumber: 'desc',
       },
     });
 
-    let nextNumber = 1;
-    if (lastCase) {
-      const lastNumberStr = lastCase.caseNumber.split('-')[2];
-      nextNumber = parseInt(lastNumberStr, 10) + 1;
-    }
-
-    return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+    return `C${dateStr}${(count + 1).toString().padStart(4, '0')}`;
   }
 }

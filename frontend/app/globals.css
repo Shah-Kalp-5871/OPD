@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
+/* ============================================================
+   MEDFLOW ENTERPRISE DESIGN TOKENS
+   ============================================================ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Scrollbar Design Tokens */
+  --scrollbar-width: 6px;
+  --scrollbar-width-thin: 4px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #cbd5e1;          /* slate-300 */
+  --scrollbar-thumb-hover: #94a3b8;    /* slate-400 */
+  --scrollbar-thumb-active: #64748b;   /* slate-500 */
+  --scrollbar-radius: 999px;
 }
 
 @theme inline {
@@ -12,38 +24,397 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+   BASE & RESET
+   ============================================================ */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Prevent body scroll-bar layout shift */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
-/* Status Color Codes - FRD v1.0 */
-.status-waiting { background-color: #fef08a !important; } /* Yellow-200 */
-.status-in-progress { background-color: #bfdbfe !important; } /* Blue-200 */
-.status-completed { background-color: #bbf7d0 !important; } /* Green-200 */
-.status-cancelled { background-color: #fecaca !important; } /* Red-200 */
-.status-new-patient { background-color: #ddd6fe !important; } /* Violet-200 */
-.status-old-patient { background-color: #e2e8f0 !important; } /* Slate-200 */
+/* ============================================================
+   GLOBAL SCROLLBAR SYSTEM — Chrome / Edge / Safari
+   ============================================================
+   Applied globally to all elements. Uses the design tokens
+   above for a consistent, premium enterprise feel.
+   ============================================================ */
+
+/* STANDARD SCROLLBAR — used by default on all overflow containers */
+*::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);   /* for horizontal scrollbars */
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: var(--scrollbar-radius);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  /* Creates a visual gap effect between thumb and edge */
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* FIREFOX SCROLLBAR — thin modern style */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* ============================================================
+   NAMED SCROLLBAR UTILITY CLASSES
+   Use these on specific containers for variant control.
+   ============================================================ */
+
+/* .custom-scrollbar — premium standard (6px, visible) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* .scrollbar-thin — ultra-thin (4px) for sidebars, panels */
+.scrollbar-thin::-webkit-scrollbar {
+  width: var(--scrollbar-width-thin);
+  height: var(--scrollbar-width-thin);
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* .scrollbar-hide — invisible scrollbar but keeps scroll functionality */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;   /* IE 10+ */
+  scrollbar-width: none;       /* Firefox */
+}
+
+/* .no-scrollbar — alias for scrollbar-hide (legacy compatibility) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* .scrollbar-stable — prevents layout shift when scrollbar appears/disappears */
+.scrollbar-stable {
+  scrollbar-gutter: stable;
+}
+
+/* .scrollbar-overlay — floating scrollbar that doesn't take space (macOS style) */
+.scrollbar-overlay {
+  overflow: overlay;
+}
+
+
+
+/* ============================================================
+   TABLE SCROLLING SYSTEM
+   Ensures tables scroll cleanly with sticky headers
+   and no double-scrollbar artifacts.
+   ============================================================ */
+
+.table-scroll-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: var(--scrollbar-width-thin);
+  width: var(--scrollbar-width-thin);
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+}
+
+.table-scroll-container table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-scroll-container thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Prevents shadow clipping on sticky header */
+  background-clip: padding-box;
+}
+
+/* ============================================================
+   MODAL & DRAWER SCROLL SYSTEM
+   Isolates scroll context within modals to prevent
+   body scroll bleed and nested scrollbar artifacts.
+   ============================================================ */
+
+/* Applied to the modal BACKDROP — prevents body scroll bleed */
+.modal-open {
+  overflow: hidden;
+}
+
+/* Applied to the MODAL BODY for scrollable content */
+.modal-body-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 80vh;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-body-scroll::-webkit-scrollbar {
+  width: var(--scrollbar-width-thin);
+}
+
+.modal-body-scroll::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+/* Applied to SIDE DRAWERS */
+.drawer-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================
+   SIDEBAR SCROLL SYSTEM
+   Sidebars use scrollbar-hide so navigation feels clean.
+   ============================================================ */
+
+.sidebar-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================
+   SMOOTH SCROLL CONTAINERS
+   For panels, timelines, and carousels.
+   ============================================================ */
+
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* ============================================================
+   CLINICAL WORKSPACE SCROLLING
+   Specific to the Doctor Consultation page.
+   Prevents nested scroll jitter.
+   ============================================================ */
+
+.clinical-workspace {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.clinical-workspace-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.clinical-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.clinical-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+.clinical-tab-content::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+}
+
+.clinical-tab-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.clinical-tab-content::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--scrollbar-radius);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.clinical-tab-content:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+
+.clinical-tab-content::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover) !important;
+}
+
+.clinical-sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.clinical-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================
+   HORIZONTAL SCROLL STRIPS
+   For tab strips, chip rows, filter bars.
+   Scrolls horizontally but hides scrollbar.
+   ============================================================ */
+
+.h-scroll-strip {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.h-scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================
+   DROPDOWN & SELECT SCROLL
+   ============================================================ */
+
+select {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+select::-webkit-scrollbar {
+  width: var(--scrollbar-width-thin);
+}
+
+select::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+}
+
+/* ============================================================
+   PRINT — HIDE ALL SCROLLBARS
+   ============================================================ */
+
+@media print {
+  * {
+    overflow: visible !important;
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   STATUS COLOR CODES — FRD v1.0
+   ============================================================ */
+.status-waiting     { background-color: #fef08a !important; }
+.status-in-progress { background-color: #bfdbfe !important; }
+.status-completed   { background-color: #bbf7d0 !important; }
+.status-cancelled   { background-color: #fecaca !important; }
+.status-new-patient { background-color: #ddd6fe !important; }
+.status-old-patient { background-color: #e2e8f0 !important; }
 
 /* Payment Status Colors */
-.payment-paid { background-color: #22c55e !important; color: white !important; }
-.payment-pending { background-color: #f97316 !important; color: white !important; }
-.payment-partial { background-color: #eab308 !important; color: white !important; }
-.payment-foc { background-color: #3b82f6 !important; color: white !important; }
+.payment-paid     { background-color: #22c55e !important; color: white !important; }
+.payment-pending  { background-color: #f97316 !important; color: white !important; }
+.payment-partial  { background-color: #eab308 !important; color: white !important; }
+.payment-foc      { background-color: #3b82f6 !important; color: white !important; }
 .payment-discount { background-color: #a855f7 !important; color: white !important; }
 
-/* Blinking Animation for In-Progress Patients */
+/* ============================================================
+   BLINKING ANIMATION — In-Progress Patients
+   ============================================================ */
 @keyframes patient-blink {
-  0% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%   { opacity: 1; }
+  50%  { opacity: 0.3; }
   100% { opacity: 1; }
 }
 
@@ -51,3 +422,27 @@ body {
   animation: patient-blink 1s ease-in-out infinite;
   font-weight: bold;
 }
+
+/* ============================================================
+   ANIMATE-IN UTILITIES
+   ============================================================ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slide-in-from-bottom {
+  from { transform: translateY(1rem); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes zoom-in-95 {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.animate-in { animation-fill-mode: both; }
+.fade-in    { animation-name: fade-in; }
+.slide-in-from-bottom-4 { animation-name: slide-in-from-bottom; }
+.zoom-in-95 { animation-name: zoom-in-95; }
+.duration-200 { animation-duration: 200ms; }
+.duration-300 { animation-duration: 300ms; }
+.duration-700 { animation-duration: 700ms; }

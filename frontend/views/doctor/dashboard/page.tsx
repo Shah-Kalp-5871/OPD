@@ -6,6 +6,8 @@ import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useQueueSSE } from '@/hooks/useQueueSSE';
+import { useClinicalSSE } from '@/hooks/useClinicalSSE';
+
 
 import { 
   Users, 
@@ -29,6 +31,7 @@ const DoctorDashboardView = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { entries: sseEntries } = useQueueSSE();
+  const { lastEvent: clinicalEvent } = useClinicalSSE();
 
   useEffect(() => {
     if (sseEntries.length > 0) {
@@ -37,8 +40,15 @@ const DoctorDashboardView = () => {
   }, [sseEntries]);
 
   useEffect(() => {
+    if (clinicalEvent?.type === 'VITALS_SAVED') {
+      fetchMyQueue(); // Refresh queue when vitals are saved as it might change stage visibility
+    }
+  }, [clinicalEvent]);
+
+  useEffect(() => {
     fetchMyQueue();
   }, []);
+
 
 
   const fetchMyQueue = async () => {
@@ -140,7 +150,7 @@ const DoctorDashboardView = () => {
            
            {/* LEFT COLUMN: LIVE DOCTOR QUEUE */}
            <div className="xl:col-span-8 space-y-8">
-              <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden min-h-[600px]">
+              <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden min-h-[600px]">
                  <div className="p-8 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-slate-200">
@@ -157,21 +167,22 @@ const DoctorDashboardView = () => {
                     </div>
                  </div>
                  
-                 <div className="overflow-x-auto">
+                  <div className="table-scroll-container rounded-b-[3rem] max-h-[620px] overflow-y-auto scrollbar-hover-only">
                     <table className="w-full text-left border-collapse">
-                       <thead>
-                          <tr className="bg-slate-50/20">
-                             <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Token</th>
-                             <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">In Time</th>
-                             <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Patient Detail</th>
-                             <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Visit Type</th>
-                             <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Status</th>
+                       <thead className="sticky top-0 z-20 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
+                          <tr className="bg-white/95 backdrop-blur-sm">
+                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Token</th>
+                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">In Time</th>
+                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Patient Detail</th>
+                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Stage</th>
+                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Visit Type</th>
+                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Status</th>
                           </tr>
                        </thead>
                        <tbody className="divide-y divide-slate-50">
                           {isLoading ? (
                             <tr>
-                              <td colSpan={5} className="py-20 text-center">
+                              <td colSpan={6} className="py-20 text-center">
                                  <div className="flex flex-col items-center gap-4">
                                     <div className="w-8 h-8 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Board...</span>
@@ -180,7 +191,7 @@ const DoctorDashboardView = () => {
                             </tr>
                           ) : queue.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="py-20 text-center">
+                              <td colSpan={6} className="py-20 text-center">
                                  <div className="flex flex-col items-center gap-4 opacity-30">
                                     <Users className="w-12 h-12 text-slate-400" />
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Your Queue is Empty</span>
@@ -188,58 +199,74 @@ const DoctorDashboardView = () => {
                               </td>
                             </tr>
                           ) : queue.map((entry) => (
-                            <tr 
-                              key={entry.id} 
-                              onClick={() => entry.status === 'IN_SESSION' ? router.push(`/doctor/consultation/${entry.caseId}`) : handleStartConsultation(entry.caseId, entry.patientId)}
-                              className={`group cursor-pointer transition-all ${entry.status === 'IN_SESSION' ? 'bg-emerald-50/50 hover:bg-emerald-100' : 'hover:bg-slate-50'}`}
-                            >
-                               <td className="px-10 py-8">
-                                  <span className={`text-[13px] font-black tracking-[0.1em] px-3 py-1.5 rounded-xl border-2 shadow-[3px_3px_0px_rgba(0,0,0,0.05)] ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-white text-slate-900 border-slate-900'}`}>
-                                     {entry.tokenDisplay}
-                                  </span>
-                               </td>
-                               <td className="px-10 py-8 text-center">
-                                  <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest flex items-center justify-center gap-2">
-                                     <Clock className="w-4 h-4 text-slate-300" />
-                                     {new Date(entry.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                               </td>
-                               <td className="px-10 py-8">
-                                  <div className="flex flex-col">
-                                     <div className="flex items-center gap-3">
-                                        <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{entry.patient.firstName} {entry.patient.lastName}</span>
-                                        {getPriorityBadge(entry.priority)}
+                             <tr 
+                               key={entry.id} 
+                               onClick={() => entry.status === 'IN_SESSION' ? router.push(`/doctor/consultation/${entry.caseId}`) : handleStartConsultation(entry.caseId, entry.patientId)}
+                               className={`group cursor-pointer transition-all duration-200 border-l-4 ${entry.status === 'IN_SESSION' ? 'bg-emerald-50/40 border-emerald-500 hover:bg-emerald-50' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
+                             >
+                                <td className="px-10 py-6">
+                                   <div className={`w-fit text-[12px] font-black tracking-widest px-3 py-1.5 rounded-xl border-2 transition-all group-hover:scale-105 ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700 shadow-[4px_4px_0px_rgba(16,185,129,0.2)]' : 'bg-white text-slate-900 border-slate-900 shadow-[4px_4px_0px_rgba(0,0,0,0.05)]'}`}>
+                                      {entry.tokenDisplay}
+                                   </div>
+                                </td>
+                                <td className="px-10 py-6 text-center">
+                                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-center gap-2">
+                                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                      {new Date(entry.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   </span>
+                                </td>
+                                <td className="px-10 py-6">
+                                   <div className="flex flex-col">
+                                      <div className="flex items-center gap-2">
+                                         <span className="text-[15px] font-bold text-slate-900 tracking-tight">{entry.patient.firstName} {entry.patient.lastName}</span>
+                                         {getPriorityBadge(entry.priority)}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">{entry.patient.mrdNumber}</span>
+                                         <span className="text-[10px] font-bold text-slate-300">•</span>
+                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{entry.patient.gender}</span>
+                                      </div>
+                                   </div>
+                                </td>
+                                <td className="px-10 py-6 text-center">
+                                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${
+                                     entry.case.stage === 'NURSING' 
+                                       ? 'bg-amber-50 text-amber-600 border-amber-200' 
+                                       : entry.case.stage === 'DOCTOR'
+                                       ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                       : 'bg-slate-50 text-slate-400 border-slate-200'
+                                   }`}>
+                                      {entry.case.stage}
+                                   </span>
+                                </td>
+                                <td className="px-10 py-6">
+                                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                                      {entry.case.visitType}
+                                   </span>
+                                </td>
+
+                                <td className="px-10 py-6 text-right">
+                                   {entry.status === 'IN_SESSION' ? (
+                                     <div className="flex items-center justify-end gap-2.5">
+                                       <span className="px-4 py-1.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                                          <Activity className="w-3 h-3 animate-pulse" /> ACTIVE
+                                       </span>
                                      </div>
-                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase">{entry.patient.mrdNumber}</span>
-                                        <span className="text-[9px] font-black text-slate-400 uppercase">•</span>
-                                        <span className="text-[9px] font-black text-slate-400 uppercase">{entry.patient.gender}</span>
+                                   ) : (
+                                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Consult</span>
+                                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                           <ChevronRight className="w-4 h-4 text-white" />
+                                        </div>
                                      </div>
-                                  </div>
-                               </td>
-                               <td className="px-10 py-8">
-                                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] bg-white border border-slate-200 px-3 py-1 rounded-lg">
-                                     {entry.case.visitType}
-                                  </span>
-                               </td>
-                               <td className="px-10 py-8 text-right">
-                                  {entry.status === 'IN_SESSION' ? (
-                                    <span className="px-4 py-1.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest flex items-center justify-end gap-2 ml-auto w-fit">
-                                       <Activity className="w-3 h-3 animate-pulse" /> ACTIVE
-                                    </span>
-                                  ) : (
-                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                       <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Select Patient</span>
-                                       <ChevronRight className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                  )}
-                               </td>
-                            </tr>
+                                   )}
+                                </td>
+                             </tr>
                           ))}
                        </tbody>
                     </table>
-                 </div>
-              </div>
+                  </div>
+               </div>
            </div>
 
            {/* RIGHT COLUMN: CLINICAL SNAPSHOT */}

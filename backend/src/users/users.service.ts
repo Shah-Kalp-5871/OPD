@@ -22,14 +22,34 @@ export class UsersService {
   async findOne(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
-      include: {
-        adminProfile: true,
-        receptionProfile: true,
-        doctorProfile: true,
-        nurseProfile: true,
-        medicalProfile: true,
+    });
+  }
+
+  async incrementFailedAttempts(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return;
+
+    const newAttempts = user.failedLoginAttempts + 1;
+    const lockDuration = 15 * 60 * 1000; // 15 minutes
+    const lockedUntil =
+      newAttempts >= 5 ? new Date(Date.now() + lockDuration) : null;
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: newAttempts,
+        lockedUntil,
+      },
+    });
+  }
+
+  async resetFailedAttempts(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: 0,
+        lockedUntil: null,
       },
     });
   }
 }
-

@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import CheckInView from '@/views/reception/check-in/page';
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function CheckInPage() {
-  return <CheckInView />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckInView />
+    </Suspense>
+  );
 }

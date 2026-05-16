@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import { 
   FileSignature, 
   Printer, 
@@ -16,33 +19,134 @@ import {
   AlertCircle,
   ChevronRight,
   ClipboardCheck,
-  FileCheck2
+  FileCheck2,
+  Loader2
 } from 'lucide-react';
 
 const ConsentFormView = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState('Hair Removal – Standard');
-  const [selectedLanguage, setSelectedLanguage] = useState('Gujarati');
+  const searchParams = useSearchParams();
+  const caseId = searchParams.get('caseId');
 
-  const patientData = {
-    name: 'Mahesh K. Kumar',
-    gender: 'Male',
-    age: '45',
-    city: 'Surat',
-    mrd: 'P03-260003',
-    caseNo: 'C003-001-130426',
-    procedure: 'Hair Removal Diode Laser',
-    date: '13/04/2026',
-    doctor: 'Dr. Raj Valaki'
-  };
-
-  const templates = [
-    'Hair Removal – Standard',
-    'Hair Removal – Sensitive Skin',
-    'PRP – Standard',
-    'Chemical Peel – Standard'
-  ];
+  const [loading, setLoading] = useState(true);
+  const [patientData, setPatientData] = useState<any>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const [saving, setSaving] = useState(false);
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const languages = ['Gujarati', 'Hindi', 'English'];
+
+  useEffect(() => {
+    fetchData();
+  }, [caseId]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // 1. Fetch Templates
+      const templatesRes = await api.get('/consent/templates');
+      const templatesData = Array.isArray(templatesRes) ? templatesRes : (templatesRes as any).data || [];
+      setTemplates(templatesData);
+      if (templatesData.length > 0) {
+        setSelectedTemplate(templatesData[0]);
+      }
+
+      // 2. Fetch Patient/Case Data if caseId exists
+      if (caseId) {
+        const caseRes = await api.get(`/consultation/${caseId}`);
+        const data = (caseRes as any).data || caseRes;
+        setPatientData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching consent data:', error);
+      toast.error('Failed to load consent data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveConsent = async () => {
+    if (!caseId || !selectedTemplate) return;
+    
+    try {
+      setSaving(true);
+      setUploadProgress(0);
+      setUploadError(null);
+      const formData = new FormData();
+      formData.append('templateId', selectedTemplate.id);
+      if (signatureFile) {
+        formData.append('signature', signatureFile);
+      }
+
+      await api.post(`/consent/case/${caseId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (event) => {
+          if (event.total) {
+            setUploadProgress(Math.round((event.loaded * 100) / event.total));
+          }
+        },
+      });
+      toast.success('Consent form recorded successfully');
+      setSignatureFile(null);
+    } catch (error: any) {
+      console.error('Error saving consent:', error);
+      const message = error?.response?.data?.message || 'Failed to save consent form';
+      setUploadError(Array.isArray(message) ? message.join(', ') : message);
+      toast.error(Array.isArray(message) ? message.join(', ') : message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSignatureFileChange = (file?: File) => {
+    if (!file) {
+      setSignatureFile(null);
+      return;
+    }
+
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Signature must be a PDF, PNG, or JPEG file');
+      toast.error('Signature must be a PDF, PNG, or JPEG file');
+      return;
+    }
+
+    setSignatureFile(file);
+    setUploadProgress(0);
+    setUploadError(null);
+  };
+
+  if (loading) {
+    return (
+      <ReceptionLayout>
+        <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Initialising Consent Engine...</p>
+        </div>
+      </ReceptionLayout>
+    );
+  }
+
+  if (!caseId) {
+    return (
+      <ReceptionLayout>
+        <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+          <AlertCircle className="w-12 h-12 text-amber-500" />
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">No Patient Case Selected</h2>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Please select a patient from the queue first.</p>
+        </div>
+      </ReceptionLayout>
+    );
+  }
+
+  const patientInfo = patientData?.case?.patient;
+  const patientProfile = patientInfo?.profile;
+  const procedure = patientData?.case?.procedureSessions?.[0]?.procedure?.name || 'N/A';
+  const doctorName = patientData?.case?.doctor?.name || 'Assigned Consultant';
 
   return (
     <ReceptionLayout>
@@ -51,11 +155,11 @@ const ConsentFormView = () => {
         {/* PAGE HEADER */}
         <div>
            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
-              Consent Form — <span className="text-teal-600 uppercase">{patientData.name}</span>
+              Consent Form — <span className="text-teal-600 uppercase">{patientProfile?.firstName} {patientProfile?.lastName}</span>
            </h1>
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 flex items-center gap-2">
               <Stethoscope className="w-3.5 h-3.5 text-teal-500" />
-              Procedure: {patientData.procedure}
+              Procedure: {procedure}
            </p>
         </div>
 
@@ -73,14 +177,14 @@ const ConsentFormView = () => {
            <div className="p-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-8">
                  {[
-                   { label: 'Patient Name', value: patientData.name, icon: User },
-                   { label: 'Gender', value: patientData.gender, icon: User },
-                   { label: 'Age', value: patientData.age, icon: Calendar },
-                   { label: 'City / Location', value: patientData.city, icon: MapPin },
-                   { label: 'MRD No.', value: patientData.mrd, icon: FileText },
-                   { label: 'OPD Case No.', value: patientData.caseNo, icon: FileText },
-                   { label: 'Procedure Name', value: patientData.procedure, icon: Stethoscope },
-                   { label: 'Date', value: patientData.date, icon: Calendar },
+                   { label: 'Patient Name', value: `${patientProfile?.firstName} ${patientProfile?.lastName}`, icon: User },
+                   { label: 'Gender', value: patientProfile?.gender || 'N/A', icon: User },
+                   { label: 'Age', value: patientProfile?.age?.toString() || 'N/A', icon: Calendar },
+                   { label: 'City / Location', value: patientProfile?.city || 'N/A', icon: MapPin },
+                   { label: 'MRD No.', value: patientInfo?.mrdNo || 'N/A', icon: FileText },
+                   { label: 'OPD Case No.', value: patientData?.case?.caseNumber || 'N/A', icon: FileText },
+                   { label: 'Procedure Name', value: procedure, icon: Stethoscope },
+                   { label: 'Date', value: new Date().toLocaleDateString(), icon: Calendar },
                  ].map((field, idx) => (
                    <div key={idx} className="group">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-teal-600 transition-colors">{field.label}</p>
@@ -108,12 +212,12 @@ const ConsentFormView = () => {
                  <div className="space-y-3">
                     {templates.map((template) => (
                       <button
-                        key={template}
+                        key={template.id}
                         onClick={() => setSelectedTemplate(template)}
-                        className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${selectedTemplate === template ? 'bg-teal-50 border-teal-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                        className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${selectedTemplate?.id === template.id ? 'bg-teal-50 border-teal-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}
                       >
-                         <p className={`text-[10px] font-black uppercase tracking-widest ${selectedTemplate === template ? 'text-teal-700' : 'text-slate-500'}`}>
-                            {template}
+                         <p className={`text-[10px] font-black uppercase tracking-widest ${selectedTemplate?.id === template.id ? 'text-teal-700' : 'text-slate-500'}`}>
+                            {template.name}
                          </p>
                       </button>
                     ))}
@@ -127,12 +231,6 @@ const ConsentFormView = () => {
                        <Languages className="w-4 h-4 text-slate-400" />
                        Language
                     </h3>
-                    <div className="group relative">
-                       <AlertCircle className="w-4 h-4 text-amber-500 cursor-help" />
-                       <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 text-white p-3 rounded-xl text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow-xl">
-                          Language auto-set from patient profile. Overridable here.
-                       </div>
-                    </div>
                  </div>
                  <div className="flex flex-col gap-3">
                     {languages.map((lang) => (
@@ -142,9 +240,6 @@ const ConsentFormView = () => {
                         className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedLanguage === lang ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-100 hover:border-slate-200 text-slate-600'}`}
                       >
                          <span className="text-[10px] font-black uppercase tracking-widest">{lang}</span>
-                         {lang === 'Gujarati' && selectedLanguage !== 'Gujarati' && (
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">Default</span>
-                         )}
                          {selectedLanguage === lang && <CheckCircle2 className="w-4 h-4 text-teal-400" />}
                       </button>
                     ))}
@@ -171,47 +266,35 @@ const ConsentFormView = () => {
 
                        <div className="text-center mb-10 pb-8 border-b border-slate-100">
                           <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] mb-2">
-                             PATIENT CONSENT FORM – HAIR REMOVAL ({selectedLanguage.toUpperCase()})
+                             {selectedTemplate?.name || 'PATIENT CONSENT FORM'} ({selectedLanguage.toUpperCase()})
                           </h2>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">MedFlow Clinic • Surat • Gujarat</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">MedFlow Clinic • Enterprise Grade Management</p>
                        </div>
 
                        <div className="grid grid-cols-2 gap-y-6 mb-12 bg-slate-50 p-6 rounded-xl border border-slate-100">
                           <div className="space-y-1">
                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Patient Name</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase">{patientData.name}</p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase">{patientProfile?.firstName} {patientProfile?.lastName}</p>
                           </div>
                           <div className="space-y-1">
                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">MRD Number</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientData.mrd}</p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientInfo?.mrdNo || 'N/A'}</p>
                           </div>
                           <div className="space-y-1">
                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Case Number</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientData.caseNo}</p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientData?.case?.caseNumber || 'N/A'}</p>
                           </div>
                           <div className="space-y-1">
                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Date</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientData.date}</p>
-                          </div>
-                          <div className="space-y-1 col-span-2 pt-4 border-t border-slate-200">
-                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Procedure & Doctor</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">
-                                {patientData.procedure} — <span className="text-teal-600">{patientData.doctor}</span>
-                             </p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{new Date().toLocaleDateString()}</p>
                           </div>
                        </div>
 
                        <div className="space-y-6 text-xs text-slate-600 leading-relaxed text-justify mb-16 px-4">
-                          <p className="font-bold text-slate-800">1. Nature of the Procedure:</p>
-                          <p>
-                             I, <span className="font-black text-slate-900 uppercase">{patientData.name}</span>, hereby authorize the clinic to perform the procedure described as <span className="font-black text-slate-900 uppercase">{patientData.procedure}</span>. I understand the procedure involves medical risks and potential side effects which have been explained to me in <span className="font-black text-slate-900 uppercase underline decoration-teal-500 decoration-2">{selectedLanguage}</span>.
-                          </p>
-                          <p className="bg-slate-50 p-4 rounded-lg italic border-l-4 border-slate-200">
-                             [ Consent form body text in {selectedLanguage} for template: {selectedTemplate} ]
-                          </p>
-                          <p>
-                             I confirm that I have had the opportunity to ask questions and have received satisfactory answers. I am signing this form voluntarily and understand its legal implications.
-                          </p>
+                          <div 
+                            className="consent-content"
+                            dangerouslySetInnerHTML={{ __html: selectedTemplate?.contentHtml || '<p>Select a template to view content</p>' }}
+                          />
                        </div>
 
                        <div className="grid grid-cols-2 gap-12 mt-20 pt-10 border-t border-slate-100">
@@ -232,18 +315,54 @@ const ConsentFormView = () => {
                  </div>
 
                  {/* ACTION BAR */}
-                 <div className="p-8 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row gap-4">
-                    <button className="flex-1 py-5 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3">
-                       <Printer className="w-5 h-5" />
-                       Print Consent Form
-                    </button>
-                    <button className="flex-1 py-5 bg-white border-2 border-slate-200 text-slate-800 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all flex items-center justify-center gap-3 group">
-                       <Upload className="w-5 h-5 text-slate-400 group-hover:text-teal-600" />
-                       Upload Signed Form
-                    </button>
-                    <button className="px-10 py-5 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-teal-700 transition-all shadow-xl shadow-teal-100">
-                       Change Template
-                    </button>
+                 <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                       <label className="flex-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          Upload Patient Signature (optional)
+                          <input
+                            type="file"
+                            accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
+                            disabled={saving}
+                            onChange={(e) => {
+                              handleSignatureFileChange(e.target.files?.[0]);
+                              e.target.value = '';
+                            }}
+                            className="mt-2 block w-full text-xs text-slate-700"
+                          />
+                       </label>
+                       {signatureFile && (
+                         <p className="text-[10px] font-black uppercase tracking-widest text-teal-700">
+                           {signatureFile.name} ({(signatureFile.size / 1024).toFixed(1)} KB)
+                         </p>
+                       )}
+                    </div>
+                    {saving && signatureFile && (
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-full bg-teal-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                      </div>
+                    )}
+                    {uploadError && (
+                      <p className="text-[10px] font-black uppercase tracking-widest text-rose-600">
+                        {uploadError}
+                      </p>
+                    )}
+                    <div className="flex flex-col md:flex-row gap-4">
+                       <button 
+                         onClick={() => window.print()}
+                         className="flex-1 py-5 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3"
+                       >
+                          <Printer className="w-5 h-5" />
+                          Print Consent Form
+                       </button>
+                       <button 
+                         onClick={handleSaveConsent}
+                         disabled={saving}
+                         className="flex-1 py-5 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 disabled:opacity-50 flex items-center justify-center gap-3"
+                       >
+                          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileSignature className="w-5 h-5" />}
+                          {saving && signatureFile ? `Uploading ${uploadProgress}%` : 'Record Signed Consent'}
+                       </button>
+                    </div>
                  </div>
               </div>
            </div>

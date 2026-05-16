@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Put, UseGuards, SetMetadata, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+  SetMetadata,
+  Logger,
+} from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
 import { CreateDoctorDto, UpdateDoctorDto } from './dto/doctor.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,7 +27,9 @@ export class DoctorsController {
   @Post()
   @Roles(Role.ADMIN)
   create(@Body() createDoctorDto: CreateDoctorDto) {
-    this.logger.log('Creating doctor with data: ' + JSON.stringify(createDoctorDto));
+    this.logger.log(
+      'Creating doctor with data: ' + JSON.stringify(createDoctorDto),
+    );
     return this.doctorsService.create(createDoctorDto);
   }
 

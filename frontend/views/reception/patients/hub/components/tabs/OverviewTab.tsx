@@ -1,5 +1,5 @@
 import React from 'react';
-import { Patient, Vital } from '../types';
+import { Patient, Vital } from '../../types';
 import VitalsCard from '../VitalsCard';
 import VisitSummary from '../VisitSummary';
 

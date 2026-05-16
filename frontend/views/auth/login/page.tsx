@@ -21,6 +21,7 @@ import {
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import { ROUTES, ROLE_REDIRECT_MAP } from '@/constants/routes';
 
 // Helper to set cookies
 const setCookie = (name: string, value: string, days: number) => {
@@ -31,8 +32,8 @@ const setCookie = (name: string, value: string, days: number) => {
 const StaticLoginView = () => {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const [email, setEmail] = useState('admin@opd.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('admin@clinic.com');
+  const [password, setPassword] = useState('123456');
   const [role, setRole] = useState('Admin');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,15 +79,7 @@ const StaticLoginView = () => {
       toast.success(`Welcome back, ${user.name}!`);
 
       // Redirect based on role
-      const redirectMap: Record<string, string> = {
-        'ADMIN': '/admin/dashboard',
-        'RECEPTION': '/reception/dashboard',
-        'DOCTOR': '/doctor/dashboard',
-        'NURSING': '/nursing/dashboard',
-        'MEDICAL': '/medical/dashboard',
-      };
-
-      router.push(redirectMap[user.role] || '/');
+      router.push(ROLE_REDIRECT_MAP[user.role] || ROUTES.HOME);
     } catch (error: any) {
       console.error('Login error:', error);
       const message = error.response?.data?.message || 'Login failed. Connection error.';
@@ -99,6 +92,7 @@ const StaticLoginView = () => {
   const QuickAccessCard = ({ title, roleName, icon: Icon, color }: any) => (
     <button 
       onClick={() => setRole(roleName)}
+      suppressHydrationWarning
       className={`group p-4 bg-white border rounded-2xl transition-all duration-300 text-left relative overflow-hidden ${
         role === roleName ? 'border-emerald-500 shadow-lg shadow-emerald-500/10' : 'border-slate-100 hover:border-emerald-200 hover:shadow-xl'
       }`}
@@ -191,6 +185,7 @@ const StaticLoginView = () => {
                             value={email}
                             required
                             onChange={(e) => setEmail(e.target.value)}
+                            suppressHydrationWarning
                             className="w-full pl-16 pr-8 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-black outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner" 
                          />
                      </div>
@@ -207,6 +202,7 @@ const StaticLoginView = () => {
                             required
                             minLength={6}
                             onChange={(e) => setPassword(e.target.value)}
+                            suppressHydrationWarning
                             className="w-full pl-16 pr-14 py-5 bg-slate-50 border-2 border-slate-50 rounded-2xl text-[14px] font-black outline-none focus:border-emerald-600 focus:bg-white transition-all shadow-inner" 
                          />
                         <button 
@@ -226,6 +222,7 @@ const StaticLoginView = () => {
                         <select 
                            value={role}
                            onChange={(e) => setRole(e.target.value)}
+                           suppressHydrationWarning
                            className="w-full pl-16 pr-8 py-5 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl text-[14px] font-black text-emerald-900 outline-none focus:border-emerald-600 focus:bg-white transition-all appearance-none cursor-pointer"
                         >
                            <option>Admin</option>

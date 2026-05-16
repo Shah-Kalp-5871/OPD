@@ -1,16 +1,20 @@
-import { IsString, IsEnum, IsOptional, IsNotEmpty } from 'class-validator';
-import { QueueType, QueueStatus } from '@prisma/client';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsNotEmpty,
+  IsUUID,
+} from 'class-validator';
+import { CasePriority, QueueType } from '@prisma/client';
 
 export class CreateQueueEntryDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   caseId: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   patientId: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   doctorId?: string;
 
@@ -18,7 +22,7 @@ export class CreateQueueEntryDto {
   @IsOptional()
   queueType?: QueueType;
 
-  @IsString()
+  @IsEnum(CasePriority)
   @IsOptional()
-  priority?: string;
+  priority?: CasePriority;
 }

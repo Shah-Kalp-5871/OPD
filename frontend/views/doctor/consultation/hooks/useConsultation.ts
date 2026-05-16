@@ -11,6 +11,7 @@ export const useConsultation = (caseId: string) => {
   const [dirty, setDirty] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!caseId) return;
     try {
       setLoading(true);
       const res = await api.get(`/consultation/${caseId}`);
@@ -24,13 +25,14 @@ export const useConsultation = (caseId: string) => {
   }, [caseId]);
 
   useEffect(() => {
-    if (caseId) fetchData();
+    fetchData();
   }, [fetchData]);
 
   // Simple debounce implementation
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const performSave = useCallback(async (updatedData: any) => {
+    if (!caseId) return;
     setSaving(true);
     try {
       await api.post(`/consultation/${caseId}/save`, updatedData);
@@ -60,17 +62,49 @@ export const useConsultation = (caseId: string) => {
     setDirty(true);
   };
 
+  const updateConsultation = (field: string, value: any) => {
+    setData((prev: any) => ({
+      ...prev,
+      consultation: { ...prev.consultation, [field]: value }
+    }));
+    setDirty(true);
+  };
+
+  const saveManually = async () => {
+    if (!data) return;
+    const payload = {
+      complaint: data.complaint ? {
+        ...data.complaint,
+        duration: data.complaint.duration ? parseInt(data.complaint.duration) : null
+      } : undefined,
+      history: data.history,
+      provisionalDiagnosis: data.consultation?.provisionalDiagnosis,
+      finalDiagnosis: data.consultation?.finalDiagnosis,
+      treatmentPlan: data.consultation?.treatmentPlan,
+      advice: data.consultation?.advice,
+    };
+    await performSave(payload);
+    toast.success('Clinical data synchronized');
+  };
+
   useEffect(() => {
     if (dirty && data) {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       
       saveTimeoutRef.current = setTimeout(() => {
         const payload = {
-          complaint: data.complaint,
-          history: data.history
+          complaint: data.complaint ? {
+            ...data.complaint,
+            duration: data.complaint.duration ? parseInt(data.complaint.duration) : null
+          } : undefined,
+          history: data.history,
+          provisionalDiagnosis: data.consultation?.provisionalDiagnosis,
+          finalDiagnosis: data.consultation?.finalDiagnosis,
+          treatmentPlan: data.consultation?.treatmentPlan,
+          advice: data.consultation?.advice
         };
         performSave(payload);
-      }, 2000);
+      }, 3000);
     }
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -84,6 +118,8 @@ export const useConsultation = (caseId: string) => {
     lastSaved,
     updateComplaint,
     updateHistory,
+    updateConsultation,
+    saveManually,
     refresh: fetchData
   };
 };

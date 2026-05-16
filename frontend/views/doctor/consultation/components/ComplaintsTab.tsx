@@ -8,8 +8,11 @@ import {
   Users,
   Scissors,
   Activity,
-  Baby
+  Baby,
+  History as HistoryIcon,
+  Search
 } from 'lucide-react';
+import { Card, SectionHeader, TextArea, Input, Badge } from './ClinicalDesignSystem';
 
 interface ComplaintsTabProps {
   data: any;
@@ -28,41 +31,42 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
   const history = data?.history || {};
 
   return (
-    <div className="p-8 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 pb-12">
       {/* Chief Complaints Section */}
-      <section>
-        <div className="flex items-center gap-3 mb-6 border-b border-slate-800 pb-2">
-          <Stethoscope className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-xl font-bold text-white">Chief Complaints</h2>
-        </div>
-
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 md:col-span-6 space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Complaint Detail</label>
-            <textarea
+      <Card 
+        title="Chief Complaints & Present Illness" 
+        subtitle="Primary reason for visit and detailed history of the current condition."
+        headerAction={
+          <div className="flex items-center gap-2">
+            <Badge variant="blue">Session Active</Badge>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-12 lg:col-span-7">
+            <TextArea
+              label="Complaint Details"
               value={complaint.chiefComplaint || ''}
               onChange={(e) => updateComplaint('chiefComplaint', e.target.value)}
-              placeholder="e.g. Sharp abdominal pain, persistent cough..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all min-h-[120px]"
+              placeholder="Describe the patient's primary symptoms and reasons for visit..."
+              className="min-h-[160px]"
             />
           </div>
 
-          <div className="col-span-12 md:col-span-6 grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Duration</label>
-              <input
-                type="number"
-                value={complaint.duration || ''}
-                onChange={(e) => updateComplaint('duration', e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</label>
+          <div className="col-span-12 lg:col-span-5 grid grid-cols-2 gap-4">
+            <Input
+              label="Duration"
+              type="number"
+              value={complaint.duration || ''}
+              onChange={(e) => updateComplaint('duration', e.target.value)}
+              placeholder="Value"
+            />
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Type</label>
               <select
                 value={complaint.durationType || 'DAYS'}
                 onChange={(e) => updateComplaint('durationType', e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 outline-none transition-all appearance-none"
               >
                 <option value="DAYS">Days</option>
                 <option value="WEEKS">Weeks</option>
@@ -70,24 +74,24 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
                 <option value="YEARS">Years</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Severity</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Severity</label>
               <select
                 value={complaint.severity || 'MILD'}
                 onChange={(e) => updateComplaint('severity', e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 outline-none transition-all appearance-none"
               >
                 <option value="MILD">Mild</option>
                 <option value="MODERATE">Moderate</option>
                 <option value="SEVERE">Severe</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Onset</label>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Onset</label>
               <select
                 value={complaint.onset || 'GRADUAL'}
                 onChange={(e) => updateComplaint('onset', e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 outline-none transition-all appearance-none"
               >
                 <option value="GRADUAL">Gradual</option>
                 <option value="SUDDEN">Sudden</option>
@@ -95,91 +99,116 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
             </div>
           </div>
 
-          <div className="col-span-12 md:col-span-6 space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Aggravating Factors</label>
-            <input
-              type="text"
+          <div className="col-span-12 lg:col-span-6">
+            <Input
+              label="Aggravating Factors"
               value={complaint.aggravatingFactors || ''}
               onChange={(e) => updateComplaint('aggravatingFactors', e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. Walking, eating spicy food..."
             />
           </div>
 
-          <div className="col-span-12 md:col-span-6 space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Relieving Factors</label>
-            <input
-              type="text"
+          <div className="col-span-12 lg:col-span-6">
+            <Input
+              label="Relieving Factors"
               value={complaint.relievingFactors || ''}
               onChange={(e) => updateComplaint('relievingFactors', e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="e.g. Rest, cold compress..."
+            />
+          </div>
+
+          <div className="col-span-12">
+            <TextArea
+              label="History of Present Illness (HPI)"
+              value={complaint.presentIllness || ''}
+              onChange={(e) => updateComplaint('presentIllness', e.target.value)}
+              placeholder="Timeline and evolution of current symptoms..."
+              className="min-h-[120px]"
             />
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* Clinical History Section */}
-      <section>
-        <div className="flex items-center gap-3 mb-6 border-b border-slate-800 pb-2">
-          <Activity className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-xl font-bold text-white">Clinical History</h2>
-        </div>
+      <SectionHeader 
+        title="Clinical History" 
+        subtitle="Past records, hereditary conditions, and surgical history."
+        action={<Badge variant="slate">Total 6 Sections</Badge>}
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <HistoryField 
-            icon={<Clock className="w-4 h-4" />} 
-            label="Past Medical History" 
-            value={history.pastHistory} 
-            onChange={(val) => updateHistory('pastHistory', val)}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <HistoryCard 
+          icon={<HistoryIcon className="w-4 h-4" />} 
+          label="Past Medical History" 
+          value={history.pastHistory} 
+          onChange={(val) => updateHistory('pastHistory', val)}
+          placeholder="Details of previous medical conditions..."
+        />
+        <HistoryCard 
+          icon={<AlertCircle className="w-4 h-4" />} 
+          label="Known Allergies" 
+          value={history.allergies} 
+          onChange={(val) => updateHistory('allergies', val)}
+          placeholder="List any drug, food or environmental allergies..."
+          isAlert
+        />
+        <HistoryCard 
+          icon={<Zap className="w-4 h-4" />} 
+          label="Chronic Diseases" 
+          value={history.chronicDiseases} 
+          onChange={(val) => updateHistory('chronicDiseases', val)}
+          placeholder="Diabetes, Hypertension, etc..."
+        />
+        <HistoryCard 
+          icon={<Users className="w-4 h-4" />} 
+          label="Family History" 
+          value={history.familyHistory} 
+          onChange={(val) => updateHistory('familyHistory', val)}
+          placeholder="Hereditary conditions in the family..."
+        />
+        <HistoryCard 
+          icon={<Scissors className="w-4 h-4" />} 
+          label="Surgical History" 
+          value={history.surgicalHistory} 
+          onChange={(val) => updateHistory('surgicalHistory', val)}
+          placeholder="Previous surgeries and dates..."
+        />
+        <HistoryCard 
+          icon={<Activity className="w-4 h-4" />} 
+          label="Personal History" 
+          value={history.personalHistory} 
+          onChange={(val) => updateHistory('personalHistory', val)}
+          placeholder="Smoking, alcohol, diet, lifestyle..."
+        />
+        {patientGender?.toUpperCase() === 'FEMALE' && (
+          <HistoryCard 
+            icon={<Baby className="w-4 h-4" />} 
+            label="Obstetric History" 
+            value={history.obstetricHistory} 
+            onChange={(val) => updateHistory('obstetricHistory', val)}
+            placeholder="Pregnancies, births, complications..."
           />
-          <HistoryField 
-            icon={<AlertCircle className="w-4 h-4" />} 
-            label="Personal History" 
-            value={history.personalHistory} 
-            onChange={(val) => updateHistory('personalHistory', val)}
-          />
-          <HistoryField 
-            icon={<Scissors className="w-4 h-4" />} 
-            label="Surgical History" 
-            value={history.surgicalHistory} 
-            onChange={(val) => updateHistory('surgicalHistory', val)}
-          />
-          <HistoryField 
-            icon={<Users className="w-4 h-4" />} 
-            label="Family History" 
-            value={history.familyHistory} 
-            onChange={(val) => updateHistory('familyHistory', val)}
-          />
-          {patientGender?.toUpperCase() === 'FEMALE' && (
-            <HistoryField 
-              icon={<Baby className="w-4 h-4" />} 
-              label="Obstetric History" 
-              value={history.obstetricHistory} 
-              onChange={(val) => updateHistory('obstetricHistory', val)}
-            />
-          )}
-        </div>
-      </section>
+        )}
+      </div>
     </div>
   );
 };
 
-const HistoryField = ({ icon, label, value, onChange }: { icon: any, label: string, value: string, onChange: (v: string) => void }) => (
-  <div className="space-y-2 group">
-    <div className="flex items-center gap-2 mb-1">
-      <div className="text-slate-500 group-focus-within:text-indigo-400 transition-colors">
+const HistoryCard = ({ icon, label, value, onChange, placeholder, isAlert }: { icon: any, label: string, value: string, onChange: (v: string) => void, placeholder: string, isAlert?: boolean }) => (
+  <Card className={`group transition-all ${isAlert ? 'border-rose-100 hover:border-rose-200' : 'hover:border-blue-200'}`}>
+    <div className="flex items-center gap-3 mb-4">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${isAlert ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
         {icon}
       </div>
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider group-focus-within:text-slate-300 transition-colors">
-        {label}
-      </label>
+      <h4 className={`text-sm font-black tracking-tight ${isAlert ? 'text-rose-700' : 'text-slate-900'}`}>{label}</h4>
     </div>
-    <textarea
+    <TextArea
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-white placeholder:text-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none transition-all min-h-[100px]"
-      placeholder={`Enter details about ${label.toLowerCase()}...`}
+      placeholder={placeholder}
+      className={`bg-white border-slate-100 min-h-[100px] ${isAlert ? 'focus:border-rose-400 focus:ring-rose-500/5' : ''}`}
     />
-  </div>
+  </Card>
 );
 
 export default ComplaintsTab;

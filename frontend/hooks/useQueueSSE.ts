@@ -12,7 +12,13 @@ export const useQueueSSE = (options: QueueSSEOptions = {}) => {
   const [lastEvent, setLastEvent] = useState<any>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/events/queue`);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('Queue SSE disabled: missing auth token');
+      return;
+    }
+
+    const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/events/queue?token=${encodeURIComponent(token)}`);
 
     eventSource.onmessage = (event) => {
       try {
@@ -40,16 +46,33 @@ export const useQueueSSE = (options: QueueSSEOptions = {}) => {
     const refreshData = async () => {
       try {
         const url = options.doctorId ? `/queue/live?doctorId=${options.doctorId}` : '/queue/live';
+        console.log(`Fetching queue from: ${url}`);
+        
         const [queueRes, statsRes] = await Promise.all([
           api.get(url),
           api.get('/queue/stats')
         ]);
-        setEntries(queueRes.data);
-        setStats(statsRes.data);
-      } catch (error) {
-        console.error('Failed to refresh data via SSE trigger', error);
+        
+        console.log('Queue API Response:', queueRes);
+        
+        // Handle both wrapped and unwrapped responses
+        const queueData = queueRes.data || (Array.isArray(queueRes) ? queueRes : []);
+        const statsData = statsRes.data || statsRes;
+
+        setEntries(queueData);
+        setStats(statsData);
+        
+        console.log('Resolved Queue Entries:', queueData.length);
+      } catch (error: any) {
+        console.error('Failed to refresh data:', error);
+        if (error.response) {
+          console.error('Response Error Data:', error.response.data);
+        }
       }
     };
+
+    // Initial fetch
+    refreshData();
 
     eventSource.onerror = (error) => {
       console.error('SSE Error:', error);

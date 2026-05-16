@@ -1,4 +1,10 @@
-import { Controller, Post, Body, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 
@@ -19,7 +25,10 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     this.logger.log(`Login attempt for: ${loginDto.email}`);
-    const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+    const user = await this.authService.validateUser(
+      loginDto.email,
+      loginDto.password,
+    );
     this.logger.log(`Successful login for: ${loginDto.email}`);
     return this.authService.login(user);
   }

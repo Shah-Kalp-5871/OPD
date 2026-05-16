@@ -1,4 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch()
@@ -13,7 +19,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : null;
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : null;
 
     let message = 'Internal server error';
     let errors = null;
@@ -22,7 +29,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const res = exception.getResponse() as any;
       message = res.message || exception.message;
       errors = res.errors || null;
-      
+
       // Handle NestJS class-validator default array format
       if (Array.isArray(res.message)) {
         message = 'Validation failed';
