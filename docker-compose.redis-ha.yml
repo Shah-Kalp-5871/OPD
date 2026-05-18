@@ -1,0 +1,68 @@
+# =============================================================================
+# MedFlow Redis Sentinel High Availability — Docker Compose Stack
+# =============================================================================
+version: '3.9'
+
+services:
+  # 1. Master Redis Node
+  redis-master:
+    image: redis:7-alpine
+    container_name: medflow_redis_master
+    command: redis-server --requirepass super_secure_redis_password --appendonly yes
+    networks:
+      - medflow_internal
+    ports:
+      - "6379:6379"
+
+  # 2. Replica Redis Node
+  redis-replica:
+    image: redis:7-alpine
+    container_name: medflow_redis_replica
+    command: redis-server --replicaof redis-master 6379 --masterauth super_secure_redis_password --requirepass super_secure_redis_password
+    depends_on:
+      - redis-master
+    networks:
+      - medflow_internal
+
+  # 3. Redis Sentinel Orchestrators (Quorum of 3)
+  sentinel-1:
+    image: redis:7-alpine
+    container_name: medflow_sentinel_1
+    volumes:
+      - ./infrastructure/redis/redis-sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-server /etc/redis/sentinel.conf --sentinel
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - medflow_internal
+    ports:
+      - "26379:26379"
+
+  sentinel-2:
+    image: redis:7-alpine
+    container_name: medflow_sentinel_2
+    volumes:
+      - ./infrastructure/redis/redis-sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-server /etc/redis/sentinel.conf --sentinel
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - medflow_internal
+
+  sentinel-3:
+    image: redis:7-alpine
+    container_name: medflow_sentinel_3
+    volumes:
+      - ./infrastructure/redis/redis-sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-server /etc/redis/sentinel.conf --sentinel
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - medflow_internal
+
+networks:
+  medflow_internal:
+    driver: bridge

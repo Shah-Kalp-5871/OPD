@@ -12,10 +12,27 @@ import * as redisStore from 'cache-manager-redis-store';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const password = configService.get<string>('REDIS_PASSWORD');
+        const isSentinel = configService.get<string>('REDIS_SENTINEL_ENABLED') === 'true';
+        const sentinelMaster = configService.get<string>('REDIS_SENTINEL_MASTER') || 'mymaster';
+        const sentinelNodesStr = configService.get<string>('REDIS_SENTINEL_NODES') || '';
+
+        if (isSentinel && sentinelNodesStr) {
+          return {
+            store: redisStore,
+            sentinels: sentinelNodesStr.split(',').map((node) => {
+              const [shost, sport] = node.trim().split(':');
+              return { host: shost, port: parseInt(sport, 10) };
+            }),
+            name: sentinelMaster,
+            ...(password ? { auth_pass: password, sentinelPassword: password } : {}),
+            ttl: 60 * 1000,
+          } as any;
+        }
+
         return {
           store: redisStore,
-          host: configService.get<string>('REDIS_HOST'),
-          port: configService.get<number>('REDIS_PORT'),
+          host: configService.get<string>('REDIS_HOST') || 'localhost',
+          port: configService.get<number>('REDIS_PORT') || 6379,
           ...(password ? { auth_pass: password } : {}),
           ttl: 60 * 1000, // default 60 seconds in ms
         };

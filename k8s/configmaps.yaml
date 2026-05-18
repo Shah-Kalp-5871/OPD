@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medflow-config
+  namespace: medflow
+data:
+  NODE_ENV: "production"
+  PORT: "4000"
+  ENABLE_REDIS_CACHE: "true"
+  REDIS_SENTINEL_ENABLED: "true"
+  REDIS_SENTINEL_MASTER: "mymaster"
+  REDIS_SENTINEL_NODES: "redis-sentinel-0.redis-sentinel.medflow.svc.cluster.local:26379,redis-sentinel-1.redis-sentinel.medflow.svc.cluster.local:26379,redis-sentinel-2.redis-sentinel.medflow.svc.cluster.local:26379"
+  DB_READ_REPLICA_URL: "postgresql://medflow_user:super_secure_password@postgres-replica.medflow.svc.cluster.local:5432/medflow_db"
+  ENABLE_AUDIT_LOGGING: "true"
+  LOG_LEVEL: "info"
+  COMMUNICATION_MAX_RETRIES: "5"
+  WEBSOCKET_HEARTBEAT_INTERVAL: "25000"
+  AUTO_SCALING_THRESHOLD: "70"

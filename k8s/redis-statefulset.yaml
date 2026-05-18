@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: medflow
+spec:
+  serviceName: redis
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+        # 1. Redis DB Node
+        - name: redis
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              if [ "$(hostname)" = "redis-0" ]; then
+                echo "Initializing as Redis Master node..."
+                exec redis-server --requirepass super_secure_redis_password --protected-mode no
+              else
+                echo "Initializing as Replica node..."
+                exec redis-server --replicaof redis-0.redis.medflow.svc.cluster.local 6379 --masterauth super_secure_redis_password --requirepass super_secure_redis_password --protected-mode no
+              fi
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+          livenessProbe:
+            exec:
+              command: [ "redis-cli", "-a", "super_secure_redis_password", "ping" ]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: [ "redis-cli", "-a", "super_secure_redis_password", "ping" ]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+        # 2. Redis Sentinel Coordinator
+        - name: sentinel
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - |
+              cat <<EOF > /tmp/sentinel.conf
+              port 26379
+              dir /tmp
+              sentinel monitor mymaster redis-0.redis.medflow.svc.cluster.local 6379 2
+              sentinel auth-pass mymaster super_secure_redis_password
+              sentinel down-after-milliseconds mymaster 5000
+              sentinel failover-timeout mymaster 10000
+              sentinel parallel-syncs mymaster 1
+              EOF
+              exec redis-server /tmp/sentinel.conf --sentinel
+          ports:
+            - containerPort: 26379
+              name: sentinel
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+          livenessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 10
+            periodSeconds: 5

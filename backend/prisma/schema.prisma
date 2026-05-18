@@ -9,57 +9,58 @@ datasource db {
 }
 
 model User {
-  id                     String               @id @default(uuid())
-  name                   String
-  email                  String               @unique
-  password               String
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
-  isActive               Boolean              @default(true)
-  role                   Role
-  mobile                 String?
-  deletedAt              DateTime?
-  failedLoginAttempts    Int                  @default(0)
-  firstName              String?
-  lastLoginAt            DateTime?
-  lastName               String?
-  lockedUntil            DateTime?
-  passwordHash           String?
-  activityLogs           ActivityLog[]
-  adminProfile           AdminProfile?
-  auditLogs              AuditLog[]
-  authorizedDevices      AuthorizedDevice[]
-  createdBills           Bill[]               @relation("BillCreatedBy")
-  collectedPayments      BillPayment[]        @relation("CollectedPayments")
-  clinicalImages         ClinicalImage[]
-  doctorConsultations    ConsultationRecord[] @relation("DoctorConsultations")
-  doctorProfile          DoctorProfile?
-  loginHistory           LoginHistory[]
-  medicalProfile         MedicalProfile?
-  nurseProfile           NurseProfile?
-  createdPatients        Patient[]            @relation("PatientCreatedBy")
-  doctorCases            PatientCase[]
-  vitalsTaken            PatientVitals[]
-  assignedQueues         QueueEntry[]
-  performedActions       QueueHistory[]
-  receptionProfile       ReceptionProfile?
-  staffProfile           StaffProfile?
-  userSessions           UserSession[]
-  doctorSessions         VisitSession[]
-  consultationsUpdated   ConsultationRecord[] @relation("ConsultationUpdatedBy")
-  consultationsFinalized ConsultationRecord[] @relation("ConsultationFinalizedBy")
-  investigationFiles     InvestigationFile[]
-  processedRefunds       BillRefund[]         @relation("ProcessedRefunds")
-  finalizedBills         Bill[]               @relation("BillFinalizedBy")
-  stockMovements         StockMovement[]
-  transfersRequested     StockTransfer[]      @relation("TransfersRequested")
-  transfersApproved      StockTransfer[]      @relation("TransfersApproved")
-  transfersDispatched    StockTransfer[]      @relation("TransfersDispatched")
-  transfersReceived      StockTransfer[]      @relation("TransfersReceived")
-  communicationLogs      CommunicationLog[]
-  inAppNotifications     InAppNotification[]
-  primaryBranchId        String?
-  branchAccess           UserBranchAccess[]
+  id                      String                   @id @default(uuid())
+  name                    String
+  email                   String                   @unique
+  password                String
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  isActive                Boolean                  @default(true)
+  role                    Role
+  mobile                  String?
+  deletedAt               DateTime?
+  failedLoginAttempts     Int                      @default(0)
+  firstName               String?
+  lastLoginAt             DateTime?
+  lastName                String?
+  lockedUntil             DateTime?
+  passwordHash            String?
+  activityLogs            ActivityLog[]
+  adminProfile            AdminProfile?
+  auditLogs               AuditLog[]
+  authorizedDevices       AuthorizedDevice[]
+  createdBills            Bill[]                   @relation("BillCreatedBy")
+  collectedPayments       BillPayment[]            @relation("CollectedPayments")
+  clinicalImages          ClinicalImage[]
+  doctorConsultations     ConsultationRecord[]     @relation("DoctorConsultations")
+  doctorProfile           DoctorProfile?
+  loginHistory            LoginHistory[]
+  medicalProfile          MedicalProfile?
+  nurseProfile            NurseProfile?
+  createdPatients         Patient[]                @relation("PatientCreatedBy")
+  doctorCases             PatientCase[]
+  vitalsTaken             PatientVitals[]
+  assignedQueues          QueueEntry[]
+  performedActions        QueueHistory[]
+  receptionProfile        ReceptionProfile?
+  staffProfile            StaffProfile?
+  userSessions            UserSession[]
+  doctorSessions          VisitSession[]
+  consultationsUpdated    ConsultationRecord[]     @relation("ConsultationUpdatedBy")
+  consultationsFinalized  ConsultationRecord[]     @relation("ConsultationFinalizedBy")
+  investigationFiles      InvestigationFile[]
+  processedRefunds        BillRefund[]             @relation("ProcessedRefunds")
+  finalizedBills          Bill[]                   @relation("BillFinalizedBy")
+  stockMovements          StockMovement[]
+  transfersRequested      StockTransfer[]          @relation("TransfersRequested")
+  transfersApproved       StockTransfer[]          @relation("TransfersApproved")
+  transfersDispatched     StockTransfer[]          @relation("TransfersDispatched")
+  transfersReceived       StockTransfer[]          @relation("TransfersReceived")
+  communicationLogs       CommunicationLog[]
+  inAppNotifications      InAppNotification[]
+  primaryBranchId         String?
+  branchAccess            UserBranchAccess[]
+  telemedicineSessionLogs TelemedicineSessionLog[]
 }
 
 model AdminProfile {
@@ -78,22 +79,22 @@ model ReceptionProfile {
 }
 
 model DoctorProfile {
-  id              String           @id @default(uuid())
-  userId          String           @unique
+  id              String              @id @default(uuid())
+  userId          String              @unique
   specialization  String?
-  consultationFee Decimal          @default(0.0) @db.Decimal(10, 2)
-  licenseNumber   String?          @unique
-  appointmentGap  Int              @default(10)
-  availableDays   String[]         @default([])
+  consultationFee Decimal             @default(0.0) @db.Decimal(10, 2)
+  licenseNumber   String?             @unique
+  appointmentGap  Int                 @default(10)
+  availableDays   String[]            @default([])
   eveningEnd      String?
   eveningStart    String?
   morningEnd      String?
   morningStart    String?
-  slotDuration    Int              @default(15)
+  slotDuration    Int                 @default(15)
   departmentId    String?
   appointments    Appointment[]
-  department      Department?      @relation(fields: [departmentId], references: [id])
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department      Department?         @relation(fields: [departmentId], references: [id])
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   schedules       DoctorSchedule[]
   leaves          DoctorLeave[]
   blockedSlots    DoctorBlockedSlot[]
@@ -130,26 +131,26 @@ model StaffProfile {
 }
 
 model Patient {
-  id                      String             @id @default(uuid())
-  mrdNumber               String             @unique
+  id                      String                   @id @default(uuid())
+  mrdNumber               String                   @unique
   firstName               String
   middleName              String?
   lastName                String
-  mobile                  String             @unique
+  mobile                  String                   @unique
   gender                  String
-  profileCompletionStatus Int                @default(20)
-  isActive                Boolean            @default(true)
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
+  profileCompletionStatus Int                      @default(20)
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   createdById             String?
   deletedAt               DateTime?
   email                   String?
-  genderEnum              Gender             @default(UNKNOWN)
-  isFoc                   Boolean            @default(false)
-  preferredLanguage       String             @default("English")
+  genderEnum              Gender                   @default(UNKNOWN)
+  isFoc                   Boolean                  @default(false)
+  preferredLanguage       String                   @default("English")
   appointments            Appointment[]
   bills                   Bill[]
-  createdBy               User?              @relation("PatientCreatedBy", fields: [createdById], references: [id])
+  createdBy               User?                    @relation("PatientCreatedBy", fields: [createdById], references: [id])
   addresses               PatientAddress[]
   allergiesList           PatientAllergy[]
   cases                   PatientCase[]
@@ -164,6 +165,8 @@ model Patient {
   queueEntries            QueueEntry[]
   communicationLogs       CommunicationLog[]
   auth                    PatientAuth?
+  telemedicineSessionLogs TelemedicineSessionLog[]
+  paymentIntents          PaymentIntent[]
 
   @@index([firstName, lastName])
   @@index([createdAt])
@@ -213,40 +216,41 @@ model PatientVitals {
 }
 
 model PatientCase {
-  id                  String               @id @default(uuid())
-  caseNumber          String
-  patientId           String
-  doctorId            String?
-  visitType           String?
-  priority            String               @default("NORMAL")
-  complaint           String?
-  visitDate           DateTime             @default(now())
-  status              String               @default("OPEN")
-  stage               CaseStage            @default(RECEPTION)
-  createdAt           DateTime             @default(now())
-  checkInTime         DateTime?
-  closeTime           DateTime?
-  priorityEnum        CasePriority         @default(NORMAL)
-  updatedAt           DateTime             @default(now()) @updatedAt
-  appointment         Appointment?
-  bill                Bill?
-  billsList           Bill[]               @relation("CaseBillsList")
-  notes               CaseNote[]
-  statusHistory       CaseStatusHistory[]
-  tags                CaseTag[]
-  clinicalImages      ClinicalImage[]
-  consultation        ConsultationRecord?
-  followups           Followup[]
-  investigationOrders InvestigationOrder[]
-  doctor              User?                @relation(fields: [doctorId], references: [id])
-  patient             Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  vitalsList          PatientVitals[]
-  prescriptions       Prescription[]
-  procedureSessions   ProcedureSession[]
-  queueEntry          QueueEntry?
-  sessions            VisitSession[]
-  branchId            String
-  branch              Branch               @relation("BranchCases", fields: [branchId], references: [id])
+  id                      String                   @id @default(uuid())
+  caseNumber              String
+  patientId               String
+  doctorId                String?
+  visitType               String?
+  priority                String                   @default("NORMAL")
+  complaint               String?
+  visitDate               DateTime                 @default(now())
+  status                  String                   @default("OPEN")
+  stage                   CaseStage                @default(RECEPTION)
+  createdAt               DateTime                 @default(now())
+  checkInTime             DateTime?
+  closeTime               DateTime?
+  priorityEnum            CasePriority             @default(NORMAL)
+  updatedAt               DateTime                 @default(now()) @updatedAt
+  appointment             Appointment?
+  bill                    Bill?
+  billsList               Bill[]                   @relation("CaseBillsList")
+  notes                   CaseNote[]
+  statusHistory           CaseStatusHistory[]
+  tags                    CaseTag[]
+  clinicalImages          ClinicalImage[]
+  consultation            ConsultationRecord?
+  followups               Followup[]
+  investigationOrders     InvestigationOrder[]
+  doctor                  User?                    @relation(fields: [doctorId], references: [id])
+  patient                 Patient                  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  vitalsList              PatientVitals[]
+  prescriptions           Prescription[]
+  procedureSessions       ProcedureSession[]
+  queueEntry              QueueEntry?
+  sessions                VisitSession[]
+  branchId                String
+  branch                  Branch                   @relation("BranchCases", fields: [branchId], references: [id])
+  telemedicineSessionLogs TelemedicineSessionLog[]
 
   @@unique([caseNumber, branchId])
 }
@@ -304,38 +308,39 @@ model QueueHistory {
 }
 
 model Bill {
-  id                String        @id @default(uuid())
+  id                String         @id @default(uuid())
   billNumber        String
-  caseId            String        @unique
+  caseId            String         @unique
   patientId         String
-  grossAmount       Decimal       @default(0.0) @db.Decimal(10, 2)
-  discountTotal     Decimal       @default(0.0) @db.Decimal(10, 2)
-  netAmount         Decimal       @default(0.0) @db.Decimal(10, 2)
-  paidAmount        Decimal       @default(0.0) @db.Decimal(10, 2)
-  balanceAmount     Decimal       @default(0.0) @db.Decimal(10, 2)
-  paymentStatus     String        @default("PENDING")
+  grossAmount       Decimal        @default(0.0) @db.Decimal(10, 2)
+  discountTotal     Decimal        @default(0.0) @db.Decimal(10, 2)
+  netAmount         Decimal        @default(0.0) @db.Decimal(10, 2)
+  paidAmount        Decimal        @default(0.0) @db.Decimal(10, 2)
+  balanceAmount     Decimal        @default(0.0) @db.Decimal(10, 2)
+  paymentStatus     String         @default("PENDING")
   paymentMode       String?
   transactionId     String?
-  billingDate       DateTime      @default(now())
+  billingDate       DateTime       @default(now())
   paidAt            DateTime?
   createdById       String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   patientCaseId     String?
-  paymentStatusEnum BillStatus    @default(PENDING)
-  isFinalized       Boolean       @default(false)
+  paymentStatusEnum BillStatus     @default(PENDING)
+  isFinalized       Boolean        @default(false)
   finalizedAt       DateTime?
   finalizedById     String?
-  case              PatientCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  createdBy         User?         @relation("BillCreatedBy", fields: [createdById], references: [id])
-  finalizedBy       User?         @relation("BillFinalizedBy", fields: [finalizedById], references: [id])
-  patientCase       PatientCase?  @relation("CaseBillsList", fields: [patientCaseId], references: [id])
-  patient           Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  case              PatientCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  createdBy         User?          @relation("BillCreatedBy", fields: [createdById], references: [id])
+  finalizedBy       User?          @relation("BillFinalizedBy", fields: [finalizedById], references: [id])
+  patientCase       PatientCase?   @relation("CaseBillsList", fields: [patientCaseId], references: [id])
+  patient           Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
   items             BillItem[]
   payments          BillPayment[]
   refunds           BillRefund[]
   branchId          String
-  branch            Branch        @relation("BranchBills", fields: [branchId], references: [id])
+  branch            Branch         @relation("BranchBills", fields: [branchId], references: [id])
+  paymentIntent     PaymentIntent?
 
   @@unique([billNumber, branchId])
   @@index([paymentStatusEnum, billingDate])
@@ -358,8 +363,8 @@ model BillItem {
   procedureSessionId String?
   referenceId        String?
   branchId           String
-  branch             Branch               @relation("BranchBillItems", fields: [branchId], references: [id])
-  bill               Bill                 @relation(fields: [billId], references: [id], onDelete: Cascade)
+  branch             Branch   @relation("BranchBillItems", fields: [branchId], references: [id])
+  bill               Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
 }
 
 model ConsultationRecord {
@@ -513,40 +518,40 @@ model Clinic {
 }
 
 model Branch {
-  id           String        @id @default(uuid())
-  clinicId     String
-  name         String
-  branchCode   String        @unique
-  address      String?
-  phone        String?
-  timezone     String        @default("UTC")
-  contactEmail String?
-  settings     Json?
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  departments  Department[]
-  rooms        Room[]
-  patientCases PatientCase[] @relation("BranchCases")
-  queueEntries QueueEntry[]  @relation("BranchQueue")
-  bills        Bill[]        @relation("BranchBills")
-  appointments Appointment[] @relation("BranchAppointments")
-  sessions     VisitSession[] @relation("BranchSessions")
-  vitals       PatientVitals[] @relation("BranchVitals")
-  payments     BillPayment[]   @relation("BranchPayments")
-  refunds      BillRefund[]    @relation("BranchRefunds")
-  clinicalImages ClinicalImage[] @relation("BranchClinicalImages")
-  caseNotes    CaseNote[]      @relation("BranchCaseNotes")
-  consultations ConsultationRecord[] @relation("BranchConsultations")
-  inventory    DrugInventory[] @relation("BranchInventory")
-  movements    StockMovement[] @relation("BranchMovements")
-  schedules    DoctorSchedule[] @relation("BranchSchedules")
-  transfersOut        StockTransfer[]      @relation("TransfersOut")
-  transfersIn         StockTransfer[]      @relation("TransfersIn")
-  prescriptions       Prescription[]       @relation("BranchPrescriptions")
-  investigations      InvestigationOrder[] @relation("BranchInvestigations")
-  procedures          ProcedureSession[]   @relation("BranchProcedures")
+  id                   String                @id @default(uuid())
+  clinicId             String
+  name                 String
+  branchCode           String                @unique
+  address              String?
+  phone                String?
+  timezone             String                @default("UTC")
+  contactEmail         String?
+  settings             Json?
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  clinic               Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  departments          Department[]
+  rooms                Room[]
+  patientCases         PatientCase[]         @relation("BranchCases")
+  queueEntries         QueueEntry[]          @relation("BranchQueue")
+  bills                Bill[]                @relation("BranchBills")
+  appointments         Appointment[]         @relation("BranchAppointments")
+  sessions             VisitSession[]        @relation("BranchSessions")
+  vitals               PatientVitals[]       @relation("BranchVitals")
+  payments             BillPayment[]         @relation("BranchPayments")
+  refunds              BillRefund[]          @relation("BranchRefunds")
+  clinicalImages       ClinicalImage[]       @relation("BranchClinicalImages")
+  caseNotes            CaseNote[]            @relation("BranchCaseNotes")
+  consultations        ConsultationRecord[]  @relation("BranchConsultations")
+  inventory            DrugInventory[]       @relation("BranchInventory")
+  movements            StockMovement[]       @relation("BranchMovements")
+  schedules            DoctorSchedule[]      @relation("BranchSchedules")
+  transfersOut         StockTransfer[]       @relation("TransfersOut")
+  transfersIn          StockTransfer[]       @relation("TransfersIn")
+  prescriptions        Prescription[]        @relation("BranchPrescriptions")
+  investigations       InvestigationOrder[]  @relation("BranchInvestigations")
+  procedures           ProcedureSession[]    @relation("BranchProcedures")
   investigationResults InvestigationResult[] @relation("BranchInvestigationResults")
   investigationFiles   InvestigationFile[]   @relation("BranchInvestigationFiles")
   prescriptionItems    PrescriptionItem[]    @relation("BranchPrescriptionItems")
@@ -561,8 +566,8 @@ model UserBranchAccess {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  branch    Branch   @relation("BranchUsers", fields: [branchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation("BranchUsers", fields: [branchId], references: [id], onDelete: Cascade)
 
   @@unique([userId, branchId])
 }
@@ -781,6 +786,7 @@ model Appointment {
   patient         Patient                    @relation(fields: [patientId], references: [id], onDelete: Cascade)
   branch          Branch                     @relation("BranchAppointments", fields: [branchId], references: [id])
   statusHistory   AppointmentStatusHistory[]
+  paymentIntent   PaymentIntent?
 
   @@index([doctorId, appointmentDate])
   @@index([appointmentDate])
@@ -890,8 +896,8 @@ model BillRefund {
   processedById String
   createdAt     DateTime @default(now())
 
-  bill        Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
-  processedBy User @relation("ProcessedRefunds", fields: [processedById], references: [id])
+  bill        Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+  processedBy User   @relation("ProcessedRefunds", fields: [processedById], references: [id])
   branchId    String
   branch      Branch @relation("BranchRefunds", fields: [branchId], references: [id])
 
@@ -900,7 +906,7 @@ model BillRefund {
 }
 
 model Drug {
-  id                String             @id @default(uuid())
+  id                String              @id @default(uuid())
   drugName          String
   genericName       String?
   manufacturer      String?
@@ -908,14 +914,14 @@ model Drug {
   formulation       String
   strength          String?
   unitOfMeasure     String
-  unitPrice         Decimal            @default(0.0) @db.Decimal(10, 2)
-  taxable           Boolean            @default(true)
-  stockTracked      Boolean            @default(true)
+  unitPrice         Decimal             @default(0.0) @db.Decimal(10, 2)
+  taxable           Boolean             @default(true)
+  stockTracked      Boolean             @default(true)
   schedule          String?
-  isActive          Boolean            @default(true)
+  isActive          Boolean             @default(true)
   archivedAt        DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
   inventory         DrugInventory[]
   prescriptionItems PrescriptionItem[]
   stockMovements    StockMovement[]
@@ -975,7 +981,7 @@ model DrugBatch {
 }
 
 model StockMovement {
-  id             String         @id @default(uuid())
+  id             String        @id @default(uuid())
   inventoryId    String
   batchId        String?
   branchId       String
@@ -983,17 +989,17 @@ model StockMovement {
   quantity       Int
   beforeQuantity Int?
   afterQuantity  Int?
-  unitPrice      Decimal?       @db.Decimal(10, 2)
+  unitPrice      Decimal?      @db.Decimal(10, 2)
   reason         String?
   referenceId    String? // Link to BillId or PrescriptionId
   performedById  String
-  createdAt      DateTime       @default(now())
+  createdAt      DateTime      @default(now())
   drugId         String
-  drug           Drug           @relation(fields: [drugId], references: [id])
-  inventory      DrugInventory  @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-  batch          DrugBatch?     @relation(fields: [batchId], references: [id])
-  performedBy    User           @relation(fields: [performedById], references: [id])
-  branch         Branch         @relation("BranchMovements", fields: [branchId], references: [id])
+  drug           Drug          @relation(fields: [drugId], references: [id])
+  inventory      DrugInventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  batch          DrugBatch?    @relation(fields: [batchId], references: [id])
+  performedBy    User          @relation(fields: [performedById], references: [id])
+  branch         Branch        @relation("BranchMovements", fields: [branchId], references: [id])
 
   @@index([inventoryId])
   @@index([batchId])
@@ -1005,35 +1011,35 @@ model StockMovement {
 }
 
 model Supplier {
-  id           String      @id @default(uuid())
-  name         String      @unique
-  contactName  String?
-  email        String?
-  phone        String?
-  address      String?
-  gstNumber    String?
+  id            String      @id @default(uuid())
+  name          String      @unique
+  contactName   String?
+  email         String?
+  phone         String?
+  address       String?
+  gstNumber     String?
   licenseNumber String?
-  isActive     Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  batches      DrugBatch[]
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  batches       DrugBatch[]
 
   @@index([name])
 }
 
 model Prescription {
-  id                 String             @id @default(uuid())
-  caseId             String
-  doctorId           String
-  status             String             @default("ACTIVE")
-  notes              String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  patientCase        PatientCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  items              PrescriptionItem[]
-  branchId           String
-  branch             Branch             @relation("BranchPrescriptions", fields: [branchId], references: [id])
-  
+  id          String             @id @default(uuid())
+  caseId      String
+  doctorId    String
+  status      String             @default("ACTIVE")
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  patientCase PatientCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  items       PrescriptionItem[]
+  branchId    String
+  branch      Branch             @relation("BranchPrescriptions", fields: [branchId], references: [id])
+
   // E-Prescription Digital Signature verification fields
   signedHash         String?
   signedAt           DateTime?
@@ -1369,27 +1375,27 @@ model MasterSetting {
 /// Immutable audit trail for every AI suggestion displayed to a clinician.
 /// Doctors may accept, modify, or reject — all outcomes are recorded.
 model AiSuggestionLog {
-  id               String   @id @default(uuid())
+  id              String    @id @default(uuid())
   /// Which module generated this suggestion
-  moduleType       String   // CLINICAL_DECISION, DRUG_INTERACTION, ALLERGY_CHECK, RISK_ENGINE, INVENTORY_FORECAST, ANOMALY_DETECTION
+  moduleType      String // CLINICAL_DECISION, DRUG_INTERACTION, ALLERGY_CHECK, RISK_ENGINE, INVENTORY_FORECAST, ANOMALY_DETECTION
   /// Context entity (caseId, patientId, inventoryId, etc.)
-  entityType       String
-  entityId         String
+  entityType      String
+  entityId        String
   /// The raw input that triggered the suggestion
-  inputContext     Json
+  inputContext    Json
   /// The AI-generated suggestions (array of recommendation objects)
-  suggestions      Json
+  suggestions     Json
   /// Confidence score 0-100
-  confidenceScore  Int      @default(0)
+  confidenceScore Int       @default(0)
   /// Doctor action on the suggestion
-  outcome          String   @default("SHOWN") // SHOWN, ACCEPTED, MODIFIED, REJECTED, IGNORED
+  outcome         String    @default("SHOWN") // SHOWN, ACCEPTED, MODIFIED, REJECTED, IGNORED
   /// The user who saw/acted on the suggestion
-  reviewedById     String?
-  reviewedAt       DateTime?
+  reviewedById    String?
+  reviewedAt      DateTime?
   /// Optional notes from the reviewing clinician
-  reviewNotes      String?
-  branchId         String?
-  createdAt        DateTime @default(now())
+  reviewNotes     String?
+  branchId        String?
+  createdAt       DateTime  @default(now())
 
   @@index([moduleType, entityType])
   @@index([entityId])
@@ -1399,27 +1405,27 @@ model AiSuggestionLog {
 
 /// Patient-level risk flags generated by the Clinical Risk Engine.
 model ClinicalRiskFlag {
-  id            String   @id @default(uuid())
-  patientId     String
-  branchId      String
+  id               String    @id @default(uuid())
+  patientId        String
+  branchId         String
   /// Type of risk detected
-  riskType      String   // ABNORMAL_VITALS, CRITICAL_LAB, REPEAT_EMERGENCY, CHRONIC_DISEASE, DRUG_INTERACTION, ALLERGY_CONFLICT, HIGH_REFUND
+  riskType         String // ABNORMAL_VITALS, CRITICAL_LAB, REPEAT_EMERGENCY, CHRONIC_DISEASE, DRUG_INTERACTION, ALLERGY_CONFLICT, HIGH_REFUND
   /// Severity: MILD | MODERATE | SEVERE | CRITICAL
-  severity      Severity @default(MODERATE)
+  severity         Severity  @default(MODERATE)
   /// Human-readable description of the risk
-  description   String
+  description      String
   /// Structured details (threshold values, detected values, etc.)
-  details       Json?
+  details          Json?
   /// Whether a clinician has acknowledged this flag
-  isAcknowledged Boolean @default(false)
+  isAcknowledged   Boolean   @default(false)
   acknowledgedById String?
   acknowledgedAt   DateTime?
   /// When this flag expires (for transient risks)
-  expiresAt     DateTime?
-  isResolved    Boolean  @default(false)
-  resolvedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  expiresAt        DateTime?
+  isResolved       Boolean   @default(false)
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@index([patientId, isResolved])
   @@index([branchId, severity])
@@ -1429,23 +1435,23 @@ model ClinicalRiskFlag {
 
 /// Operational anomaly alerts generated by the Enterprise Intelligence Engine.
 model OperationalAnomaly {
-  id            String   @id @default(uuid())
-  branchId      String
+  id           String    @id @default(uuid())
+  branchId     String
   /// Category of anomaly
-  anomalyType   String   // SUSPICIOUS_BILLING, UNUSUAL_REFUND, STOCK_ADJUSTMENT, REVENUE_DROP, HIGH_FOC
+  anomalyType  String // SUSPICIOUS_BILLING, UNUSUAL_REFUND, STOCK_ADJUSTMENT, REVENUE_DROP, HIGH_FOC
   /// Anomaly score 0-100 (higher = more suspicious)
-  anomalyScore  Int      @default(0)
+  anomalyScore Int       @default(0)
   /// Human-readable description
-  description   String
+  description  String
   /// Structured evidence data
-  evidence      Json?
+  evidence     Json?
   /// Whether this anomaly was reviewed
-  status        String   @default("OPEN") // OPEN, REVIEWED, DISMISSED, ESCALATED
-  reviewedById  String?
-  reviewedAt    DateTime?
-  reviewNotes   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status       String    @default("OPEN") // OPEN, REVIEWED, DISMISSED, ESCALATED
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNotes  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([branchId, status])
   @@index([anomalyType])
@@ -1648,40 +1654,40 @@ enum Severity {
 }
 
 model StockTransfer {
-  id             String               @id @default(uuid())
+  id             String              @id @default(uuid())
   sourceBranchId String
   destBranchId   String
-  status         StockTransferStatus  @default(REQUESTED)
+  status         StockTransferStatus @default(REQUESTED)
   requestedById  String
   approvedById   String?
   dispatchedById String?
   receivedById   String?
   notes          String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   items          StockTransferItem[]
 
-  sourceBranch   Branch               @relation("TransfersOut", fields: [sourceBranchId], references: [id])
-  destBranch     Branch               @relation("TransfersIn", fields: [destBranchId], references: [id])
-  requestedBy    User                 @relation("TransfersRequested", fields: [requestedById], references: [id])
-  approvedBy     User?                @relation("TransfersApproved", fields: [approvedById], references: [id])
-  dispatchedBy   User?                @relation("TransfersDispatched", fields: [dispatchedById], references: [id])
-  receivedBy     User?                @relation("TransfersReceived", fields: [receivedById], references: [id])
+  sourceBranch Branch @relation("TransfersOut", fields: [sourceBranchId], references: [id])
+  destBranch   Branch @relation("TransfersIn", fields: [destBranchId], references: [id])
+  requestedBy  User   @relation("TransfersRequested", fields: [requestedById], references: [id])
+  approvedBy   User?  @relation("TransfersApproved", fields: [approvedById], references: [id])
+  dispatchedBy User?  @relation("TransfersDispatched", fields: [dispatchedById], references: [id])
+  receivedBy   User?  @relation("TransfersReceived", fields: [receivedById], references: [id])
 }
 
 model StockTransferItem {
-  id              String         @id @default(uuid())
-  transferId      String
-  drugId          String
-  batchId         String?
-  requestedQty    Int
-  dispatchedQty   Int            @default(0)
-  receivedQty     Int            @default(0)
-  status          StockTransferItemStatus @default(PENDING)
+  id            String                  @id @default(uuid())
+  transferId    String
+  drugId        String
+  batchId       String?
+  requestedQty  Int
+  dispatchedQty Int                     @default(0)
+  receivedQty   Int                     @default(0)
+  status        StockTransferItemStatus @default(PENDING)
 
-  transfer        StockTransfer  @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  drug            Drug           @relation(fields: [drugId], references: [id])
-  batch           DrugBatch?     @relation(fields: [batchId], references: [id])
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  drug     Drug          @relation(fields: [drugId], references: [id])
+  batch    DrugBatch?    @relation(fields: [batchId], references: [id])
 }
 
 enum StockTransferStatus {
@@ -1712,34 +1718,34 @@ model PatientAuth {
 }
 
 model CommunicationLog {
-  id           String             @id @default(uuid())
+  id           String    @id @default(uuid())
   recipient    String
-  channel      String             // SMS, EMAIL, WHATSAPP, IN_APP
-  payload      String             @db.Text
+  channel      String // SMS, EMAIL, WHATSAPP, IN_APP
+  payload      String    @db.Text
   templateName String?
-  status       String             @default("PENDING") // PENDING, SENT, FAILED
-  errorMessage String?            @db.Text
+  status       String    @default("PENDING") // PENDING, SENT, FAILED
+  errorMessage String?   @db.Text
   patientId    String?
   userId       String?
   metadata     Json?
-  createdAt    DateTime           @default(now())
+  createdAt    DateTime  @default(now())
   deliveredAt  DateTime?
-  patient      Patient?           @relation(fields: [patientId], references: [id])
-  user         User?              @relation(fields: [userId], references: [id])
+  patient      Patient?  @relation(fields: [patientId], references: [id])
+  user         User?     @relation(fields: [userId], references: [id])
 }
 
 model InAppNotification {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   title     String
-  message   String   @db.Text
-  severity  String   @default("MILD") // MILD, MODERATE, SEVERE, CRITICAL
-  status    String   @default("UNREAD") // UNREAD, READ, ARCHIVED
-  isRead    Boolean  @default(false)
+  message   String    @db.Text
+  severity  String    @default("MILD") // MILD, MODERATE, SEVERE, CRITICAL
+  status    String    @default("UNREAD") // UNREAD, READ, ARCHIVED
+  isRead    Boolean   @default(false)
   readAt    DateTime?
   link      String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -1747,19 +1753,19 @@ model InAppNotification {
 }
 
 model HipaaAuditLog {
-  id           String    @id @default(uuid())
-  userId       String?
-  role         String?
-  branchId     String?
-  patientId    String?
-  actionType   String
-  module       String
-  ipAddress    String?
-  userAgent    String?
-  timestamp    DateTime  @default(now())
-  entityType   String?
-  entityId     String?
-  details      String?
+  id         String   @id @default(uuid())
+  userId     String?
+  role       String?
+  branchId   String?
+  patientId  String?
+  actionType String
+  module     String
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+  entityType String?
+  entityId   String?
+  details    String?
 
   @@index([patientId])
   @@index([userId])
@@ -1771,7 +1777,7 @@ model HipaaAuditLog {
 model PatientConsent {
   id            String    @id @default(uuid())
   patientId     String
-  consentType   String    // TREATMENT, DATA_SHARING, INSURANCE, etc.
+  consentType   String // TREATMENT, DATA_SHARING, INSURANCE, etc.
   status        String    @default("ACTIVE") // ACTIVE, WITHDRAWN
   signedAt      DateTime  @default(now())
   withdrawnAt   DateTime?
@@ -1780,4 +1786,83 @@ model PatientConsent {
   signatureText String?
 
   @@index([patientId])
+}
+
+model AnalyticsSnapshot {
+  id        String   @id @default(uuid())
+  date      DateTime @default(now())
+  key       String // e.g. "executive_overview", "revenue", "forecasting"
+  branchId  String?
+  data      Json
+  createdAt DateTime @default(now())
+
+  @@index([key])
+  @@index([date])
+  @@index([branchId])
+}
+
+// ─── Phase 21: Digital Healthcare Ecosystem ──────────────────────────────────
+
+/// Tracks the metadata of a WebRTC Telemedicine consultation session. No video PHI is stored.
+model TelemedicineSessionLog {
+  id              String    @id @default(uuid())
+  sessionId       String    @unique
+  caseId          String
+  doctorId        String
+  patientId       String
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  durationSeconds Int       @default(0)
+  disconnects     Int       @default(0)
+  qualityMetrics  Json? // Stores bandwidth, latency, resolution degradation info
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  case    PatientCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  doctor  User        @relation(fields: [doctorId], references: [id])
+  patient Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([caseId])
+  @@index([doctorId])
+  @@index([patientId])
+}
+
+/// Tracks external payment intents from gateways like Stripe or Razorpay.
+model PaymentIntent {
+  id            String   @id @default(uuid())
+  provider      String // STRIPE, RAZORPAY
+  providerId    String   @unique // e.g., pi_123 or order_abc
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("INR")
+  status        String   @default("REQUIRES_PAYMENT_METHOD") // REQUIRES_PAYMENT_METHOD, SUCCEEDED, FAILED
+  billId        String?  @unique
+  appointmentId String?  @unique
+  patientId     String
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bill        Bill?        @relation(fields: [billId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([status])
+  @@index([patientId])
+}
+
+/// Idempotency table for webhook event processing
+model WebhookEvent {
+  id        String   @id @default(uuid())
+  provider  String // STRIPE, RAZORPAY
+  eventId   String   @unique
+  eventType String
+  status    String   @default("PROCESSED") // PROCESSED, FAILED
+  payload   Json?
+  error     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@index([provider, eventType])
 }

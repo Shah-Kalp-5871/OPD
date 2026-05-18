@@ -1,0 +1,42 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": 4,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Hospital OPD Revenue Rate (INR/sec)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(medflow_billing_revenue_total[5m])",
+          "legendFormat": "Revenue"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Insurance Settlement Delays (Average Hours)",
+      "type": "gauge",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "medflow_insurance_settlement_delay_seconds / 3600",
+          "legendFormat": "Settlement Delay (Hrs)"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["billing", "finance"],
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "MedFlow Billing & Insurance Analytics Dashboard",
+  "version": 1
+}

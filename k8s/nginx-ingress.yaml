@@ -1,0 +1,48 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medflow-ingress
+  namespace: medflow
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "medflow-backend"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  tls:
+    - hosts:
+        - medflow.hospital.org
+      secretName: medflow-tls-cert
+  rules:
+    - host: medflow.hospital.org
+      http:
+        paths:
+          # 1. API traffic
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: medflow-backend
+                port:
+                  number: 4000
+          # 2. WebSockets (socket.io) traffic
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: medflow-backend
+                port:
+                  number: 4000
+          # 3. Main Next.js Web UI traffic
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: medflow-frontend
+                port:
+                  number: 3000

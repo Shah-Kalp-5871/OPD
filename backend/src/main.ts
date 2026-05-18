@@ -9,6 +9,7 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 import { Request, Response, NextFunction } from 'express';
 import { RedisIoAdapter } from './socket/redis-io.adapter';
+import { StructuredLogger } from './common/logging/structured-logger.service';
 
 // BigInt Serialization Fix for JSON.stringify
 (BigInt.prototype as any).toJSON = function () {
@@ -16,9 +17,14 @@ import { RedisIoAdapter } from './socket/redis-io.adapter';
 };
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const logger = new StructuredLogger('Bootstrap');
+  const app = await NestFactory.create(AppModule, {
+    logger,
+  });
   const configService = app.get(ConfigService);
+
+  // Enable Graceful Container Shutdown hooks
+  app.enableShutdownHooks();
 
   const redisIoAdapter = new RedisIoAdapter(app);
   app.useWebSocketAdapter(redisIoAdapter);

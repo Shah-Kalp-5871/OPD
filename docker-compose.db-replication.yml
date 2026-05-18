@@ -1,0 +1,47 @@
+# =============================================================================
+# MedFlow PostgreSQL Streaming Replication — Docker Compose
+# =============================================================================
+version: '3.9'
+
+services:
+  # 1. Primary PostgreSQL database (Write-heavy node)
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: medflow_postgres_primary
+    restart: always
+    environment:
+      POSTGRES_DB: medflow_db
+      POSTGRES_USER: medflow_user
+      POSTGRES_PASSWORD: super_secure_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./scripts/replication/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - medflow_internal
+
+  # 2. Replica PostgreSQL database (Read-only replica node)
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: medflow_postgres_replica
+    restart: always
+    entrypoint: [ "/bin/bash", "/scripts/init-replica.sh" ]
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./scripts/replication/init-replica.sh:/scripts/init-replica.sh:ro
+    depends_on:
+      - postgres-primary
+    ports:
+      - "5433:5432"
+    networks:
+      - medflow_internal
+
+networks:
+  medflow_internal:
+    driver: bridge
+
+volumes:
+  postgres_primary_data:
+  postgres_replica_data:

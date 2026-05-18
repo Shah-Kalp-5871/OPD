@@ -1,0 +1,42 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "id": 3,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Average Queue Wait Time (Seconds)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "medflow_queue_wait_time_seconds_average",
+          "legendFormat": "Avg Wait Time"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Queue Abandonment Rate (%)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(rate(medflow_queue_abandonments_total[5m]) / rate(medflow_queue_checkins_total[5m])) * 100",
+          "legendFormat": "Abandonment Rate"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["queue", "operations"],
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "MedFlow Queue Operations Dashboard",
+  "version": 1
+}

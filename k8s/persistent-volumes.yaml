@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-claim
+  namespace: medflow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uploads-data-claim
+  namespace: medflow
+spec:
+  accessModes:
+    - ReadWriteMany # Allows multiple frontend/backend replicas to write uploads
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard

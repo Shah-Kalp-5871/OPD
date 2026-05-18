@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medflow-backend
+  namespace: medflow
+  labels:
+    app: medflow-backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: medflow-backend
+  template:
+    metadata:
+      labels:
+        app: medflow-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+        - name: backend
+          image: medflow-backend:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: medflow-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: medflow-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: medflow-secrets
+                  key: REDIS_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: medflow-secrets
+                  key: JWT_SECRET
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: medflow-secrets
+                  key: SESSION_SECRET
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medflow-secrets
+                  key: ENCRYPTION_KEY
+            - name: DIGITAL_SIGNATURE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: medflow-secrets
+                  key: DIGITAL_SIGNATURE_KEY
+          ports:
+            - containerPort: 4000
+              name: http
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "1.5"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false # Needs to write lockfiles/temporary compilations
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 4000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 2
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo "Draining connections and processing queues..."
+                    sleep 15
+          volumeMounts:
+            - name: uploads-volume
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads-volume
+          persistentVolumeClaim:
+            claimName: uploads-data-claim

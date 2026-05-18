@@ -33,13 +33,31 @@ export class HealthController {
     const port = this.configService.get<number>('REDIS_PORT') || 6379;
     const password = this.configService.get<string>('REDIS_PASSWORD') || undefined;
 
-    this.redisClient = new Redis({
-      host,
-      port,
-      password,
-      lazyConnect: true,
-      connectTimeout: 5000,
-    });
+    const isSentinel = this.configService.get<string>('REDIS_SENTINEL_ENABLED') === 'true';
+    const sentinelMaster = this.configService.get<string>('REDIS_SENTINEL_MASTER') || 'mymaster';
+    const sentinelNodesStr = this.configService.get<string>('REDIS_SENTINEL_NODES') || '';
+
+    const redisOptions: any = isSentinel && sentinelNodesStr
+      ? {
+          sentinels: sentinelNodesStr.split(',').map((node) => {
+            const [shost, sport] = node.trim().split(':');
+            return { host: shost, port: parseInt(sport, 10) };
+          }),
+          name: sentinelMaster,
+          password: password || undefined,
+          sentinelPassword: password || undefined,
+          lazyConnect: true,
+          connectTimeout: 5000,
+        }
+      : {
+          host,
+          port,
+          password,
+          lazyConnect: true,
+          connectTimeout: 5000,
+        };
+
+    this.redisClient = new Redis(redisOptions);
   }
 
   /**

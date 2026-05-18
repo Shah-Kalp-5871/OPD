@@ -26,6 +26,8 @@ import { LaboratoryModule } from './laboratory/laboratory.module';
 import { DrugsModule } from './admin/drugs/drugs.module';
 import { LabMasterModule } from './admin/lab/lab.module';
 import { ProcedureMasterModule } from './admin/procedures/procedures.module';
+import { TelemedicineModule } from './telemedicine/telemedicine.module';
+import { PaymentModule } from './payment/payment.module';
 
 import { envValidationSchema } from './common/config/env.validation';
 import { HealthModule } from './health/health.module';
@@ -39,6 +41,12 @@ import { RedisCacheModule } from './common/cache/redis-cache.module';
 import { ClinicalAiModule } from './clinical-ai/clinical-ai.module';
 import { FhirModule } from './fhir/fhir.module';
 import { InsuranceModule } from './insurance/insurance.module';
+import { CommunicationsModule } from './communications/communications.module';
+import { ExternalLabsModule } from './external-labs/external-labs.module';
+import { BiModule } from './bi/bi.module';
+import { MetricsModule } from './metrics/metrics.module';
+import { LoggingModule } from './common/logging/logging.module';
+import { ShutdownModule } from './common/shutdown/shutdown.module';
 
 @Module({
   imports: [
@@ -83,6 +91,14 @@ import { InsuranceModule } from './insurance/insurance.module';
     InsuranceModule,
     PrescriptionSignatureModule,
     AuditModule,
+    CommunicationsModule,
+    ExternalLabsModule,
+    BiModule,
+    MetricsModule,
+    LoggingModule,
+    ShutdownModule,
+    TelemedicineModule,
+    PaymentModule,
   ],
 
   controllers: [AppController],

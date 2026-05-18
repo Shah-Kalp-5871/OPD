@@ -14,7 +14,30 @@ export class RedisIoAdapter extends IoAdapter {
     const port = Number(configService.get('REDIS_PORT')) || 6379;
     const password = (configService.get('REDIS_PASSWORD') as string) || undefined;
 
-    const redisOptions = { host, port, ...(password ? { password } : {}) };
+    const isSentinel = configService.get('REDIS_SENTINEL_ENABLED') === 'true';
+    const sentinelMaster = configService.get('REDIS_SENTINEL_MASTER') || 'mymaster';
+    const sentinelNodesStr = configService.get('REDIS_SENTINEL_NODES') || '';
+
+    const redisOptions: any = isSentinel && sentinelNodesStr
+      ? {
+          sentinels: sentinelNodesStr.split(',').map((node) => {
+            const [shost, sport] = node.trim().split(':');
+            return { host: shost, port: parseInt(sport, 10) };
+          }),
+          name: sentinelMaster,
+          password: password || undefined,
+          sentinelPassword: password || undefined,
+        }
+      : { host, port, ...(password ? { password } : {}) };
+
+    // Enterprise-grade reconnect strategies
+    redisOptions.retryStrategy = (times: number) => {
+      return Math.min(times * 150, 5000);
+    };
+    redisOptions.reconnectOnError = (err: Error) => {
+      return err.message.includes('READONLY') || err.message.includes('LOADING');
+    };
+
     const pubClient = new Redis(redisOptions);
     const subClient = pubClient.duplicate();
 
@@ -27,3 +50,4 @@ export class RedisIoAdapter extends IoAdapter {
     return server;
   }
 }
+
