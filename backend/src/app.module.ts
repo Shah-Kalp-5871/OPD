@@ -33,6 +33,8 @@ import { PatientPortalModule } from './patient-portal/patient-portal.module';
 import { StockTransferModule } from './inventory/stock-transfer/stock-transfer.module';
 import { RedisCacheModule } from './common/cache/redis-cache.module';
 import { ClinicalAiModule } from './clinical-ai/clinical-ai.module';
+import { FhirModule } from './fhir/fhir.module';
+import { InsuranceModule } from './insurance/insurance.module';
 
 @Module({
   imports: [
@@ -73,6 +75,8 @@ import { ClinicalAiModule } from './clinical-ai/clinical-ai.module';
     PatientPortalModule,
     StockTransferModule,
     ClinicalAiModule,
+    FhirModule,
+    InsuranceModule,
   ],
 
   controllers: [AppController],
