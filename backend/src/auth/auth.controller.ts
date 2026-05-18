@@ -8,6 +8,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { HipaaAudit } from '../audit/hipaa-audit.decorator';
 
 export class LoginDto {
   @IsEmail()
@@ -25,6 +26,7 @@ export class AuthController {
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
+  @HipaaAudit({ actionType: 'LOGIN_SUCCESS', module: 'AUTH' })
   async login(@Body() loginDto: LoginDto) {
     this.logger.log(`Login attempt for: ${loginDto.email}`);
     const user = await this.authService.validateUser(

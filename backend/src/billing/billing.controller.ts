@@ -21,6 +21,7 @@ import { Query } from '@nestjs/common';
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { HipaaAudit } from '../audit/hipaa-audit.decorator';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard, RolesGuard, BranchGuard)
@@ -44,12 +45,14 @@ export class BillingController {
 
   @Get('details/:id')
   @Roles(Role.RECEPTION, Role.ADMIN, Role.DOCTOR)
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   async getBillDetails(@Param('id') id: string, @BranchId() branchId: string) {
     return this.billingService.getBillById(id, branchId);
   }
 
   @Get(':caseId')
   @Roles(Role.RECEPTION, Role.ADMIN, Role.DOCTOR)
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   async getBill(@Param('caseId') caseId: string, @BranchId() branchId: string) {
     return this.billingService.getBillByCaseId(caseId, branchId);
   }
@@ -76,6 +79,7 @@ export class BillingController {
 
   @Post(':id/pay')
   @Roles(Role.RECEPTION, Role.ADMIN)
+  @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   async payBill(
     @Param('id') id: string,
     @Body() payBillDto: PayBillDto,
@@ -95,6 +99,7 @@ export class BillingController {
 
   @Post(':id/finalize')
   @Roles(Role.RECEPTION, Role.ADMIN)
+  @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   async finalizeBill(
     @Param('id') id: string,
     @Req() req,
@@ -105,6 +110,7 @@ export class BillingController {
 
   @Post(':id/refund')
   @Roles(Role.RECEPTION, Role.ADMIN)
+  @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   async refundBill(
     @Param('id') id: string,
     @Body() refundDto: RefundBillDto,

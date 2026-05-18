@@ -1022,17 +1022,23 @@ model Supplier {
 }
 
 model Prescription {
-  id          String             @id @default(uuid())
-  caseId      String
-  doctorId    String
-  status      String             @default("ACTIVE")
-  notes       String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  patientCase PatientCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  items       PrescriptionItem[]
-  branchId    String
-  branch      Branch             @relation("BranchPrescriptions", fields: [branchId], references: [id])
+  id                 String             @id @default(uuid())
+  caseId             String
+  doctorId           String
+  status             String             @default("ACTIVE")
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  patientCase        PatientCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  items              PrescriptionItem[]
+  branchId           String
+  branch             Branch             @relation("BranchPrescriptions", fields: [branchId], references: [id])
+  
+  // E-Prescription Digital Signature verification fields
+  signedHash         String?
+  signedAt           DateTime?
+  signedBy           String?
+  verificationStatus String?
 
   @@index([caseId])
   @@index([branchId])
@@ -1738,4 +1744,40 @@ model InAppNotification {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+}
+
+model HipaaAuditLog {
+  id           String    @id @default(uuid())
+  userId       String?
+  role         String?
+  branchId     String?
+  patientId    String?
+  actionType   String
+  module       String
+  ipAddress    String?
+  userAgent    String?
+  timestamp    DateTime  @default(now())
+  entityType   String?
+  entityId     String?
+  details      String?
+
+  @@index([patientId])
+  @@index([userId])
+  @@index([branchId])
+  @@index([actionType])
+  @@index([timestamp])
+}
+
+model PatientConsent {
+  id            String    @id @default(uuid())
+  patientId     String
+  consentType   String    // TREATMENT, DATA_SHARING, INSURANCE, etc.
+  status        String    @default("ACTIVE") // ACTIVE, WITHDRAWN
+  signedAt      DateTime  @default(now())
+  withdrawnAt   DateTime?
+  ipAddress     String?
+  userAgent     String?
+  signatureText String?
+
+  @@index([patientId])
 }

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -7,6 +8,9 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { PrescriptionSignatureModule } from './prescription-signature/prescription-signature.module';
+import { AuditModule } from './audit/audit.module';
+import { HipaaAuditInterceptor } from './audit/hipaa-audit.interceptor';
 
 import { DoctorsModule } from './doctors/doctors.module';
 import { StaffModule } from './staff/staff.module';
@@ -77,9 +81,17 @@ import { InsuranceModule } from './insurance/insurance.module';
     ClinicalAiModule,
     FhirModule,
     InsuranceModule,
+    PrescriptionSignatureModule,
+    AuditModule,
   ],
 
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HipaaAuditInterceptor,
+    },
+  ],
 })
 export class AppModule {}

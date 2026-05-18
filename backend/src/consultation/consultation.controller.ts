@@ -18,6 +18,7 @@ import { Roles } from '../auth/roles.decorator';
 import { BranchGuard } from '../auth/branch.guard';
 import { BranchId } from '../auth/branch-id.decorator';
 import { FILE_UPLOAD_MULTER_OPTIONS } from '../common/file-storage/file-storage.service';
+import { HipaaAudit } from '../audit/hipaa-audit.decorator';
 import {
   CreateInvestigationOrderDto,
   CreatePrescriptionDto,
@@ -51,6 +52,7 @@ export class ConsultationController {
 
   @Get(':caseId')
   @Roles('DOCTOR', 'ADMIN', 'NURSING')
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   async getConsultation(
     @Param('caseId') caseId: string,
     @Request() req,
@@ -164,6 +166,7 @@ export class ConsultationController {
 
   @Post(':caseId/finalize')
   @Roles('DOCTOR', 'ADMIN')
+  @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   async finalizeConsultation(
     @Param('caseId') caseId: string,
     @Body() dto: FinalizeConsultationDto,

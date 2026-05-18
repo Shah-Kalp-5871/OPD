@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
+import { HipaaAudit } from '../audit/hipaa-audit.decorator';
 
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
@@ -50,6 +51,7 @@ export class PatientsController {
 
   @Get()
   @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING)
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   findAll(@Query() query: PatientQueryDto) {
     // If 'search' is passed instead of 'q', map it to 'q'
     if ((query as any).search && !query.q) {
@@ -60,24 +62,28 @@ export class PatientsController {
 
   @Get('search')
   @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING)
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   search(@Query() query: PatientQueryDto) {
     return this.findAll(query);
   }
 
   @Get(':id')
   @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING, Role.MEDICAL, Role.SUPERADMIN, Role.BRANCH_ADMIN)
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   findOne(@Param('id') id: string) {
     return this.patientsService.findOne(id);
   }
 
   @Get('mrd/:mrd')
   @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING, Role.SUPERADMIN, Role.BRANCH_ADMIN)
+  @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   findByMrd(@Param('mrd') mrd: string) {
     return this.patientsService.findByMrd(mrd);
   }
 
   @Patch(':id/profile')
   @Roles(Role.ADMIN, Role.RECEPTION)
+  @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   updateProfile(
     @Param('id') id: string,
     @Body() updateDto: UpdatePatientProfileDto,
