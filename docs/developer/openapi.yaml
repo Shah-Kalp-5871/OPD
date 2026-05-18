@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: MedFlow Public API
+  version: 2.0.0
+  description: Enterprise healthcare API — tenant-scoped, HIPAA-ready
+servers:
+  - url: https://api.medflow.health/api
+    description: Production
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+paths:
+  /v2/patients:
+    get:
+      summary: List patients (tenant-scoped)
+      tags: [Patients]
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, maximum: 100 }
+      responses:
+        '200':
+          description: Paginated patient list
+    post:
+      summary: Register patient
+      tags: [Patients]
+      responses:
+        '201':
+          description: Created
+  /v2/appointments:
+    get:
+      summary: List appointments
+      tags: [Appointments]
+    post:
+      summary: Create appointment
+      tags: [Appointments]
+  /v2/webhooks/subscriptions:
+    post:
+      summary: Create webhook subscription
+      tags: [Webhooks]
+  /v2/webhooks/registry/events:
+    get:
+      summary: Event catalog
+      tags: [Webhooks]
+      security: []

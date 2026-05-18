@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 export class RedisIoAdapter extends IoAdapter {
   private adapterConstructor: ReturnType<typeof createAdapter>;
 
-  constructor(app: any) {
+  constructor(private readonly app: any) {
     super(app);
     const configService: ConfigService = app.get(ConfigService);
     const host = (configService.get('REDIS_HOST') as string) || 'localhost';
@@ -45,9 +45,23 @@ export class RedisIoAdapter extends IoAdapter {
   }
 
   createIOServer(port: number, options?: ServerOptions): any {
-    const server = super.createIOServer(port, options);
+    const configService: ConfigService = this.app.get(ConfigService);
+    const originEnv = configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000';
+    const origins = originEnv.split(',').map((o) => o.trim());
+
+    const securedOptions: ServerOptions = {
+      ...options,
+      cors: {
+        origin: origins,
+        credentials: true,
+        methods: ['GET', 'POST'],
+      },
+    } as any;
+
+    const server = super.createIOServer(port, securedOptions);
     server.adapter(this.adapterConstructor);
     return server;
   }
 }
+
 

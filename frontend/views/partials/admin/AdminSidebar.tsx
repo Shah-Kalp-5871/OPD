@@ -19,7 +19,15 @@ import {
   Settings, 
   LifeBuoy, 
   UserCircle,
-  LogOut
+  LogOut,
+  BrainCircuit,
+  Building2,
+  HardHat,
+  BadgeDollarSign,
+  PackageSearch,
+  TestTube2,
+  Cpu,
+  Code2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -42,6 +50,15 @@ const menuItems = [
   { label: 'Settings', icon: Settings, href: ROUTES.ADMIN_SETTINGS },
   { label: 'Support', icon: LifeBuoy, href: ROUTES.ADMIN_SUPPORT },
   { label: 'My Profile', icon: UserCircle, href: ROUTES.ADMIN_PROFILE },
+  { label: 'Enterprise ERP', icon: BrainCircuit, href: '/erp-intelligence' },
+  { label: 'HRMS', icon: Building2, href: '/hrms' },
+  { label: 'Workforce', icon: HardHat, href: '/workforce' },
+  { label: 'Payroll', icon: BadgeDollarSign, href: '/payroll' },
+  { label: 'Procurement', icon: PackageSearch, href: '/procurement' },
+  { label: 'Pharmacy AI', icon: TestTube2, href: '/pharmacy-intelligence' },
+  { label: 'Biomedical Ops', icon: Cpu, href: '/biomedical' },
+  { label: 'Facility Ops', icon: Building2, href: '/facility-ops' },
+  { label: 'Developer Portal', icon: Code2, href: '/developer' },
 ];
 
 const AdminSidebar = () => {

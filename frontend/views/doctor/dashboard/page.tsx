@@ -23,6 +23,7 @@ import {
   Stethoscope,
   ChevronRight
 } from 'lucide-react';
+import ClinicalWorkflowWidget from '@/components/dashboard/ClinicalWorkflowWidget';
 
 const DoctorDashboardView = () => {
   const router = useRouter();
@@ -80,6 +81,20 @@ const DoctorDashboardView = () => {
 
   const activeSessionEntry = queue.find(q => q.status === 'IN_SESSION');
   const nextPatientEntry = queue.find(q => q.status === 'WAITING' || q.status === 'CALLING');
+
+  const activePatientName = activeSessionEntry 
+    ? `${activeSessionEntry.patient.firstName} ${activeSessionEntry.patient.lastName}` 
+    : nextPatientEntry 
+    ? `${nextPatientEntry.patient.firstName} ${nextPatientEntry.patient.lastName}` 
+    : undefined;
+
+  const handlePrescribe = (med: any) => {
+    toast.success(`Draft prescription created for ${activePatientName || 'Patient'}: ${med.name} ${med.dosage}`);
+  };
+
+  const handleReferral = (specialty: string) => {
+    toast.success(`Referral request logged to ${specialty} specialty`);
+  };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -145,6 +160,14 @@ const DoctorDashboardView = () => {
              </button>
            )}
         </div>
+
+        {/* 🔷 SECTION 2: CLINICAL WORKFLOW WIDGET */}
+        <ClinicalWorkflowWidget
+          activePatientId={activeSessionEntry?.patientId || nextPatientEntry?.patientId}
+          activePatientName={activePatientName}
+          onPrescribe={handlePrescribe}
+          onRefer={handleReferral}
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
            

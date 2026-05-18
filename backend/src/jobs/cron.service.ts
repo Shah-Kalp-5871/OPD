@@ -3,6 +3,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { AlertsService } from '../notifications/alerts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ReminderScheduleService } from '../notifications/reminder-schedule.service';
+import { ApiUsageService } from '../public-api/usage/api-usage.service';
 
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -15,6 +17,8 @@ export class CronService {
     private readonly alertsService: AlertsService,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly reminderScheduleService: ReminderScheduleService,
+    private readonly apiUsageService: ApiUsageService,
     @InjectQueue('reports') private readonly reportsQueue: Queue,
   ) {}
 
@@ -79,5 +83,22 @@ export class CronService {
         patientId: appointment.patient.id,
       });
     }
+  }
+
+  /**
+   * Run every 5 minutes to trigger pending clinical reminders
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async handleScheduledReminders() {
+    this.logger.log('Executing sweep of scheduled reminders...');
+    await this.reminderScheduleService.triggerPendingReminders();
+  }
+
+  /** Aggregate public API usage into monthly summaries (1st of month, 3 AM). */
+  @Cron('0 3 1 * *')
+  async handleApiUsageAggregation() {
+    this.logger.log('Aggregating monthly API usage summaries...');
+    const count = await this.apiUsageService.aggregateMonthlySummaries();
+    this.logger.log(`API usage aggregation complete: ${count} clients processed`);
   }
 }

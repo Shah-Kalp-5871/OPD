@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CronService } from './cron.service';
 import { ReportsProcessor } from './processors/reports.processor';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { PublicApiModule } from '../public-api/public-api.module';
 
 @Global()
 @Module({
@@ -54,6 +55,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
       name: 'reports',
     }),
     AnalyticsModule,
+    PublicApiModule,
   ],
   providers: [CronService, ReportsProcessor],
   exports: [BullModule, CronService],

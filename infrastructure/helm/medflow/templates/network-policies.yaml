@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "medflow.fullname" . }}-allow-frontend-backend
+  namespace: {{ .Release.Namespace | default .Values.global.namespace }}
+  labels:
+    app: {{ include "medflow.name" . }}
+    release: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ include "medflow.fullname" . }}-backend
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: {{ include "medflow.fullname" . }}-frontend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.backend.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "medflow.fullname" . }}-allow-ingress
+  namespace: {{ .Release.Namespace | default .Values.global.namespace }}
+  labels:
+    app: {{ include "medflow.name" . }}
+    release: {{ .Release.Name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ include "medflow.fullname" . }}-frontend
+  ingress:
+    - from:
+        - namespaceSelector: {} # Allow traffic from ingress controller in any namespace (default standard)
+      ports:
+        - protocol: TCP
+          port: {{ .Values.frontend.port }}

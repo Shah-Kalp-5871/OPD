@@ -53,4 +53,18 @@ export class UsersService {
       },
     });
   }
+
+  async updateMfa(userId: string, data: { mfaSecret?: string | null; mfaEnabled?: boolean; mfaBackupCodes?: string | null }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+  }
+
+  async updatePermissions(userId: string, permissions: string[]) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { permissions },
+    });
+  }
 }

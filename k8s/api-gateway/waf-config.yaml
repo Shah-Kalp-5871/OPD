@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medflow-api-waf-rules
+  namespace: medflow
+data:
+  modsecurity.conf: |
+    SecRuleEngine On
+    SecRequestBodyAccess On
+    SecRule REQUEST_HEADERS:User-Agent "@contains sqlmap" "id:1000,deny,status:403"
+    SecRule REQUEST_URI "@contains ../" "id:1001,deny,status:403"
+    SecRule ARGS "@detectSQLi" "id:1002,deny,status:403"

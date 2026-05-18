@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medflow-api-gateway
+  namespace: medflow
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "5"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Correlation-Id: $request_id";
+      more_set_headers "Cache-Control: no-store";
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.medflow.health
+      secretName: medflow-api-tls
+  rules:
+    - host: api.medflow.health
+      http:
+        paths:
+          - path: /api/v2
+            pathType: Prefix
+            backend:
+              service:
+                name: medflow-backend
+                port:
+                  number: 3001
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: medflow-backend
+                port:
+                  number: 3001

@@ -22,6 +22,7 @@ async function bootstrap() {
     logger,
   });
   const configService = app.get(ConfigService);
+  const frontendOrigin = configService.get('CORS_ORIGIN') || 'http://localhost:3000';
 
   // Enable Graceful Container Shutdown hooks
   app.enableShutdownHooks();
@@ -30,7 +31,34 @@ async function bootstrap() {
   app.useWebSocketAdapter(redisIoAdapter);
 
   // Security Hardening
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: [
+            "'self'",
+            "wss:",
+            "ws:",
+            "https://api.stripe.com",
+            frontendOrigin,
+          ],
+          frameAncestors: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+      xFrameOptions: { action: "deny" },
+    }),
+  );
   app.use(compression());
 
   // Correlation ID Middleware
@@ -42,7 +70,6 @@ async function bootstrap() {
     next();
   });
 
-  const frontendOrigin = configService.get('CORS_ORIGIN');
   app.enableCors({
     origin: frontendOrigin,
     credentials: true,

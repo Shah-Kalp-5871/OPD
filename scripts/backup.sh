@@ -81,12 +81,18 @@ if ! command -v pg_dump &>/dev/null && ! command -v docker &>/dev/null; then
 fi
 
 # ── Create Backup Directories ─────────────────────────────────────────────────
+BACKUP_ENCRYPTION_KEY="${BACKUP_ENCRYPTION_KEY:-}"
+EXT=".sql.gz"
+if [ -n "$BACKUP_ENCRYPTION_KEY" ]; then
+    EXT=".sql.gz.enc"
+fi
+
 if [ "$BACKUP_TYPE" = "weekly" ]; then
     BACKUP_DIR_TARGET="$WEEKLY_DIR"
-    BACKUP_FILENAME="medflow_weekly_${TIMESTAMP}.sql.gz"
+    BACKUP_FILENAME="medflow_weekly_${TIMESTAMP}${EXT}"
 else
     BACKUP_DIR_TARGET="$DAILY_DIR"
-    BACKUP_FILENAME="medflow_daily_${TIMESTAMP}.sql.gz"
+    BACKUP_FILENAME="medflow_daily_${TIMESTAMP}${EXT}"
 fi
 
 if [ "$DRY_RUN" = false ]; then
@@ -108,29 +114,60 @@ log "Connecting to PostgreSQL: $DB_USER@$DB_HOST:$DB_PORT/$DB_NAME"
 # Try Docker exec first (if running in Docker environment)
 if docker ps --filter "name=medflow_postgres" --format "{{.Names}}" 2>/dev/null | grep -q medflow_postgres; then
     log "Using Docker exec for backup..."
-    PGPASSWORD="$DB_PASS" docker exec medflow_postgres \
-        pg_dump -U "$DB_USER" -d "$DB_NAME" \
-        --format=plain \
-        --no-password \
-        --verbose \
-        --clean \
-        --if-exists \
-        --create \
-        2>/dev/null | gzip > "$BACKUP_PATH"
+    if [ -n "$BACKUP_ENCRYPTION_KEY" ]; then
+        log "Encrypting backup with AES-256-CBC..."
+        PGPASSWORD="$DB_PASS" docker exec medflow_postgres \
+            pg_dump -U "$DB_USER" -d "$DB_NAME" \
+            --format=plain \
+            --no-password \
+            --verbose \
+            --clean \
+            --if-exists \
+            --create \
+            2>/dev/null | gzip | openssl enc -aes-256-cbc -pbkdf2 -salt -pass pass:"$BACKUP_ENCRYPTION_KEY" > "$BACKUP_PATH"
+    else
+        log "⚠️ Saving unencrypted compressed backup..."
+        PGPASSWORD="$DB_PASS" docker exec medflow_postgres \
+            pg_dump -U "$DB_USER" -d "$DB_NAME" \
+            --format=plain \
+            --no-password \
+            --verbose \
+            --clean \
+            --if-exists \
+            --create \
+            2>/dev/null | gzip > "$BACKUP_PATH"
+    fi
 else
     log "Using local pg_dump for backup..."
-    PGPASSWORD="$DB_PASS" pg_dump \
-        -h "$DB_HOST" \
-        -p "$DB_PORT" \
-        -U "$DB_USER" \
-        -d "$DB_NAME" \
-        --format=plain \
-        --no-password \
-        --verbose \
-        --clean \
-        --if-exists \
-        --create \
-        2>/dev/null | gzip > "$BACKUP_PATH"
+    if [ -n "$BACKUP_ENCRYPTION_KEY" ]; then
+        log "Encrypting backup with AES-256-CBC..."
+        PGPASSWORD="$DB_PASS" pg_dump \
+            -h "$DB_HOST" \
+            -p "$DB_PORT" \
+            -U "$DB_USER" \
+            -d "$DB_NAME" \
+            --format=plain \
+            --no-password \
+            --verbose \
+            --clean \
+            --if-exists \
+            --create \
+            2>/dev/null | gzip | openssl enc -aes-256-cbc -pbkdf2 -salt -pass pass:"$BACKUP_ENCRYPTION_KEY" > "$BACKUP_PATH"
+    else
+        log "⚠️ Saving unencrypted compressed backup..."
+        PGPASSWORD="$DB_PASS" pg_dump \
+            -h "$DB_HOST" \
+            -p "$DB_PORT" \
+            -U "$DB_USER" \
+            -d "$DB_NAME" \
+            --format=plain \
+            --no-password \
+            --verbose \
+            --clean \
+            --if-exists \
+            --create \
+            2>/dev/null | gzip > "$BACKUP_PATH"
+    fi
 fi
 
 # Verify backup was created and has content
@@ -148,16 +185,25 @@ fi
 log "Backup created successfully: $BACKUP_FILENAME (size: $BACKUP_SIZE)"
 
 # ── Create Latest Symlink ─────────────────────────────────────────────────────
-LATEST_LINK="$BACKUP_DIR_TARGET/latest.sql.gz"
+LATEST_LINK="$BACKUP_DIR_TARGET/latest${EXT}"
 ln -sf "$BACKUP_PATH" "$LATEST_LINK"
 log "Updated latest symlink: $LATEST_LINK → $BACKUP_PATH"
 
-# ── Verify Backup Integrity (test gunzip) ─────────────────────────────────────
-if gunzip -t "$BACKUP_PATH" 2>/dev/null; then
-    log "Backup integrity check: PASSED"
+# ── Verify Backup Integrity (test decryption and gunzip) ─────────────────────
+if [ -n "$BACKUP_ENCRYPTION_KEY" ]; then
+    if openssl enc -d -aes-256-cbc -pbkdf2 -salt -pass pass:"$BACKUP_ENCRYPTION_KEY" -in "$BACKUP_PATH" 2>/dev/null | gunzip -t 2>/dev/null; then
+        log "Backup integrity check: PASSED (Decrypted and decompressed successfully)"
+    else
+        error "Backup integrity check: FAILED — decryption or decompression failed"
+        exit 1
+    fi
 else
-    error "Backup integrity check: FAILED — backup file may be corrupted"
-    exit 1
+    if gunzip -t "$BACKUP_PATH" 2>/dev/null; then
+        log "Backup integrity check: PASSED"
+    else
+        error "Backup integrity check: FAILED — backup file may be corrupted"
+        exit 1
+    fi
 fi
 
 # ── Retention Cleanup ─────────────────────────────────────────────────────────

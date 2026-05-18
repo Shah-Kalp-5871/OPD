@@ -1,0 +1,9 @@
+apiVersion: v2
+name: medflow
+description: A production-grade, enterprise multi-tenant healthcare OPD SaaS platform deployment Helm chart.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+maintainers:
+  - name: MedFlow Engineering
+    email: platform-arch@medflow.io

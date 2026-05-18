@@ -1,0 +1,150 @@
+# Global configurations
+global:
+  environment: production
+  namespace: medflow
+  domain: medflow.io
+
+# Backend Configuration
+backend:
+  replicaCount: 2
+  image:
+    repository: medflow-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 4000
+  env:
+    enableRedisCache: "true"
+    redisSentinelEnabled: "true"
+    redisSentinelMaster: "mymaster"
+    redisSentinelNodes: "redis-sentinel-0.redis-sentinel.medflow.svc.cluster.local:26379,redis-sentinel-1.redis-sentinel.medflow.svc.cluster.local:26379,redis-sentinel-2.redis-sentinel.medflow.svc.cluster.local:26379"
+    enableAuditLogging: "true"
+    logLevel: "info"
+    communicationMaxRetries: "5"
+    websocketHeartbeatInterval: "25000"
+    autoScalingThreshold: "70"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1.5"
+      memory: 2Gi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  probes:
+    initialDelaySeconds:
+      liveness: 45
+      readiness: 30
+    periodSeconds:
+      liveness: 15
+      readiness: 10
+    timeoutSeconds:
+      liveness: 5
+      readiness: 3
+    failureThreshold:
+      liveness: 3
+      readiness: 2
+
+# Frontend Configuration
+frontend:
+  replicaCount: 2
+  image:
+    repository: medflow-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 3000
+  basePath: /opd
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1.0"
+      memory: 1Gi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 80
+  probes:
+    initialDelaySeconds:
+      liveness: 30
+      readiness: 20
+    periodSeconds:
+      liveness: 15
+      readiness: 10
+    timeoutSeconds:
+      liveness: 5
+      readiness: 3
+    failureThreshold:
+      liveness: 3
+      readiness: 2
+
+# Database & Storage
+postgres:
+  enabled: true
+  replicas: 3
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "1.0"
+      memory: 2Gi
+  storage:
+    size: 20Gi
+    storageClass: standard
+
+# Redis Config
+redis:
+  enabled: true
+  replicas: 3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "500m"
+      memory: 1Gi
+
+# Shared uploads volume size
+uploadsStorageSize: 10Gi
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    # Enable session affinity for persistent WebSocket connections
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "balanced"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
+  hosts:
+    - host: medflow.io
+      paths:
+        - path: /api
+          pathType: Prefix
+          backendService: medflow-backend
+          backendPort: 4000
+        - path: /socket.io
+          pathType: Prefix
+          backendService: medflow-backend
+          backendPort: 4000
+        - path: /opd
+          pathType: Prefix
+          backendService: medflow-frontend
+          backendPort: 3000
+  tls:
+    enabled: true
+    secretName: medflow-tls-cert

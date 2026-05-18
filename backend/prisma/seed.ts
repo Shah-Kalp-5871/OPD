@@ -27,6 +27,7 @@ async function main() {
   await prisma.medicalProfile.deleteMany();
   await prisma.adminProfile.deleteMany();
   await prisma.receptionProfile.deleteMany();
+  await prisma.terminologyConcept.deleteMany();
   await prisma.user.deleteMany();
 
   const password = await bcrypt.hash('123456', 10);
@@ -378,6 +379,42 @@ async function main() {
       where: { code: proc.code },
       update: proc,
       create: proc
+    });
+  }
+
+  // 6. Create Terminology Concept Seeding
+  console.log('Seeding clinical terminology concepts (ICD-10, SNOMED, LOINC, RxNorm)...');
+  const terminologyConcepts = [
+    // ICD-10
+    { system: 'ICD-10', code: 'J06.9', display: 'Acute upper respiratory infection, unspecified' },
+    { system: 'ICD-10', code: 'E11.9', display: 'Type 2 diabetes mellitus without complications' },
+    { system: 'ICD-10', code: 'I10', display: 'Essential (primary) hypertension' },
+    { system: 'ICD-10', code: 'K21.9', display: 'Gastro-esophageal reflux disease without esophagitis' },
+    { system: 'ICD-10', code: 'M54.5', display: 'Low back pain' },
+
+    // SNOMED
+    { system: 'SNOMED', code: '195967001', display: 'Asthma' },
+    { system: 'SNOMED', code: '44054006', display: 'Type 2 diabetes mellitus' },
+    { system: 'SNOMED', code: '38341003', display: 'Hypertensive disorder' },
+    { system: 'SNOMED', code: '22298006', display: 'Myocardial infarction' },
+
+    // LOINC
+    { system: 'LOINC', code: '8310-5', display: 'Body temperature' },
+    { system: 'LOINC', code: '8867-4', display: 'Heart rate' },
+    { system: 'LOINC', code: '2708-6', display: 'Oxygen saturation in Arterial blood by Pulse oximetry' },
+    { system: 'LOINC', code: '85354-9', display: 'Blood pressure panel systolic and diastolic' },
+    { system: 'LOINC', code: '2345-7', display: 'Glucose [Mass/volume] in Serum or Plasma' },
+
+    // RxNorm
+    { system: 'RXNORM', code: '313782', display: 'Acetaminophen 325 MG Oral Tablet' },
+    { system: 'RXNORM', code: '855332', display: 'Ibuprofen 200 MG Oral Tablet' },
+    { system: 'RXNORM', code: '866514', display: 'Metformin hydrochloride 500 MG Oral Tablet' },
+    { system: 'RXNORM', code: '197361', display: 'Amlodipine 5 MG Oral Tablet' },
+  ];
+
+  for (const concept of terminologyConcepts) {
+    await prisma.terminologyConcept.create({
+      data: concept,
     });
   }
 

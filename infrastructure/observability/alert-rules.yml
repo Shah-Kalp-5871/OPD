@@ -1,0 +1,42 @@
+groups:
+  - name: medflow-system-alerts
+    rules:
+      # 1. Instance Down Alert
+      - alert: InstanceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} is down"
+          description: "A MedFlow service instance or exporter has been unresponsive for more than 1 minute."
+
+      # 2. High CPU Usage Alert
+      - alert: HighCpuUsage
+        expr: container_cpu_usage_seconds_total{namespace="medflow"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on pod {{ $labels.pod }}"
+          description: "Pod CPU usage has exceeded 85% for more than 5 minutes."
+
+      # 3. High Memory Usage Alert
+      - alert: HighMemoryUsage
+        expr: container_memory_working_set_bytes{namespace="medflow"} > 1.6e+09 # 1.5 GB
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on pod {{ $labels.pod }}"
+          description: "Pod memory usage is above 1.5 GB for more than 5 minutes."
+
+      # 4. HTTP API High Failure Rate Alert
+      - alert: HttpApiHighFailureRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx error rate on {{ $labels.service }}"
+          description: "API server 5xx errors represent more than 5% of total requests over the last 2 minutes."

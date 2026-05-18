@@ -52,6 +52,7 @@ export class AuthService {
       role: user.role,
       primaryBranchId: user.primaryBranchId,
       branchAccess: user.branchAccess?.map((b: any) => b.branchId) || [],
+      permissions: user.permissions || [],
     };
     return {
       access_token: this.jwtService.sign(payload),
@@ -62,7 +63,33 @@ export class AuthService {
         role: user.role,
         primaryBranchId: user.primaryBranchId,
         branchAccess: user.branchAccess?.map((b: any) => b.branchId) || [],
+        permissions: user.permissions || [],
       },
     };
+  }
+
+  async signMfaTicket(user: any): Promise<string> {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      mfaTicket: true,
+    };
+    return this.jwtService.sign(payload, { expiresIn: '5m' });
+  }
+
+  async verifyMfaTicket(ticket: string): Promise<any> {
+    try {
+      const decoded = this.jwtService.verify(ticket);
+      if (!decoded.mfaTicket) {
+        throw new UnauthorizedException('Invalid multi-factor ticket');
+      }
+      const user = await this.usersService.findOne(decoded.sub);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+      return user;
+    } catch (e) {
+      throw new UnauthorizedException('MFA verification ticket has expired or is invalid');
+    }
   }
 }

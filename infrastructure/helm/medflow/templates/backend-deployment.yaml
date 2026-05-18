@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "medflow.fullname" . }}-backend
+  namespace: {{ .Release.Namespace | default .Values.global.namespace }}
+  labels:
+    app: {{ include "medflow.fullname" . }}-backend
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ include "medflow.fullname" . }}-backend
+  template:
+    metadata:
+      labels:
+        app: {{ include "medflow.fullname" . }}-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "medflow.fullname" . }}-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "medflow.fullname" . }}-secrets
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "medflow.fullname" . }}-secrets
+                  key: REDIS_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "medflow.fullname" . }}-secrets
+                  key: JWT_SECRET
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "medflow.fullname" . }}-secrets
+                  key: SESSION_SECRET
+            - name: ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "medflow.fullname" . }}-secrets
+                  key: ENCRYPTION_KEY
+            - name: DIGITAL_SIGNATURE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "medflow.fullname" . }}-secrets
+                  key: DIGITAL_SIGNATURE_KEY
+          ports:
+            - containerPort: {{ .Values.backend.port }}
+              name: http
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false # Required for prisma temporary engines/migration locks
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: {{ .Values.backend.probes.initialDelaySeconds.liveness }}
+            periodSeconds: {{ .Values.backend.probes.periodSeconds.liveness }}
+            timeoutSeconds: {{ .Values.backend.probes.timeoutSeconds.liveness }}
+            failureThreshold: {{ .Values.backend.probes.failureThreshold.liveness }}
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.backend.port }}
+            initialDelaySeconds: {{ .Values.backend.probes.initialDelaySeconds.readiness }}
+            periodSeconds: {{ .Values.backend.probes.periodSeconds.readiness }}
+            timeoutSeconds: {{ .Values.backend.probes.timeoutSeconds.readiness }}
+            failureThreshold: {{ .Values.backend.probes.failureThreshold.readiness }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    echo "Draining connections and processing queues..."
+                    sleep 15
+          volumeMounts:
+            - name: uploads-volume
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads-volume
+          persistentVolumeClaim:
+            claimName: {{ include "medflow.fullname" . }}-uploads-claim

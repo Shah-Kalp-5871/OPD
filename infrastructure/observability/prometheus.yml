@@ -2,6 +2,15 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager.medflow.svc.cluster.local:9093"
+
+rule_files:
+  - "alert-rules.yml"
+
 scrape_configs:
   # 1. MedFlow Backend API metrics
   - job_name: "medflow-backend"

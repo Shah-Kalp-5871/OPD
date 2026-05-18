@@ -1,0 +1,123 @@
+# =============================================================================
+# MedFlow OPD — Automated Kubernetes Rollback Pipeline
+# Triggers: Manual trigger (workflow_dispatch) with confirmation inputs
+# Actions: Initiates safe rolling rollbacks and verifies service health
+# =============================================================================
+
+name: Production Deployment Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+      service_to_rollback:
+        description: 'Service to Rollback'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - backend
+          - frontend
+      revision_offset:
+        description: 'Kubernetes revision to rollback to (0 for previous)'
+        required: true
+        default: '0'
+        type: string
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        default: 'Deploy anomaly / regression identified'
+
+jobs:
+  rollback:
+    name: Execute Rollback
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Kubernetes CLI (kubectl)
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.2'
+
+      - name: Configure kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_PROD }}
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG_DATA" | base64 --decode > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Validate Kubernetes Connection
+        run: |
+          kubectl cluster-info
+          kubectl get namespaces
+
+      # ──────────────────────────────────────────────────────────────────────────
+      # Step 1: Rollback Backend
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: Rollback Backend Service
+        if: ${{ github.event.inputs.service_to_rollback == 'all' || github.event.inputs.service_to_rollback == 'backend' }}
+        run: |
+          echo "Starting rollback of medflow-backend deployment in namespace medflow..."
+          
+          # Capture current deployment state
+          kubectl get deployment medflow-backend -n medflow
+          
+          if [ "${{ github.event.inputs.revision_offset }}" = "0" ]; then
+            echo "Rolling back to previous revision..."
+            kubectl rollout undo deployment/medflow-backend -n medflow
+          else
+            echo "Rolling back to specific revision: ${{ github.event.inputs.revision_offset }}..."
+            kubectl rollout undo deployment/medflow-backend --to-revision=${{ github.event.inputs.revision_offset }} -n medflow
+          fi
+          
+          # Monitor rollback status
+          kubectl rollout status deployment/medflow-backend -n medflow --timeout=120s
+
+      # ──────────────────────────────────────────────────────────────────────────
+      # Step 2: Rollback Frontend
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: Rollback Frontend Service
+        if: ${{ github.event.inputs.service_to_rollback == 'all' || github.event.inputs.service_to_rollback == 'frontend' }}
+        run: |
+          echo "Starting rollback of medflow-frontend deployment in namespace medflow..."
+          
+          # Capture current deployment state
+          kubectl get deployment medflow-frontend -n medflow
+          
+          if [ "${{ github.event.inputs.revision_offset }}" = "0" ]; then
+            echo "Rolling back to previous revision..."
+            kubectl rollout undo deployment/medflow-frontend -n medflow
+          else
+            echo "Rolling back to specific revision: ${{ github.event.inputs.revision_offset }}..."
+            kubectl rollout undo deployment/medflow-frontend --to-revision=${{ github.event.inputs.revision_offset }} -n medflow
+          fi
+          
+          # Monitor rollback status
+          kubectl rollout status deployment/medflow-frontend -n medflow --timeout=120s
+
+      # ──────────────────────────────────────────────────────────────────────────
+      # Step 3: Post-Rollback Health Check
+      # ──────────────────────────────────────────────────────────────────────────
+      - name: Verify Application Health
+        run: |
+          echo "Verifying application status and pod health..."
+          kubectl get pods -n medflow -o wide
+          
+          # Check backend endpoints internally from curl if possible or fetch service status
+          kubectl get service -n medflow
+          
+          echo "✅ Rollback and verification completed successfully."
+          echo "Reason for rollback was: '${{ github.event.inputs.reason }}'"

@@ -4,12 +4,21 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { TelemetryService } from '../metrics/telemetry.service';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPERADMIN', 'BRANCH_ADMIN', 'CLINIC_MANAGER', 'CENTRAL_FINANCE', 'CENTRAL_PHARMACY')
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    private readonly telemetryService: TelemetryService,
+  ) {}
+
+  @Get('interop-telemetry')
+  async getInteropTelemetry() {
+    return this.telemetryService.getTelemetryJson();
+  }
 
   @Get('dashboard/stats')
   async getDashboardStats() {

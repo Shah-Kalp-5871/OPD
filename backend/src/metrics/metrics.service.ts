@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TelemetryService } from './telemetry.service';
 
 @Injectable()
 export class MetricsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly telemetryService: TelemetryService,
+  ) {}
 
   /**
    * Generates the Prometheus text representation of MedFlow operational telemetry.
@@ -61,9 +65,12 @@ export class MetricsService {
       "",
       "# HELP medflow_insurance_settlement_delay_seconds Average delay for insurance/TPA claims settlement in seconds.",
       "# TYPE medflow_insurance_settlement_delay_seconds gauge",
-      `medflow_insurance_settlement_delay_seconds ${insuranceDelay}`
+      `medflow_insurance_settlement_delay_seconds ${insuranceDelay}`,
+      "",
+      this.telemetryService.getMetricsText(),
     ];
 
     return lines.join("\n");
   }
 }
+

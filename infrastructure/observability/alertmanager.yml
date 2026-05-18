@@ -1,0 +1,45 @@
+global:
+  resolve_timeout: 5m
+  # Default integrations setup
+  # pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default-receiver'
+  routes:
+    # Route high-severity alerts directly to critical PagerDuty endpoint
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+    
+    # Route normal warnings to generic Slack channel
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
+
+receivers:
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'admin@medflow-opd.com'
+        from: 'alerts@medflow-opd.com'
+        smarthost: 'smtp.medflow-opd.com:587'
+        auth_username: 'alerts@medflow-opd.com'
+        auth_password: 'super_secure_smtp_password'
+        require_tls: true
+
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: 'PAGERDUTY_SECRETS_TOKEN_KEY'
+        severity: 'critical'
+        client: 'MedFlow OPD Prometheus'
+        client_url: 'https://prometheus.medflow-opd.com'
+
+  - name: 'slack-warnings'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/SLACK_WEBHOOK_SECRETS_TOKEN'
+        channel: '#medflow-ops-alerts'
+        text: "Alert: {{ .CommonAnnotations.summary }}\nSeverity: {{ .CommonLabels.severity }}\nDescription: {{ .CommonAnnotations.description }}"
+        send_resolved: true

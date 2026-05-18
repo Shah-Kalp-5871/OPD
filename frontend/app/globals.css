@@ -22,6 +22,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-primary-theme: var(--primary-theme);
+  --color-secondary-theme: var(--secondary-theme);
 }
 
 /* ============================================================

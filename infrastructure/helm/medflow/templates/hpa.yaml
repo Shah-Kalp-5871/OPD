@@ -1,0 +1,61 @@
+{{- if .Values.backend.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "medflow.fullname" . }}-backend-hpa
+  namespace: {{ .Release.Namespace | default .Values.global.namespace }}
+  labels:
+    app: {{ include "medflow.fullname" . }}-backend
+    release: {{ .Release.Name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "medflow.fullname" . }}-backend
+  minReplicas: {{ .Values.backend.hpa.minReplicas }}
+  maxReplicas: {{ .Values.backend.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.backend.hpa.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.backend.hpa.targetMemoryUtilizationPercentage }}
+---
+{{- end }}
+{{- if .Values.frontend.hpa.enabled -}}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "medflow.fullname" . }}-frontend-hpa
+  namespace: {{ .Release.Namespace | default .Values.global.namespace }}
+  labels:
+    app: {{ include "medflow.fullname" . }}-frontend
+    release: {{ .Release.Name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "medflow.fullname" . }}-frontend
+  minReplicas: {{ .Values.frontend.hpa.minReplicas }}
+  maxReplicas: {{ .Values.frontend.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.frontend.hpa.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.frontend.hpa.targetMemoryUtilizationPercentage }}
+{{- end }}

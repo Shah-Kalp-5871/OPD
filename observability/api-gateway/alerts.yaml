@@ -1,0 +1,17 @@
+groups:
+  - name: medflow_api_gateway
+    rules:
+      - alert: ApiRateLimitSpike
+        expr: rate(http_requests_total{path=~"/api/v2.*",status="429"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elevated 429 rate on public API
+      - alert: WebhookDeliveryDeadLetter
+        expr: increase(medflow_webhook_failures_total[1h]) > 50
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: Webhook dead-letter queue growing

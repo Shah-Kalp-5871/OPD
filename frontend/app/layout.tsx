@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 
 import { Toaster } from "sonner";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
+import BrandingProvider from "@/components/common/BrandingProvider";
 
 export const metadata: Metadata = {
   title: "MedFlow | Modern OPD Management System",
@@ -33,7 +34,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ErrorBoundary>
-          {children}
+          <BrandingProvider>
+            {children}
+          </BrandingProvider>
         </ErrorBoundary>
         <Toaster position="top-right" richColors />
       </body>

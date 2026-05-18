@@ -9,4 +9,5 @@ export const analyticsApi = {
   getAuditAnalytics: () => api.get('/analytics/audit'),
   exportFinancialReport: (startDate: string, endDate: string) => 
     api.get('/analytics/export/financial', { params: { startDate, endDate } }),
+  getInteropTelemetry: () => api.get('/analytics/interop-telemetry'),
 };

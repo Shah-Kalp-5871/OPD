@@ -18,6 +18,13 @@ model User {
   isActive                Boolean                  @default(true)
   role                    Role
   mobile                  String?
+  mfaSecret               String?
+  mfaEnabled              Boolean                  @default(false)
+  mfaBackupCodes          String?
+  permissions             String[]                 @default([])
+  ssoProvider             String?
+  ssoId                   String?                  @unique
+  ssoConfig               Json?
   deletedAt               DateTime?
   failedLoginAttempts     Int                      @default(0)
   firstName               String?
@@ -61,6 +68,10 @@ model User {
   primaryBranchId         String?
   branchAccess            UserBranchAccess[]
   telemedicineSessionLogs TelemedicineSessionLog[]
+  deviceTokens            DeviceToken[]
+  notificationLogs        NotificationLog[]
+  notificationPreference  NotificationPreference?
+  tenantUsers             TenantUser[]
 }
 
 model AdminProfile {
@@ -167,6 +178,9 @@ model Patient {
   auth                    PatientAuth?
   telemedicineSessionLogs TelemedicineSessionLog[]
   paymentIntents          PaymentIntent[]
+  notificationLogs        NotificationLog[]
+  wearableDevices         WearableDevice[]
+  healthMetrics           HealthMetric[]
 
   @@index([firstName, lastName])
   @@index([createdAt])
@@ -515,6 +529,8 @@ model Clinic {
   updatedAt      DateTime        @updatedAt
   branches       Branch[]
   settings       ClinicSetting[]
+  tenantId       String?
+  tenant         Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Branch {
@@ -557,6 +573,7 @@ model Branch {
   prescriptionItems    PrescriptionItem[]    @relation("BranchPrescriptionItems")
   billItems            BillItem[]            @relation("BranchBillItems")
   userAccess           UserBranchAccess[]    @relation("BranchUsers")
+  apiClients           ApiClient[]           @relation("BranchApiClients")
 }
 
 model UserBranchAccess {
@@ -1865,4 +1882,1947 @@ model WebhookEvent {
 
   @@index([eventId])
   @@index([provider, eventType])
+}
+
+/// Append-only audit ledger tracking payment transactions. Immutable.
+model PaymentAuditLog {
+  id              String   @id @default(uuid())
+  paymentIntentId String
+  oldStatus       String?
+  newStatus       String
+  actor           String?
+  webhookSource   String?
+  correlationId   String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([paymentIntentId])
+  @@index([correlationId])
+  @@index([createdAt])
+}
+
+model DeviceToken {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  platform     String // ANDROID, IOS, WEB
+  deviceType   String?
+  appVersion   String?
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([platform])
+  @@index([isActive])
+}
+
+model NotificationPreference {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  reminders    Boolean  @default(true)
+  marketing    Boolean  @default(false)
+  prescription Boolean  @default(true)
+  followup     Boolean  @default(true)
+  queueAlerts  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model NotificationLog {
+  id            String             @id @default(uuid())
+  userId        String?
+  patientId     String?
+  title         String
+  message       String             @db.Text
+  channel       NotificationType
+  provider      String // FIREBASE, APNS, SMS, EMAIL
+  status        NotificationStatus @default(PENDING)
+  retryCount    Int                @default(0)
+  errorReason   String?            @db.Text
+  correlationId String?
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  user          User?              @relation(fields: [userId], references: [id])
+  patient       Patient?           @relation(fields: [patientId], references: [id])
+
+  @@index([userId])
+  @@index([patientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([correlationId])
+}
+
+model ReminderSchedule {
+  id           String   @id @default(uuid())
+  targetId     String // e.g. appointmentId, followupId, prescriptionId
+  targetType   String // APPOINTMENT, MEDICINE, FOLLOWUP, BILLING
+  reminderTime DateTime
+  timeOffset   String // 24H, 1H, MISSED
+  status       String   @default("PENDING") // PENDING, SENT, CANCELLED, FAILED
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([targetId, targetType])
+  @@index([reminderTime])
+  @@index([status])
+}
+
+// ─── Phase 21 Batch 3: Wearables & Public API Platform ────────────────────────
+
+model WearableDevice {
+  id           String    @id @default(uuid())
+  patientId    String
+  provider     String // APPLE_HEALTH, GOOGLE_FIT, BP_MONITOR, GLUCOSE_MONITOR
+  deviceName   String?
+  deviceUuid   String? // unique identifier of the physical device
+  accessToken  String? // encrypted/hashed token if oauth based
+  refreshToken String? // encrypted/hashed token
+  tokenExpires DateTime?
+  isActive     Boolean   @default(true)
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  patient  Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  metrics  HealthMetric[]
+  syncLogs DeviceSyncLog[]
+
+  @@unique([patientId, provider, deviceUuid])
+  @@index([patientId])
+  @@index([provider])
+}
+
+model HealthMetric {
+  id          String   @id @default(uuid())
+  patientId   String
+  deviceId    String?
+  metricType  String // HEART_RATE, BLOOD_PRESSURE, SPO2, GLUCOSE, SLEEP, STEPS
+  value       Float // numeric primary value
+  valueString String? // secondary text value (e.g. "120/80" for BP)
+  unit        String? // bpm, mmHg, %, mg/dL, hrs, steps
+  timestamp   DateTime // normalized timestamp of reading
+  timezone    String   @default("UTC")
+  metadata    Json? // custom fields like activity, intensity, sleep state
+  createdAt   DateTime @default(now())
+
+  patient Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  device  WearableDevice? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, metricType, timestamp])
+  @@index([patientId, timestamp])
+  @@index([deviceId])
+}
+
+model DeviceSyncLog {
+  id              String    @id @default(uuid())
+  deviceId        String
+  status          String // SUCCESS, FAILED
+  metricsCount    Int       @default(0)
+  errorReason     String?   @db.Text
+  syncWindowStart DateTime?
+  syncWindowEnd   DateTime?
+  createdAt       DateTime  @default(now())
+
+  device WearableDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([createdAt])
+}
+
+model ApiClient {
+  id                  String    @id @default(uuid())
+  name                String
+  clientId            String    @unique
+  clientSecret        String // hashed secret
+  apiKey              String?   @unique // hashed api key if using direct API keys
+  apiKeyPrefix        String? // prefix e.g., mf_live_
+  apiKeyActive        Boolean   @default(true)
+  scopes              String[] // e.g. ["appointments:read", "patients:read"]
+  environment         String    @default("production") // sandbox, production
+  isActive            Boolean   @default(true)
+  tenantId            String? // SaaS tenant isolation
+  branchId            String? // optional single-branch scope
+  rateLimitPerMinute  Int       @default(100)
+  monthlyQuota        Int       @default(100000)
+  monthlyUsageCount   Int       @default(0)
+  usageResetAt        DateTime?
+  lastUsedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  webhooks       ApiWebhookSubscription[]
+  auditLogs      ApiAuditLog[]
+  oauthTokens    OAuthToken[]
+  usageRecords   ApiUsageRecord[]
+  monthlySummaries ApiUsageMonthlySummary[]
+  tenant         Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch         Branch?                  @relation("BranchApiClients", fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([tenantId])
+  @@index([branchId])
+}
+
+model ApiUsageRecord {
+  id            String   @id @default(uuid())
+  clientId      String
+  tenantId      String?
+  endpoint      String
+  method        String
+  statusCode    Int
+  durationMs    Int
+  responseBytes Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  client ApiClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
+  @@index([tenantId, createdAt])
+  @@index([endpoint])
+}
+
+model ApiUsageMonthlySummary {
+  id            String   @id @default(uuid())
+  clientId      String
+  tenantId      String?
+  year          Int
+  month         Int
+  totalRequests Int      @default(0)
+  totalBytes    BigInt   @default(0)
+  avgDurationMs Float    @default(0)
+  endpointStats Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client ApiClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@unique([clientId, year, month])
+  @@index([tenantId, year, month])
+}
+
+model OAuthToken {
+  id           String    @id @default(uuid())
+  clientId     String
+  userId       String? // if authorized by a user (e.g., patient or staff)
+  accessToken  String    @unique
+  refreshToken String?   @unique
+  scopes       String[]
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  client ApiClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@index([accessToken])
+  @@index([refreshToken])
+}
+
+model ApiWebhookSubscription {
+  id        String   @id @default(uuid())
+  clientId  String
+  url       String
+  secret    String // signing secret
+  events    String[] // ["appointment.created", "appointment.cancelled"]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client     ApiClient            @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  deliveries ApiWebhookDelivery[]
+
+  @@index([clientId])
+}
+
+model ApiWebhookDelivery {
+  id             String   @id @default(uuid())
+  subscriptionId String
+  eventId        String
+  eventType      String
+  payload        Json
+  responseStatus Int?
+  responseBody   String?  @db.Text
+  retryCount     Int      @default(0)
+  status         String // DELIVERED, FAILED, RETRYING, DEAD
+  errorReason    String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  subscription ApiWebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([eventId])
+}
+
+model ApiAuditLog {
+  id           String   @id @default(uuid())
+  clientId     String
+  endpoint     String
+  method       String
+  statusCode   Int
+  ipAddress    String?
+  userAgent    String?
+  durationMs   Int
+  errorMessage String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  client ApiClient @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([createdAt])
+}
+
+model Tenant {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique // subdomain value, e.g. "clinica"
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  branding                TenantBranding?
+  domains                 TenantDomain[]
+  subscription            TenantSubscription?
+  users                   TenantUser[]
+  invites                 TenantInvite[]
+  auditLogs               TenantAuditLog[]
+  clinics                 Clinic[]
+  apiClients              ApiClient[]
+  invoices                BillingInvoice[]
+  transactions            BillingTransaction[]
+  usages                  SubscriptionUsage[]
+  featureUsageLogs        FeatureUsageLog[]
+  consentArtifacts        ConsentArtifact[]
+  consentGrants           ConsentGrant[]
+  consentRevocations      ConsentRevocation[]
+  exportJobs              ExportJob[]
+  smartApps               SmartApp[]
+  cdsRules                CdsRule[]
+  cdsRecommendations      CdsRecommendation[]
+  integrationConnectors   IntegrationConnector[]
+  exchangeLogs            ExchangeLog[]
+  webhookDeliveries       WebhookDelivery[]
+  phiAccessLogs           PhiAccessLog[]
+  retentionPolicies       RetentionPolicy[]
+  legalAuditLogs          LegalAuditLog[]
+  telemedicineSessions    TelemedicineSession[]
+  rpmDevices              RpmDevice[]
+  rpmReadings             RpmReading[]
+  rpmAlerts               RpmAlert[]
+  scribeSessions          ScribeSession[]
+  digitalPrescriptions    DigitalPrescription[]
+  virtualAdmissions       VirtualAdmission[]
+  careTasks               CareTask[]
+  messages                Message[]
+  regionPolicies          RegionPolicy[]
+  consentRecords          ConsentRecord[]
+  patientRiskProfiles     PatientRiskProfile[]
+  riskPredictions         RiskPrediction[]
+  aiAlerts                AiAlert[]
+  workflowRules           WorkflowRule[]
+  workflowTasks           WorkflowTask[]
+  medicalImages           MedicalImage[]
+  imageFindings           ImageFinding[]
+  revenueForecasts        RevenueForecast[]
+  fraudAlerts             FraudAlert[]
+  epiHotspots             EpiHotspot[]
+  populationRisks         PopulationRisk[]
+  ragDocuments            RagDocument[]
+  copilotInteractions     CopilotInteraction[]
+  mlModels                ModelRegistry[]
+  driftMetrics            DriftMetric[]
+  hrmsDepartments         HrmsDepartment[]
+  designations            Designation[]
+  employees               Employee[]
+  employeeAttendances     EmployeeAttendance[]
+  shifts                  Shift[]
+  shiftAssignments        ShiftAssignment[]
+  shiftSwapRequests       ShiftSwapRequest[]
+  leaveRequests           LeaveRequest[]
+  staffingForecasts       StaffingForecast[]
+  salaryStructures        SalaryStructure[]
+  payrollCycles           PayrollCycle[]
+  payrollRecords          PayrollRecord[]
+  employeeBenefits        EmployeeBenefit[]
+  reimbursementClaims     ReimbursementClaim[]
+  vendors                 Vendor[]
+  purchaseOrders          PurchaseOrder[]
+  goodsReceipts           GoodsReceipt[]
+  warehouses              Warehouse[]
+  inventoryStocks         InventoryStock[]
+  inventoryMovements      InventoryMovement[]
+  medicationInventories   MedicationInventory[]
+  medicationBatches       MedicationBatch[]
+  controlledSubstanceLogs ControlledSubstanceLog[]
+  dispenseAudits          DispenseAudit[]
+  expiryAlerts            ExpiryAlert[]
+  biomedicalAssets        BiomedicalAsset[]
+  biomedicalVendors       BiomedicalVendor[]
+  assetMaintenances       AssetMaintenance[]
+  calibrationRecords      CalibrationRecord[]
+  assetDowntimes          AssetDowntime[]
+  facilities              Facility[]
+  maintenanceTickets      MaintenanceTicket[]
+  housekeepingTasks       HousekeepingTask[]
+  energyConsumptions      EnergyConsumption[]
+  incidentReports         IncidentReport[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model TenantUser {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String // references core User model id
+  role      String // SUPER_ADMIN, TENANT_ADMIN, DOCTOR, RECEPTIONIST, BILLING_MANAGER, PATIENT
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model TenantSubscription {
+  id          String    @id @default(uuid())
+  tenantId    String    @unique
+  plan        String // TRIAL, STARTER, GROWTH, ENTERPRISE
+  status      String // ACTIVE, PAST_DUE, CANCELED, UNPAID
+  priceId     String? // stripe or razorpay plan price identifier
+  customerId  String? // payment gateway customer id
+  subId       String? // payment gateway subscription id
+  seatsCount  Int       @default(5) // seat-based licensing limit
+  trialEndsAt DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model TenantBranding {
+  id             String   @id @default(uuid())
+  tenantId       String   @unique
+  logoUrl        String?
+  faviconUrl     String?
+  primaryColor   String   @default("#0f766e") // Default MedFlow teal
+  secondaryColor String   @default("#0d9488")
+  companyName    String?
+  customCss      String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model TenantDomain {
+  id         String   @id @default(uuid())
+  tenantId   String
+  domain     String   @unique // e.g. app.clinicxyz.com
+  isVerified Boolean  @default(false)
+  dnsToken   String // domain ownership token
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([domain])
+}
+
+model TenantInvite {
+  id         String    @id @default(uuid())
+  tenantId   String
+  email      String
+  role       String
+  token      String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([email])
+}
+
+model TenantAuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String?
+  action    String // BRANDING_UPDATE, DOMAIN_CHANGE, USER_INVITE, BILLING_EVENT
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model BillingInvoice {
+  id              String    @id @default(uuid())
+  tenantId        String
+  stripeInvoiceId String?   @unique
+  invoiceNumber   String
+  amountDue       Decimal   @db.Decimal(10, 2)
+  amountPaid      Decimal   @db.Decimal(10, 2)
+  currency        String    @default("USD")
+  status          String // DRAFT, OPEN, PAID, UNCOLLECTIBLE, VOID
+  hostedUrl       String?   @db.Text
+  pdfUrl          String?   @db.Text
+  dueDate         DateTime?
+  paidAt          DateTime?
+  periodStart     DateTime
+  periodEnd       DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions BillingTransaction[]
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model BillingTransaction {
+  id              String   @id @default(uuid())
+  invoiceId       String?
+  tenantId        String
+  stripePaymentId String?  @unique // stripe payment intent id
+  amount          Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD")
+  status          String // SUCCESS, FAILED, PENDING
+  paymentMethod   String? // CARD, ACH, etc.
+  errorMessage    String?  @db.Text
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice BillingInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([status])
+}
+
+model SubscriptionUsage {
+  id           String   @id @default(uuid())
+  tenantId     String
+  metricName   String // SEATS_USED, AI_REQUESTS, API_CALLS
+  currentUsage Int      @default(0)
+  limitMax     Int      @default(0)
+  resetAt      DateTime
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, metricName])
+  @@index([tenantId])
+}
+
+model FeatureUsageLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  featureKey String // TELEMEDICINE, AI_ANALYSIS, EXCEL_EXPORT
+  actionCost Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([featureKey])
+  @@index([createdAt])
+}
+
+model ConsentArtifact {
+  id              String         @id @default(uuid())
+  tenantId        String
+  patientId       String
+  consentType     String // TREATMENT, DATA_SHARING, INSURANCE, etc.
+  documentUrl     String?
+  documentHash    String?
+  signatureBase64 String?
+  signedAt        DateTime       @default(now())
+  deletedAt       DateTime?
+  grants          ConsentGrant[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([patientId])
+}
+
+model ConsentGrant {
+  id              String              @id @default(uuid())
+  tenantId        String
+  patientId       String
+  artifactId      String
+  requesterSystem String // e.g. "epic-hub", "ndhm-portal"
+  scopes          String[] // e.g. ["patient/*.read", "observation/*.read"]
+  expiresAt       DateTime
+  createdAt       DateTime            @default(now())
+  deletedAt       DateTime?
+  artifact        ConsentArtifact     @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  revocations     ConsentRevocation[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([patientId])
+  @@index([artifactId])
+}
+
+model ConsentRevocation {
+  id        String       @id @default(uuid())
+  tenantId  String
+  grantId   String
+  revokedBy String // User ID or external system
+  revokedAt DateTime     @default(now())
+  reason    String?
+  deletedAt DateTime?
+  grant     ConsentGrant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([grantId])
+}
+
+model TerminologyConcept {
+  id        String   @id @default(uuid())
+  system    String // ICD-10, SNOMED, LOINC, RXNORM
+  code      String
+  display   String
+  createdAt DateTime @default(now())
+
+  @@unique([system, code])
+  @@index([system])
+}
+
+model ExportJob {
+  id        String    @id @default(uuid())
+  tenantId  String
+  status    String // PENDING, PROCESSING, COMPLETED, FAILED
+  fileUrl   String?
+  fileSize  Int?
+  error     String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+// -----------------------------------------
+// PHASE 22 BATCH 3: SMART-on-FHIR
+// -----------------------------------------
+model SmartApp {
+  id             String               @id @default(uuid())
+  clientId       String               @unique
+  clientSecret   String
+  name           String
+  description    String?
+  redirectUris   String[]
+  scopes         String[]
+  developerEmail String
+  isActive       Boolean              @default(true)
+  tenantId       String
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  tokens         SmartAppToken[]
+  launchContexts SmartLaunchContext[]
+  tenant         Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model SmartAppToken {
+  id           String   @id @default(uuid())
+  appId        String
+  userId       String
+  patientId    String?
+  accessToken  String   @unique
+  refreshToken String?  @unique
+  scopes       String[]
+  expiresAt    DateTime
+  revoked      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  app          SmartApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+}
+
+model SmartLaunchContext {
+  id          String   @id @default(uuid())
+  appId       String
+  launchCode  String   @unique
+  patientId   String?
+  encounterId String?
+  tenantId    String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  app         SmartApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// PHASE 22 BATCH 4: CDS Engine
+// -----------------------------------------
+model CdsRule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  condition   Json
+  action      Json
+  severity    String   @default("INFO")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CdsRecommendation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  patientId   String
+  encounterId String?
+  ruleId      String?
+  suggestion  String
+  severity    String
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  reason      String?
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// PHASE 22 BATCH 6: Health Exchange
+// -----------------------------------------
+model IntegrationConnector {
+  id         String        @id @default(uuid())
+  tenantId   String
+  name       String
+  type       String
+  endpoint   String
+  authConfig Json
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs       ExchangeLog[]
+}
+
+model ExchangeLog {
+  id          String               @id @default(uuid())
+  tenantId    String
+  connectorId String
+  direction   String // INBOUND, OUTBOUND
+  status      String // SUCCESS, FAILED, RETRYING
+  payload     String?
+  error       String?
+  createdAt   DateTime             @default(now())
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connector   IntegrationConnector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+}
+
+model WebhookDelivery {
+  id          String    @id @default(uuid())
+  tenantId    String
+  endpoint    String
+  payload     Json
+  status      String // SUCCESS, FAILED
+  attempts    Int       @default(0)
+  lastAttempt DateTime?
+  createdAt   DateTime  @default(now())
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// PHASE 22 BATCH 7: Governance & Compliance
+// -----------------------------------------
+model PhiAccessLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String
+  patientId String
+  action    String // READ, EXPORT
+  resource  String // Patient, Encounter, etc
+  reason    String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model RetentionPolicy {
+  id            String   @id @default(uuid())
+  tenantId      String
+  resourceType  String
+  retentionDays Int
+  action        String // ARCHIVE, PURGE
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model LegalAuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  action     String
+  actorId    String
+  resourceId String?
+  details    Json
+  timestamp  DateTime @default(now())
+  hash       String // For immutability proof
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 1: Telemedicine V2 — WebRTC Sessions
+// =================================================================
+model TelemedicineSession {
+  id               String               @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  patientId        String
+  doctorId         String
+  status           String               @default("WAITING") // WAITING, ACTIVE, ENDED, FAILED
+  roomId           String               @unique
+  startedAt        DateTime?
+  endedAt          DateTime?
+  durationSeconds  Int?
+  recordingUrl     String?
+  recordingConsent Boolean              @default(false)
+  turnCredential   Json?
+  qualityMetrics   Json?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  participants     SessionParticipant[]
+  events           SessionEvent[]
+  tenant           Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model SessionParticipant {
+  id              String              @id @default(uuid())
+  sessionId       String
+  userId          String
+  role            String // DOCTOR, PATIENT, NURSE, SPECIALIST
+  joinedAt        DateTime            @default(now())
+  leftAt          DateTime?
+  isMuted         Boolean             @default(false)
+  isVideoOff      Boolean             @default(false)
+  isScreenSharing Boolean             @default(false)
+  reconnectCount  Int                 @default(0)
+  session         TelemedicineSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model SessionEvent {
+  id        String              @id @default(uuid())
+  sessionId String
+  type      String // JOIN, LEAVE, RECONNECT, ESCALATE, MUTE, UNMUTE
+  userId    String
+  metadata  Json?
+  timestamp DateTime            @default(now())
+  session   TelemedicineSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 2: Remote Patient Monitoring (RPM)
+// =================================================================
+model RpmDevice {
+  id              String       @id @default(uuid())
+  tenantId        String
+  patientId       String
+  deviceType      String // BP_MONITOR, PULSE_OX, GLUCOMETER, ECG, THERMOMETER, WEARABLE
+  serialNumber    String
+  pairingToken    String       @unique
+  firmwareVersion String?
+  isActive        Boolean      @default(true)
+  lastSeenAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  readings        RpmReading[]
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model RpmReading {
+  id         String    @id @default(uuid())
+  deviceId   String
+  tenantId   String
+  patientId  String
+  type       String // BP, SPO2, GLUCOSE, ECG, TEMP, HR
+  value      Json
+  unit       String?
+  isAbnormal Boolean   @default(false)
+  alertSent  Boolean   @default(false)
+  recordedAt DateTime  @default(now())
+  device     RpmDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model RpmAlert {
+  id             String   @id @default(uuid())
+  tenantId       String
+  patientId      String
+  readingId      String
+  alertType      String // LOW_SPO2, TACHYCARDIA, HIGH_GLUCOSE, FEVER, ECG_ABNORMAL
+  severity       String // WARNING, CRITICAL
+  message        String
+  acknowledged   Boolean  @default(false)
+  acknowledgedBy String?
+  createdAt      DateTime @default(now())
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 3: AI Clinical Scribe
+// =================================================================
+model ScribeSession {
+  id            String              @id @default(uuid())
+  tenantId      String
+  patientId     String
+  encounterId   String?
+  doctorId      String
+  status        String              @default("RECORDING") // RECORDING, PROCESSING, COMPLETED, APPROVED
+  audioUrl      String?
+  rawTranscript String?
+  soapNote      Json?
+  approvedAt    DateTime?
+  approvedBy    String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  segments      TranscriptSegment[]
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TranscriptSegment {
+  id         String        @id @default(uuid())
+  sessionId  String
+  speaker    String // DOCTOR, PATIENT
+  text       String
+  startMs    Int
+  endMs      Int
+  confidence Float?
+  entities   Json? // detected symptoms, medications, diagnoses
+  session    ScribeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 4: ePharmacy & Digital Prescriptions
+// =================================================================
+model DigitalPrescription {
+  id             String                    @id @default(uuid())
+  tenantId       String
+  patientId      String
+  doctorId       String
+  encounterId    String?
+  status         String                    @default("ACTIVE") // ACTIVE, DISPENSED, EXPIRED, CANCELLED
+  qrCode         String                    @unique
+  signature      String
+  issuedAt       DateTime                  @default(now())
+  expiresAt      DateTime
+  refillsAllowed Int                       @default(0)
+  refillsUsed    Int                       @default(0)
+  isControlled   Boolean                   @default(false)
+  dispensedAt    DateTime?
+  dispensedBy    String?
+  items          DigitalPrescriptionItem[]
+  tenant         Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model DigitalPrescriptionItem {
+  id               String              @id @default(uuid())
+  prescriptionId   String
+  drugName         String
+  dosage           String
+  frequency        String
+  duration         String
+  instructions     String?
+  rxNormCode       String?
+  interactionFlags Json?
+  prescription     DigitalPrescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 5: Virtual Hospital
+// =================================================================
+model VirtualAdmission {
+  id           String     @id @default(uuid())
+  tenantId     String
+  patientId    String
+  assignedTo   String // doctor/nurse userId
+  status       String     @default("ACTIVE") // ACTIVE, DISCHARGED, ESCALATED
+  careLevel    String // HOME_MONITORING, VIRTUAL_WARD, EMERGENCY
+  riskScore    Float?
+  admittedAt   DateTime   @default(now())
+  dischargedAt DateTime?
+  tasks        CareTask[]
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CareTask {
+  id          String           @id @default(uuid())
+  admissionId String
+  tenantId    String
+  title       String
+  type        String // MEDICATION, FOLLOWUP, ESCALATION, MONITORING
+  assignedTo  String?
+  dueAt       DateTime?
+  completedAt DateTime?
+  status      String           @default("PENDING") // PENDING, DONE, MISSED
+  admission   VirtualAdmission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 6: Communication Hub
+// =================================================================
+model Message {
+  id          String              @id @default(uuid())
+  tenantId    String
+  senderId    String
+  recipientId String?
+  roomId      String?
+  content     String
+  type        String              @default("TEXT") // TEXT, IMAGE, FILE, ALERT
+  isEncrypted Boolean             @default(true)
+  readAt      DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime            @default(now())
+  attachments MessageAttachment[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model MessageAttachment {
+  id        String  @id @default(uuid())
+  messageId String
+  fileName  String
+  fileUrl   String
+  fileSize  Int
+  mimeType  String
+  scanned   Boolean @default(false)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 23 BATCH 7: Regionalization & Compliance
+// =================================================================
+model RegionPolicy {
+  id            String    @id @default(uuid())
+  tenantId      String
+  countryCode   String
+  region        String?
+  policyType    String // PRESCRIPTION_RULES, CONSENT, DATA_RESIDENCY
+  rules         Json
+  isActive      Boolean   @default(true)
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  createdAt     DateTime  @default(now())
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ConsentRecord {
+  id        String    @id @default(uuid())
+  tenantId  String
+  patientId String
+  type      String // RECORDING, RPM, EMERGENCY_ESCALATION, PHARMACY_SHARING
+  granted   Boolean
+  grantedAt DateTime  @default(now())
+  expiresAt DateTime?
+  ipAddress String?
+  userAgent String?
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 1: Predictive Risk Intelligence
+// =================================================================
+model PatientRiskProfile {
+  id                String           @id @default(uuid())
+  tenantId          String
+  patientId         String           @unique
+  overallRiskScore  Float            @default(0.0) // 0-100
+  deteriorationRisk Float            @default(0.0)
+  sepsisRisk        Float            @default(0.0)
+  readmissionProb   Float            @default(0.0)
+  mortalityRisk     Float            @default(0.0)
+  icuEscalationProb Float            @default(0.0)
+  noShowProb        Float            @default(0.0)
+  adherenceProb     Float            @default(100.0)
+  lastCalculatedAt  DateTime         @default(now())
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  predictions       RiskPrediction[]
+  alerts            AiAlert[]
+  tenant            Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model RiskPrediction {
+  id                  String             @id @default(uuid())
+  tenantId            String
+  riskProfileId       String
+  predictionType      String // SEPSIS, DETERIORATION, READMISSION
+  score               Float
+  confidence          Float
+  triggerEvidence     Json // e.g. [{ "metric": "HR", "value": 120 }]
+  contributingFactors Json
+  explainability      Json // metadata for explainability layer
+  createdAt           DateTime           @default(now())
+  riskProfile         PatientRiskProfile @relation(fields: [riskProfileId], references: [id], onDelete: Cascade)
+  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AiAlert {
+  id            String             @id @default(uuid())
+  tenantId      String
+  riskProfileId String
+  alertType     String // CRITICAL, HIGH, MODERATE, LOW
+  message       String
+  isResolved    Boolean            @default(false)
+  resolvedAt    DateTime?
+  resolvedById  String?
+  createdAt     DateTime           @default(now())
+  riskProfile   PatientRiskProfile @relation(fields: [riskProfileId], references: [id], onDelete: Cascade)
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 2: Autonomous Hospital Workflow Orchestration
+// =================================================================
+model WorkflowRule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  triggerType String // E.g., 'HIGH_RISK_ALERT', 'LAB_RESULT_ABNORMAL'
+  conditions  Json // Evaluated conditions
+  actions     Json // Actions to orchestrate (e.g., 'ASSIGN_DOCTOR', 'ROUTE_TO_ICU')
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowTask {
+  id             String    @id @default(uuid())
+  tenantId       String
+  taskType       String // E.g., 'DOCTOR_ASSIGNMENT', 'REFERRAL_ROUTING'
+  status         String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  payload        Json // Details about the task (patientId, alertId, etc.)
+  assignedUserId String?
+  slaDeadlineAt  DateTime?
+  completedAt    DateTime?
+  retryCount     Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 3: AI-Assisted Medical Imaging & Radiology
+// =================================================================
+model MedicalImage {
+  id            String         @id @default(uuid())
+  tenantId      String
+  patientId     String
+  studyId       String? // DICOM StudyInstanceUID
+  modality      String // XRAY, MRI, CT, US
+  fileUrl       String
+  status        String         @default("UPLOADED") // UPLOADED, ANALYZING, COMPLETED, FAILED
+  aiProcessedAt DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  findings      ImageFinding[]
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ImageFinding {
+  id           String       @id @default(uuid())
+  tenantId     String
+  imageId      String
+  findingType  String // E.g., 'FRACTURE', 'TUMOR', 'PNEUMONIA'
+  confidence   Float
+  boundingBox  Json? // { x, y, width, height }
+  description  String?
+  isVerified   Boolean      @default(false)
+  verifiedById String?
+  createdAt    DateTime     @default(now())
+  image        MedicalImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 4: Financial Intelligence & Revenue Forecasting
+// =================================================================
+model RevenueForecast {
+  id                   String   @id @default(uuid())
+  tenantId             String
+  month                String // YYYY-MM
+  predictedRevenue     Float
+  confidenceBoundLower Float
+  confidenceBoundUpper Float
+  keyDrivers           Json // e.g. { "telemedicine": "+15%", "noShows": "-5%" }
+  generatedAt          DateTime @default(now())
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, month])
+}
+
+model FraudAlert {
+  id            String   @id @default(uuid())
+  tenantId      String
+  transactionId String? // Link to Billing or Claim
+  alertType     String // 'UPCODING', 'DUPLICATE_CLAIM', 'ANOMALOUS_PRICING'
+  riskScore     Float // 0 - 100
+  evidence      Json // e.g. { "cptCode": "99214", "avgTime": "5m", "flag": "Time mismatch" }
+  status        String   @default("INVESTIGATING") // INVESTIGATING, CONFIRMED, CLEARED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 5: Population Health & Epidemiology
+// =================================================================
+model EpiHotspot {
+  id           String   @id @default(uuid())
+  tenantId     String
+  disease      String // e.g., 'INFLUENZA_A', 'DENGUE'
+  region       String // Zip code or city
+  caseCount    Int
+  severity     String // LOW, MODERATE, HIGH, OUTBREAK
+  trend        String // INCREASING, STABLE, DECREASING
+  identifiedAt DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model PopulationRisk {
+  id               String   @id @default(uuid())
+  tenantId         String
+  cohort           String // e.g., 'DIABETIC_OVER_65'
+  averageRiskScore Float
+  totalPatients    Int
+  careGaps         Json // e.g., ["Missed HbA1c", "No Retinal Exam"]
+  updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 6: Knowledge Copilot & RAG
+// =================================================================
+model RagDocument {
+  id         String   @id @default(uuid())
+  tenantId   String
+  title      String
+  content    String   @db.Text
+  category   String // e.g., 'CLINICAL_PROTOCOL', 'DRUG_INTERACTION'
+  vectorId   String? // ID referring to vector DB (if applicable)
+  uploadedAt DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CopilotInteraction {
+  id        String   @id @default(uuid())
+  tenantId  String
+  userId    String // The clinician asking the question
+  query     String   @db.Text
+  response  String   @db.Text
+  citations Json? // Array of RagDocument IDs or titles referenced
+  timestamp DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// =================================================================
+// PHASE 24 BATCH 7: MLOps & AI Governance
+// =================================================================
+model ModelRegistry {
+  id            String        @id @default(uuid())
+  tenantId      String
+  modelName     String // e.g., 'SepsisPredictor', 'RevenueForecaster'
+  version       String // e.g., 'v1.2.0'
+  status        String // ACTIVE, DEPRECATED, SHADOW
+  accuracyScore Float // 0 - 100
+  deployedAt    DateTime      @default(now())
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  driftMetrics  DriftMetric[]
+}
+
+model DriftMetric {
+  id            String        @id @default(uuid())
+  tenantId      String
+  modelId       String
+  driftScore    Float // Magnitude of drift detected
+  featureDrifts Json // e.g., { "age_distribution": 0.15 }
+  evaluatedAt   DateTime      @default(now())
+  model         ModelRegistry @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// PHASE 25 — ENTERPRISE ERP / HRMS / SUPPLY CHAIN
+// ─────────────────────────────────────────────
+
+// 25.1 HRMS
+
+model HrmsDepartment {
+  id        String     @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  name      String
+  code      String
+  headId    String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+  shifts    Shift[]
+}
+
+model Designation {
+  id        String     @id @default(uuid())
+  tenantId  String
+  title     String
+  grade     String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employees Employee[]
+}
+
+model Employee {
+  id                String                     @id @default(uuid())
+  tenantId          String
+  branchId          String?
+  employeeCode      String
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  dateOfBirth       DateTime?
+  gender            String?
+  address           Json?
+  departmentId      String?
+  designationId     String?
+  joiningDate       DateTime
+  exitDate          DateTime?
+  employmentType    String                     @default("FULL_TIME") // FULL_TIME, PART_TIME, CONTRACT, INTERN
+  status            String                     @default("ACTIVE") // ACTIVE, INACTIVE, ON_LEAVE, TERMINATED
+  profileImageUrl   String?
+  emergencyContacts EmployeeEmergencyContact[]
+  documents         EmployeeDocument[]
+  certifications    EmployeeCertification[]
+  attendanceRecords EmployeeAttendance[]
+  shiftAssignments  ShiftAssignment[]
+  leaveRequests     LeaveRequest[]
+  payrollRecords    PayrollRecord[]
+  salaryStructure   SalaryStructure?
+  department        HrmsDepartment?            @relation(fields: [departmentId], references: [id])
+  designation       Designation?               @relation(fields: [designationId], references: [id])
+  tenant            Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([tenantId, employeeCode])
+}
+
+model EmployeeEmergencyContact {
+  id           String   @id @default(uuid())
+  employeeId   String
+  name         String
+  relationship String
+  phone        String
+  email        String?
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeDocument {
+  id           String    @id @default(uuid())
+  employeeId   String
+  documentType String // AADHAR, PAN, PASSPORT, RESUME, CONTRACT, etc.
+  documentUrl  String
+  uploadedAt   DateTime  @default(now())
+  expiryDate   DateTime?
+  verified     Boolean   @default(false)
+  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeCertification {
+  id             String    @id @default(uuid())
+  employeeId     String
+  certName       String
+  issuingBody    String
+  issueDate      DateTime
+  expiryDate     DateTime?
+  certificateUrl String?
+  status         String    @default("VALID") // VALID, EXPIRED, EXPIRING_SOON
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+}
+
+model EmployeeAttendance {
+  id            String    @id @default(uuid())
+  tenantId      String
+  employeeId    String
+  date          DateTime
+  checkIn       DateTime?
+  checkOut      DateTime?
+  status        String    @default("PRESENT") // PRESENT, ABSENT, HALF_DAY, WFH, HOLIDAY
+  hoursWorked   Float?
+  overtimeHours Float?
+  notes         String?
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+
+  @@unique([tenantId, employeeId, date])
+}
+
+// 25.2 WORKFORCE SCHEDULING
+
+model Shift {
+  id            String            @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  departmentId  String?
+  name          String // MORNING, EVENING, NIGHT, ROTATIONAL
+  startTime     String // HH:MM format
+  endTime       String
+  durationHours Float
+  isActive      Boolean           @default(true)
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  department    HrmsDepartment?   @relation(fields: [departmentId], references: [id])
+  assignments   ShiftAssignment[]
+  createdAt     DateTime          @default(now())
+}
+
+model ShiftAssignment {
+  id         String   @id @default(uuid())
+  tenantId   String
+  shiftId    String
+  employeeId String
+  date       DateTime
+  status     String   @default("SCHEDULED") // SCHEDULED, COMPLETED, SWAPPED, CANCELLED
+  notes      String?
+  shift      Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
+
+model ShiftSwapRequest {
+  id           String    @id @default(uuid())
+  tenantId     String
+  requesterId  String
+  targetId     String
+  originalDate DateTime
+  targetDate   DateTime
+  reason       String?
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy   String?
+  resolvedAt   DateTime?
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+}
+
+model LeaveRequest {
+  id         String    @id @default(uuid())
+  tenantId   String
+  employeeId String
+  leaveType  String // ANNUAL, SICK, CASUAL, MATERNITY, EMERGENCY
+  startDate  DateTime
+  endDate    DateTime
+  days       Float
+  reason     String?
+  status     String    @default("PENDING") // PENDING, APPROVED, REJECTED, CANCELLED
+  approvedBy String?
+  approvedAt DateTime?
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+}
+
+model StaffingForecast {
+  id                   String   @id @default(uuid())
+  tenantId             String
+  branchId             String?
+  forecastDate         DateTime
+  department           String
+  requiredStaff        Int
+  predictedPatientLoad Int
+  riskLevel            String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  aiRecommendations    Json?
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+}
+
+// 25.3 PAYROLL
+
+model SalaryStructure {
+  id            String   @id @default(uuid())
+  tenantId      String
+  employeeId    String   @unique
+  basicSalary   Float
+  hra           Float    @default(0)
+  allowances    Json? // { "transport": 2000, "medical": 1500 }
+  deductions    Json? // { "pf": 1800, "esi": 400 }
+  effectiveFrom DateTime
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model PayrollCycle {
+  id              String          @id @default(uuid())
+  tenantId        String
+  month           String // YYYY-MM
+  status          String          @default("DRAFT") // DRAFT, PROCESSING, APPROVED, PAID
+  totalGrossPay   Float           @default(0)
+  totalDeductions Float           @default(0)
+  totalNetPay     Float           @default(0)
+  processedAt     DateTime?
+  approvedBy      String?
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  records         PayrollRecord[]
+  createdAt       DateTime        @default(now())
+
+  @@unique([tenantId, month])
+}
+
+model PayrollRecord {
+  id              String       @id @default(uuid())
+  tenantId        String
+  cycleId         String
+  employeeId      String
+  basicPay        Float
+  allowances      Float        @default(0)
+  overtime        Float        @default(0)
+  grossPay        Float
+  taxDeduction    Float        @default(0)
+  pfDeduction     Float        @default(0)
+  otherDeductions Float        @default(0)
+  netPay          Float
+  payslipUrl      String?
+  status          String       @default("PENDING") // PENDING, PAID, HELD
+  cycle           PayrollCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  employee        Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+}
+
+model EmployeeBenefit {
+  id            String    @id @default(uuid())
+  tenantId      String
+  employeeId    String
+  benefitType   String // HEALTH_INSURANCE, LIFE_INSURANCE, GRATUITY, BONUS
+  value         Float
+  description   String?
+  effectiveDate DateTime
+  expiryDate    DateTime?
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+}
+
+model ReimbursementClaim {
+  id          String    @id @default(uuid())
+  tenantId    String
+  employeeId  String
+  category    String // TRAVEL, MEDICAL, MEAL, EQUIPMENT
+  amount      Float
+  description String
+  receiptUrl  String?
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED, PAID
+  approvedBy  String?
+  approvedAt  DateTime?
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+// 25.4 PROCUREMENT & SUPPLY CHAIN
+
+model Vendor {
+  id               String             @id @default(uuid())
+  tenantId         String
+  name             String
+  contactPerson    String?
+  email            String?
+  phone            String?
+  address          Json?
+  category         String? // PHARMACEUTICAL, EQUIPMENT, CONSUMABLE, LAB_REAGENT
+  reliabilityScore Float? // AI-generated 0-100
+  isActive         Boolean            @default(true)
+  tenant           Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseOrders   PurchaseOrder[]
+  bioVendor        BiomedicalVendor[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model PurchaseOrder {
+  id            String              @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  vendorId      String
+  poNumber      String
+  status        String              @default("DRAFT") // DRAFT, SENT, CONFIRMED, RECEIVED, CANCELLED
+  totalAmount   Float               @default(0)
+  expectedDate  DateTime?
+  deliveredDate DateTime?
+  notes         String?
+  approvedBy    String?
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vendor        Vendor              @relation(fields: [vendorId], references: [id])
+  items         PurchaseOrderItem[]
+  goodsReceipts GoodsReceipt[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([tenantId, poNumber])
+}
+
+model PurchaseOrderItem {
+  id         String        @id @default(uuid())
+  poId       String
+  itemName   String
+  itemCode   String?
+  quantity   Float
+  unitPrice  Float
+  totalPrice Float
+  unit       String?
+  received   Float         @default(0)
+  po         PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+}
+
+model GoodsReceipt {
+  id               String        @id @default(uuid())
+  tenantId         String
+  poId             String
+  grnNumber        String
+  receivedBy       String?
+  receivedAt       DateTime      @default(now())
+  status           String        @default("RECEIVED") // RECEIVED, PARTIAL, REJECTED
+  qualityCheckDone Boolean       @default(false)
+  notes            String?
+  po               PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, grnNumber])
+}
+
+model Warehouse {
+  id        String              @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  name      String
+  location  String?
+  capacity  Float?
+  isActive  Boolean             @default(true)
+  tenant    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stocks    InventoryStock[]
+  movements InventoryMovement[]
+  createdAt DateTime            @default(now())
+}
+
+model InventoryStock {
+  id           String              @id @default(uuid())
+  tenantId     String
+  warehouseId  String
+  itemName     String
+  itemCode     String
+  category     String?
+  quantity     Float               @default(0)
+  reorderLevel Float               @default(0)
+  unitCost     Float?
+  unit         String?
+  expiryDate   DateTime?
+  lastUpdated  DateTime            @updatedAt
+  warehouse    Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  movements    InventoryMovement[]
+
+  @@unique([tenantId, warehouseId, itemCode])
+}
+
+model InventoryMovement {
+  id           String         @id @default(uuid())
+  tenantId     String
+  warehouseId  String
+  stockId      String
+  movementType String // IN, OUT, TRANSFER, ADJUSTMENT
+  quantity     Float
+  referenceId  String? // PO or GRN ID
+  performedBy  String?
+  notes        String?
+  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id])
+  stock        InventoryStock @relation(fields: [stockId], references: [id])
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+}
+
+// 25.5 PHARMACY INTELLIGENCE
+
+model MedicationInventory {
+  id             String            @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  medicationName String
+  genericName    String?
+  category       String?
+  strength       String?
+  unit           String?
+  totalQty       Float             @default(0)
+  reorderQty     Float             @default(0)
+  unitCost       Float?
+  isControlled   Boolean           @default(false)
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  batches        MedicationBatch[]
+  dispenseAudits DispenseAudit[]
+  expiryAlerts   ExpiryAlert[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model MedicationBatch {
+  id             String              @id @default(uuid())
+  tenantId       String
+  medicationId   String
+  batchNumber    String
+  quantity       Float
+  expiryDate     DateTime
+  manufacturedBy String?
+  receivedAt     DateTime            @default(now())
+  status         String              @default("ACTIVE") // ACTIVE, EXPIRED, RECALLED, DEPLETED
+  medication     MedicationInventory @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ControlledSubstanceLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  medicationId String
+  action       String // RECEIVED, DISPENSED, WASTED, RETURNED, COUNTED
+  quantity     Float
+  patientId    String?
+  prescriberId String?
+  witnessId    String?
+  performedBy  String
+  notes        String?
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+}
+
+model DispenseAudit {
+  id             String              @id @default(uuid())
+  tenantId       String
+  medicationId   String
+  quantity       Float
+  dispensedTo    String?
+  dispensedBy    String
+  prescriptionId String?
+  anomalyFlag    Boolean             @default(false)
+  anomalyReason  String?
+  medication     MedicationInventory @relation(fields: [medicationId], references: [id])
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt      DateTime            @default(now())
+}
+
+model ExpiryAlert {
+  id            String              @id @default(uuid())
+  tenantId      String
+  medicationId  String
+  batchId       String?
+  expiryDate    DateTime
+  daysRemaining Int
+  alertLevel    String              @default("INFO") // INFO, WARNING, CRITICAL
+  resolved      Boolean             @default(false)
+  medication    MedicationInventory @relation(fields: [medicationId], references: [id])
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime            @default(now())
+}
+
+// 25.6 BIOMEDICAL ASSET MANAGEMENT
+
+model BiomedicalAsset {
+  id              String              @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  assetTag        String
+  name            String
+  category        String // VENTILATOR, MONITOR, ULTRASOUND, XRAY_MACHINE, etc.
+  manufacturer    String?
+  model           String?
+  serialNumber    String?
+  purchaseDate    DateTime?
+  warrantyExpiry  DateTime?
+  location        String?
+  status          String              @default("OPERATIONAL") // OPERATIONAL, UNDER_MAINTENANCE, FAULTY, DECOMMISSIONED
+  utilizationRate Float? // 0–100
+  lastServiceDate DateTime?
+  nextServiceDue  DateTime?
+  vendor          BiomedicalVendor?   @relation(fields: [vendorId], references: [id])
+  vendorId        String?
+  maintenanceLogs AssetMaintenance[]
+  calibrations    CalibrationRecord[]
+  downtimes       AssetDowntime[]
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([tenantId, assetTag])
+}
+
+model BiomedicalVendor {
+  id         String            @id @default(uuid())
+  tenantId   String
+  vendorId   String
+  speciality String? // AMC, CALIBRATION, REPAIRS
+  slaHours   Int?
+  vendor     Vendor            @relation(fields: [vendorId], references: [id])
+  assets     BiomedicalAsset[]
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AssetMaintenance {
+  id          String          @id @default(uuid())
+  tenantId    String
+  assetId     String
+  type        String // PREVENTIVE, CORRECTIVE, CALIBRATION
+  performedBy String?
+  cost        Float?
+  description String?
+  nextDue     DateTime?
+  completedAt DateTime        @default(now())
+  asset       BiomedicalAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model CalibrationRecord {
+  id              String          @id @default(uuid())
+  tenantId        String
+  assetId         String
+  calibratedBy    String?
+  standard        String?
+  result          String          @default("PASS") // PASS, FAIL, CONDITIONAL
+  certificate     String?
+  nextCalibration DateTime?
+  calibratedAt    DateTime        @default(now())
+  asset           BiomedicalAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AssetDowntime {
+  id          String          @id @default(uuid())
+  tenantId    String
+  assetId     String
+  reason      String
+  startedAt   DateTime
+  resolvedAt  DateTime?
+  durationHrs Float?
+  impact      String? // LOW, MEDIUM, HIGH, CRITICAL
+  asset       BiomedicalAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// 25.7 FACILITY & MAINTENANCE OPS
+
+model Facility {
+  id                 String              @id @default(uuid())
+  tenantId           String
+  branchId           String?
+  name               String
+  type               String // WARD, OT, ICU, PHARMACY, LAB, OPD, ADMIN
+  floor              String?
+  capacity           Int?
+  status             String              @default("OPERATIONAL")
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  maintenanceTickets MaintenanceTicket[]
+  housekeepingTasks  HousekeepingTask[]
+  energyReadings     EnergyConsumption[]
+  createdAt          DateTime            @default(now())
+}
+
+model MaintenanceTicket {
+  id          String    @id @default(uuid())
+  tenantId    String
+  facilityId  String
+  title       String
+  description String?
+  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status      String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, ESCALATED
+  assignedTo  String?
+  resolvedAt  DateTime?
+  slaDeadline DateTime?
+  cost        Float?
+  facility    Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model HousekeepingTask {
+  id          String    @id @default(uuid())
+  tenantId    String
+  facilityId  String
+  taskType    String // CLEANING, DISINFECTION, LINEN_CHANGE, WASTE_DISPOSAL
+  assignedTo  String?
+  scheduledAt DateTime
+  completedAt DateTime?
+  status      String    @default("PENDING") // PENDING, IN_PROGRESS, DONE, SKIPPED
+  notes       String?
+  facility    Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+model EnergyConsumption {
+  id         String   @id @default(uuid())
+  tenantId   String
+  facilityId String
+  metricType String // ELECTRICITY, WATER, GAS, HVAC
+  value      Float
+  unit       String // kWh, liters, m3
+  recordedAt DateTime @default(now())
+  anomaly    Boolean  @default(false)
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model IncidentReport {
+  id           String    @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  title        String
+  description  String
+  incidentType String // FALL, EQUIPMENT_FAILURE, FIRE, SECURITY, MEDICATION_ERROR, OTHER
+  severity     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  location     String?
+  reportedBy   String
+  assignedTo   String?
+  status       String    @default("OPEN") // OPEN, UNDER_REVIEW, RESOLVED, CLOSED
+  resolution   String?
+  resolvedAt   DateTime?
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }

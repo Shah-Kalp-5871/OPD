@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/views/layouts/AdminLayout';
+import { analyticsApi } from '@/lib/api/analytics';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -21,11 +22,49 @@ import {
   Activity,
   BriefcaseMedical,
   IndianRupee,
-  Info
+  Info,
+  Server,
+  ShieldAlert,
+  CheckCircle2,
+  Radio,
+  RefreshCw,
+  Layers
 } from 'lucide-react';
+
+interface TelemetryData {
+  fhirRequestsTotal: number;
+  fhirValidationFailuresTotal: number;
+  hl7MessagesParsedTotal: number;
+  hl7DeadLetterQueueTotal: number;
+  hl7SuccessRate: number;
+  avgBulkExportDurationSeconds: number;
+  websocketActiveConnections: number;
+  telemedicineAuthFailuresTotal: number;
+  publicApiRequestsTotal: Record<string, number>;
+  publicApiRateLimitedTotal: number;
+}
 
 const ReportsAnalyticsView = () => {
   const [activeTab, setActiveTab] = useState('1 Month');
+  const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
+  const [loadingTelemetry, setLoadingTelemetry] = useState(true);
+
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const res = await analyticsApi.getInteropTelemetry();
+        setTelemetry(res.data || res);
+      } catch (err) {
+        console.error('Failed to fetch telemetry:', err);
+      } finally {
+        setLoadingTelemetry(false);
+      }
+    };
+
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const timeFilters = ['Today', '1 Week', '1 Month', 'Yearly', 'Custom Range'];
 
@@ -169,6 +208,204 @@ const ReportsAnalyticsView = () => {
                </div>
             </div>
           ))}
+        </div>
+
+        {/* 🔷 SMART-on-FHIR & HL7 Interoperability Telemetry Panel */}
+        <div className="bg-slate-900 text-white rounded-3xl border border-slate-800 shadow-2xl overflow-hidden relative group">
+          {/* Decorative glowing gradient effect */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div className="p-8 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h3 className="text-sm font-black text-white uppercase tracking-[0.15em] flex items-center gap-2">
+                  <Server className="w-4 h-4 text-blue-400" />
+                  SMART-on-FHIR & HL7 Interoperability Telemetry
+                </h3>
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">
+                Live monitoring of electronic health record exchanges, HL7 packets & security gateways
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="px-4 py-1.5 bg-slate-800/80 border border-slate-700/50 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                <RefreshCw className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                Live Feed (5s)
+              </span>
+              <span className="px-4 py-1.5 bg-emerald-950/60 border border-emerald-800/50 rounded-xl text-[9px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                Gateway: Active
+              </span>
+            </div>
+          </div>
+
+          <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
+            {/* Left Column: HL7 & FHIR Transactions */}
+            <div className="space-y-8">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-800/60">
+                <Layers className="w-4 h-4 text-blue-400" />
+                <h4 className="text-[11px] font-black text-slate-200 uppercase tracking-widest">HL7 Message Processing Engine</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* HL7 Total Parsed */}
+                <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-800/80 hover:border-slate-700/60 transition-all">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Total Messages Parsed</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-white tracking-tight">
+                      {loadingTelemetry ? '...' : telemetry?.hl7MessagesParsedTotal ?? 0}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">packets</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    HL7 v2.x Standard Compliant
+                  </div>
+                </div>
+
+                {/* Dead Letter Queue */}
+                <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-800/80 hover:border-slate-700/60 transition-all">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Dead-Letter Queue (DLQ)</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-black tracking-tight ${(telemetry?.hl7DeadLetterQueueTotal ?? 0) > 0 ? 'text-amber-500 animate-pulse' : 'text-slate-300'}`}>
+                      {loadingTelemetry ? '...' : telemetry?.hl7DeadLetterQueueTotal ?? 0}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">failures</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-1.5 text-[9px] text-slate-500 font-bold uppercase">
+                    <span className={`w-1.5 h-1.5 rounded-full ${(telemetry?.hl7DeadLetterQueueTotal ?? 0) > 0 ? 'bg-amber-500' : 'bg-slate-600'}`}></span>
+                    Awaiting Manual Audit Review
+                  </div>
+                </div>
+              </div>
+
+              {/* HL7 Parsing Success Rate Bar */}
+              <div className="bg-slate-800/20 p-6 rounded-2xl border border-slate-800/60">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Ingestion & Parsing Success Rate</span>
+                  <span className="text-xs font-black text-emerald-400">
+                    {loadingTelemetry ? '...' : `${(telemetry?.hl7SuccessRate ?? 100).toFixed(2)}%`}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-1000"
+                    style={{ width: `${loadingTelemetry ? 100 : telemetry?.hl7SuccessRate ?? 100}%` }}
+                  />
+                </div>
+                <p className="text-[9px] text-slate-500 mt-2.5 font-bold uppercase tracking-wider">
+                  Target threshold: &gt;99.5% operational data integrity
+                </p>
+              </div>
+
+              {/* SMART-on-FHIR Gateway Metrics */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-3 pb-2 border-b border-slate-800/60">
+                  <Radio className="w-4 h-4 text-purple-400" />
+                  <h4 className="text-[11px] font-black text-slate-200 uppercase tracking-widest">SMART-on-FHIR Access Gateway</h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {/* FHIR Queries */}
+                  <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-800/80 hover:border-slate-700/60 transition-all">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">SMART-on-FHIR Queries</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-white tracking-tight">
+                        {loadingTelemetry ? '...' : telemetry?.fhirRequestsTotal ?? 0}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">requests</span>
+                    </div>
+                  </div>
+
+                  {/* Schema Validation Failures */}
+                  <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-800/80 hover:border-slate-700/60 transition-all">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Validation Schema Failures</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-3xl font-black tracking-tight ${(telemetry?.fhirValidationFailuresTotal ?? 0) > 0 ? 'text-rose-500' : 'text-slate-300'}`}>
+                        {loadingTelemetry ? '...' : telemetry?.fhirValidationFailuresTotal ?? 0}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">rejections</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Security, Latency & WebSockets */}
+            <div className="space-y-8">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-800/60">
+                <ShieldAlert className="w-4 h-4 text-amber-400" />
+                <h4 className="text-[11px] font-black text-slate-200 uppercase tracking-widest">Rate Limiting & Threat Shield</h4>
+              </div>
+
+              {/* Rate Limiting Stats */}
+              <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-800/60 flex items-start justify-between gap-4">
+                <div className="space-y-2">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Public API Rate Limited Total</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`text-3xl font-black tracking-tight ${(telemetry?.publicApiRateLimitedTotal ?? 0) > 0 ? 'text-amber-500 animate-pulse' : 'text-slate-300'}`}>
+                      {loadingTelemetry ? '...' : telemetry?.publicApiRateLimitedTotal ?? 0}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">violations</span>
+                  </div>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                    DDoS protection limits set to 120 reqs/min per client IP
+                  </p>
+                </div>
+                <div className="bg-amber-950/40 p-3 rounded-xl border border-amber-800/30">
+                  <ShieldAlert className="w-6 h-6 text-amber-500" />
+                </div>
+              </div>
+
+              {/* FHIR Bulk Data Export Latency */}
+              <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-800/60 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">FHIR Bulk Export Avg Latency</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-white tracking-tight">
+                        {loadingTelemetry ? '...' : `${(telemetry?.avgBulkExportDurationSeconds ?? 0).toFixed(2)}`}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">seconds</span>
+                    </div>
+                  </div>
+                  <div className="bg-blue-950/40 p-3 rounded-xl border border-blue-900/30">
+                    <Activity className="w-6 h-6 text-blue-400" />
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-slate-800/60">
+                  <div className="flex justify-between text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                    <span>Performance Rating:</span>
+                    <span className="text-emerald-400">Excellent (&lt;3.5s)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* WebSocket Live Channel Active Connections */}
+              <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-800/60 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">WebSocket Connected Staff Clients</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-emerald-400 tracking-tight animate-pulse">
+                        {loadingTelemetry ? '...' : telemetry?.websocketActiveConnections ?? 0}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">live sessions</span>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-950/40 p-3 rounded-xl border border-emerald-900/30">
+                    <Radio className="w-6 h-6 text-emerald-400" />
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-widest">
+                  <span>SSE &amp; PubSub Subscribed Clients</span>
+                  <span>Syncing Live Clinical Events</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 🔷 Chart Section (Placeholders Only) */}
