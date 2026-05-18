@@ -19,7 +19,11 @@ export class QueueService {
     private events: EventsService,
   ) {}
 
-  async createEntry(dto: CreateQueueEntryDto, userId: string, branchId: string) {
+  async createEntry(
+    dto: CreateQueueEntryDto,
+    userId: string,
+    branchId: string,
+  ) {
     if (!userId)
       throw new BadRequestException('User ID is required for check-in');
 
@@ -117,7 +121,9 @@ export class QueueService {
     let tokenNumber = (lastEntry?.tokenNumber || 0) + 1;
     let tokenDisplay = `${prefix}-${tokenNumber.toString().padStart(3, '0')}`;
 
-    while (await tx.queueEntry.findFirst({ where: { tokenDisplay, branchId } })) {
+    while (
+      await tx.queueEntry.findFirst({ where: { tokenDisplay, branchId } })
+    ) {
       tokenNumber += 1;
       tokenDisplay = `${prefix}-${tokenNumber.toString().padStart(3, '0')}`;
     }
@@ -132,8 +138,15 @@ export class QueueService {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`;
   }
 
-  async updateStatus(id: string, dto: UpdateQueueStatusDto, userId: string, branchId: string) {
-    const entry = await this.prisma.queueEntry.findFirst({ where: { id, branchId } });
+  async updateStatus(
+    id: string,
+    dto: UpdateQueueStatusDto,
+    userId: string,
+    branchId: string,
+  ) {
+    const entry = await this.prisma.queueEntry.findFirst({
+      where: { id, branchId },
+    });
     if (!entry) throw new NotFoundException('Queue entry not found');
 
     return this.prisma.$transaction(async (tx) => {
@@ -176,7 +189,12 @@ export class QueueService {
     });
   }
 
-  async updateStage(caseId: string, dto: UpdateCaseStageDto, userId: string, branchId: string) {
+  async updateStage(
+    caseId: string,
+    dto: UpdateCaseStageDto,
+    userId: string,
+    branchId: string,
+  ) {
     const entry = await this.prisma.queueEntry.findFirst({
       where: { caseId, branchId },
     });
@@ -202,7 +220,12 @@ export class QueueService {
     });
   }
 
-  async startSession(caseId: string, doctorId: string, userId: string, branchId: string) {
+  async startSession(
+    caseId: string,
+    doctorId: string,
+    userId: string,
+    branchId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       // End any other active sessions for this doctor
       await tx.visitSession.updateMany({
@@ -254,7 +277,12 @@ export class QueueService {
     });
   }
 
-  async endSession(caseId: string, userId: string, nextStage: CaseStage, branchId: string) {
+  async endSession(
+    caseId: string,
+    userId: string,
+    nextStage: CaseStage,
+    branchId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       // 1. End active sessions for this case
       await tx.visitSession.updateMany({

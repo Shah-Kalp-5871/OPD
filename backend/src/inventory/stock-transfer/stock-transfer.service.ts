@@ -1,6 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateStockTransferDto, UpdateStockTransferStatusDto } from './dto/stock-transfer.dto';
+import {
+  CreateStockTransferDto,
+  UpdateStockTransferStatusDto,
+} from './dto/stock-transfer.dto';
 
 @Injectable()
 export class StockTransferService {
@@ -40,14 +47,12 @@ export class StockTransferService {
   }
 
   async getTransfers(branchId: string, role: string) {
-    const whereClause = role === 'SUPERADMIN' 
-      ? {} 
-      : {
-          OR: [
-            { sourceBranchId: branchId },
-            { destBranchId: branchId },
-          ],
-        };
+    const whereClause =
+      role === 'SUPERADMIN'
+        ? {}
+        : {
+            OR: [{ sourceBranchId: branchId }, { destBranchId: branchId }],
+          };
 
     return this.prisma.stockTransfer.findMany({
       where: whereClause,
@@ -93,7 +98,9 @@ export class StockTransferService {
 
       if (!transfer) throw new NotFoundException('Transfer not found');
       if (transfer.status !== 'REQUESTED') {
-        throw new BadRequestException(`Cannot approve transfer in status ${transfer.status}`);
+        throw new BadRequestException(
+          `Cannot approve transfer in status ${transfer.status}`,
+        );
       }
 
       // We only update status here. Dispatch actually moves the stock.
@@ -116,7 +123,9 @@ export class StockTransferService {
 
       if (!transfer) throw new NotFoundException('Transfer not found');
       if (transfer.status !== 'APPROVED') {
-        throw new BadRequestException(`Cannot dispatch transfer in status ${transfer.status}`);
+        throw new BadRequestException(
+          `Cannot dispatch transfer in status ${transfer.status}`,
+        );
       }
 
       // Actually deduct stock from source branch
@@ -127,7 +136,9 @@ export class StockTransferService {
         });
 
         if (!inventory || inventory.totalStock < item.requestedQty) {
-          throw new BadRequestException(`Insufficient stock for drug ${item.drug.drugName}`);
+          throw new BadRequestException(
+            `Insufficient stock for drug ${item.drug.drugName}`,
+          );
         }
 
         // Deduct from total stock
@@ -153,9 +164,9 @@ export class StockTransferService {
         // Update item dispatched qty
         await tx.stockTransferItem.update({
           where: { id: item.id },
-          data: { 
+          data: {
             dispatchedQty: item.requestedQty,
-            status: 'DISPATCHED' 
+            status: 'DISPATCHED',
           },
         });
       }
@@ -179,7 +190,9 @@ export class StockTransferService {
 
       if (!transfer) throw new NotFoundException('Transfer not found');
       if (transfer.status !== 'IN_TRANSIT') {
-        throw new BadRequestException(`Cannot receive transfer in status ${transfer.status}`);
+        throw new BadRequestException(
+          `Cannot receive transfer in status ${transfer.status}`,
+        );
       }
 
       // Add stock to destination branch
@@ -228,9 +241,9 @@ export class StockTransferService {
         // Update item received qty
         await tx.stockTransferItem.update({
           where: { id: item.id },
-          data: { 
+          data: {
             receivedQty: item.dispatchedQty,
-            status: 'RECEIVED' 
+            status: 'RECEIVED',
           },
         });
       }

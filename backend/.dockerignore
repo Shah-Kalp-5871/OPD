@@ -1,0 +1,61 @@
+# Dependencies — installed fresh in Docker
+node_modules
+
+# Build output — rebuilt in Docker
+dist
+
+# Prisma cache
+.prisma
+
+# Development environment files
+.env
+.env.*
+!.env.example
+
+# Test files
+test
+**/*.spec.ts
+**/*.e2e-spec.ts
+coverage
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Development logs and debug files
+*.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation artifacts
+*.md
+!README.md
+
+# Temporary scratch files
+scratch
+build_errors*.txt
+build_output.txt
+tsc_output.txt
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Uploads (mounted as volume in Docker)
+uploads/*
+!uploads/.gitkeep
+
+# Docker files themselves (no need to copy into image)
+Dockerfile*
+docker-compose*
+.dockerignore

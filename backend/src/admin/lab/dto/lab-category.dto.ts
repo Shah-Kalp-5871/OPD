@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsBoolean, IsInt, Min, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  Min,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateLabCategoryDto {
   @IsString()

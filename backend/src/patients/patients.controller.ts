@@ -65,13 +65,13 @@ export class PatientsController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING, Role.MEDICAL)
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING, Role.MEDICAL, Role.SUPERADMIN, Role.BRANCH_ADMIN)
   findOne(@Param('id') id: string) {
     return this.patientsService.findOne(id);
   }
 
   @Get('mrd/:mrd')
-  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING)
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR, Role.NURSING, Role.SUPERADMIN, Role.BRANCH_ADMIN)
   findByMrd(@Param('mrd') mrd: string) {
     return this.patientsService.findByMrd(mrd);
   }
@@ -92,7 +92,12 @@ export class PatientsController {
     @Body() vitalsDto: AddVitalsDto,
     @Request() req,
   ) {
-    return this.patientsService.addVitals(id, vitalsDto, req.user.id, req.user.branchId);
+    return this.patientsService.addVitals(
+      id,
+      vitalsDto,
+      req.user.id,
+      req.user.branchId,
+    );
   }
 
   @Get(':id/vitals-history')

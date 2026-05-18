@@ -40,16 +40,16 @@ export class AppointmentsController {
 
   @Get()
   @Roles(Role.RECEPTION, Role.ADMIN, Role.DOCTOR)
-  findAll(
-    @Query() query: AppointmentQueryDto,
-    @BranchId() branchId: string,
-  ) {
+  findAll(@Query() query: AppointmentQueryDto, @BranchId() branchId: string) {
     return this.appointmentsService.findAll(query, branchId);
   }
 
   @Get('admin/stats')
   @Roles(Role.ADMIN, Role.RECEPTION)
-  getAdminStats(@Query('date') date: string | undefined, @BranchId() branchId: string) {
+  getAdminStats(
+    @Query('date') date: string | undefined,
+    @BranchId() branchId: string,
+  ) {
     return this.appointmentsService.getAdminStats(branchId, date);
   }
 
@@ -112,7 +112,12 @@ export class AppointmentsController {
     @Req() req: any,
     @BranchId() branchId: string,
   ) {
-    return this.appointmentsService.cancel(id, dto.reason, req.user.id, branchId);
+    return this.appointmentsService.cancel(
+      id,
+      dto.reason,
+      req.user.id,
+      branchId,
+    );
   }
 
   @Post('check-in')

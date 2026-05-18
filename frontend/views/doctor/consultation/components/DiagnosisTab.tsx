@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Stethoscope, 
   Search, 
@@ -12,9 +12,12 @@ import {
   BookOpen,
   FileText,
   Target,
-  Zap
+  Zap,
+  Check,
+  ThumbsDown
 } from 'lucide-react';
 import api from '@/lib/api';
+import { aiApi } from '@/lib/api/ai';
 import { toast } from 'sonner';
 import { Card, Button, TextArea, Input, Badge, SectionHeader } from './ClinicalDesignSystem';
 
@@ -26,6 +29,8 @@ interface DiagnosisTabProps {
 
 const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) => {
   const [saving, setSaving] = useState(false);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     provisionalDiagnosis: data?.consultation?.provisionalDiagnosis || '',
@@ -33,6 +38,36 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
     treatmentPlan: data?.consultation?.treatmentPlan || '',
     advice: data?.consultation?.advice || ''
   });
+
+  const chiefComplaint = data?.complaint?.chiefComplaint || '';
+  const branchId = data?.case?.branchId || 'default-branch';
+  const patientId = data?.case?.patientId || '';
+
+  useEffect(() => {
+    if (chiefComplaint) {
+      fetchAiSuggestions();
+    }
+  }, [chiefComplaint]);
+
+  const fetchAiSuggestions = async () => {
+    try {
+      setLoadingAi(true);
+      const res = await aiApi.getClinicalSuggestions({
+        caseId,
+        patientId,
+        branchId,
+        chiefComplaint,
+        provisionalDiagnosis: formData.provisionalDiagnosis
+      });
+      if (res && res.data && res.data.suggestions) {
+        setAiSuggestions(res.data.suggestions);
+      }
+    } catch (err) {
+      console.error('Failed to load AI suggestions', err);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -45,6 +80,48 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
       toast.error('Failed to update clinical record');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAcceptSuggestion = async (suggestion: any) => {
+    // Autofill provisional diagnosis
+    setFormData(prev => ({
+      ...prev,
+      provisionalDiagnosis: prev.provisionalDiagnosis 
+        ? `${prev.provisionalDiagnosis}\n- ${suggestion.code}: ${suggestion.disease}`
+        : `${suggestion.code}: ${suggestion.disease}`
+    }));
+
+    toast.success(`Accepted suggestion: ${suggestion.disease}`);
+
+    // Log outcome immutably
+    if (aiSuggestions?.logId) {
+      try {
+        await aiApi.recordSuggestionOutcome({
+          logId: aiSuggestions.logId,
+          outcome: 'ACCEPTED',
+          reviewNotes: `Accepted disease: ${suggestion.disease}`
+        });
+      } catch (err) {
+        console.error('Failed to log suggestion outcome', err);
+      }
+    }
+  };
+
+  const handleRejectSuggestion = async () => {
+    setAiSuggestions(null);
+    toast.error('Clinical suggestion rejected');
+
+    if (aiSuggestions?.logId) {
+      try {
+        await aiApi.recordSuggestionOutcome({
+          logId: aiSuggestions.logId,
+          outcome: 'REJECTED',
+          reviewNotes: 'Physician rejected automated suggestion.'
+        });
+      } catch (err) {
+        console.error('Failed to log rejection', err);
+      }
     }
   };
 
@@ -125,7 +202,95 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
 
         {/* Sidebar Actions */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          <Card title="Decision Support" subtitle="AI & Protocol assistance">
+          {/* AI DECISION SUPPORT SIDEBAR */}
+          <Card 
+            title="Clinical Decision Support (CDS)" 
+            subtitle="Assistive clinical intelligence"
+            className="border-blue-100 shadow-md"
+            headerAction={
+              loadingAi ? (
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+              ) : (
+                <Badge variant="blue" className="bg-blue-50 text-blue-600 border-blue-100">Assistive AI</Badge>
+              )
+            }
+          >
+            {loadingAi ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <p className="text-xs font-black text-slate-500 uppercase tracking-wider">Analyzing Chief Complaint...</p>
+              </div>
+            ) : aiSuggestions?.icd10Suggestions?.length > 0 ? (
+              <div className="space-y-5 animate-in fade-in duration-500">
+                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Primary Input</p>
+                  <p className="text-xs font-bold text-slate-700 italic line-clamp-2">"{chiefComplaint}"</p>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Suggested Codes & Diseases</p>
+                  
+                  {aiSuggestions.icd10Suggestions.map((suggestion: any, index: number) => (
+                    <div 
+                      key={index}
+                      className="group p-4 bg-white border border-slate-200/80 rounded-2xl hover:border-blue-300 hover:shadow-lg transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                          <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-black uppercase mb-1">
+                            {suggestion.code}
+                          </span>
+                          <h5 className="text-xs font-black text-slate-800 tracking-tight leading-tight">{suggestion.disease}</h5>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase tracking-tighter ${
+                          suggestion.confidence >= 80 ? 'text-emerald-600' : 'text-blue-600'
+                        }`}>
+                          {suggestion.confidence}% Conf
+                        </span>
+                      </div>
+                      
+                      <p className="text-[10px] font-medium text-slate-500 mb-4 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100/50">
+                        {suggestion.rationale}
+                      </p>
+
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          onClick={() => handleAcceptSuggestion(suggestion)}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 rounded-xl h-8 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 font-bold"
+                          icon={<Check className="w-3.5 h-3.5" />}
+                        >
+                          Accept
+                        </Button>
+                        <Button 
+                          onClick={handleRejectSuggestion}
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-xl h-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 font-bold"
+                        >
+                          <ThumbsDown className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-3.5 bg-yellow-50/50 border border-yellow-100 rounded-2xl text-[10px] font-medium text-slate-500 leading-relaxed">
+                  <span className="font-bold text-yellow-800 block mb-0.5">⚠️ Clinical Safety Mandate:</span>
+                  {aiSuggestions.safetyNotes || 'The AI assistant is strictly assistive. Always perform independent physical evaluation before finalizing diagnoses.'}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50/50 border border-dashed border-slate-200 rounded-2xl">
+                <BookOpen className="w-8 h-8 text-slate-300 mb-2" />
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No Suggestion Available</p>
+                <p className="text-[10px] font-medium text-slate-400 mt-1 max-w-[200px]">Document chief complaints to receive AI diagnosis assistance.</p>
+              </div>
+            )}
+          </Card>
+
+          <Card title="Traditional Decision Support" subtitle="Protocols & Reference Lookup">
             <div className="space-y-3">
               <QuickActionItem 
                 icon={<Search className="w-4 h-4 text-blue-600" />}
@@ -197,3 +362,4 @@ const QuickActionItem = ({ icon, title, desc }: { icon: any, title: string, desc
 );
 
 export default DiagnosisTab;
+

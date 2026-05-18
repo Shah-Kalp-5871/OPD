@@ -50,7 +50,11 @@ export class ConsultationService {
     );
   }
 
-  async getOrCreateConsultation(caseId: string, userId: string, branchId: string) {
+  async getOrCreateConsultation(
+    caseId: string,
+    userId: string,
+    branchId: string,
+  ) {
     const patientCase = await this.prisma.patientCase.findFirst({
       where: { id: caseId, branchId },
     });

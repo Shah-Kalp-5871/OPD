@@ -57,7 +57,12 @@ export class StaffService {
   }
 
   async findAll(params?: any) {
-    const { search, page = 1, limit = 20, includeInactive = false } = params || {};
+    const {
+      search,
+      page = 1,
+      limit = 20,
+      includeInactive = false,
+    } = params || {};
     const skip = (page - 1) * limit;
 
     const where: any = {

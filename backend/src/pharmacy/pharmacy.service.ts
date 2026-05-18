@@ -6,7 +6,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../common/events.service';
 import { BillingService } from '../billing/billing.service';
-import { DispenseMedicationDto, ReceiveStockDto, AdjustStockDto } from './dto/pharmacy.dto';
+import {
+  DispenseMedicationDto,
+  ReceiveStockDto,
+  AdjustStockDto,
+} from './dto/pharmacy.dto';
 import { Decimal } from 'decimal.js';
 
 @Injectable()
@@ -44,7 +48,11 @@ export class PharmacyService {
     });
   }
 
-  async dispenseMedication(dto: DispenseMedicationDto, userId: string, branchId: string) {
+  async dispenseMedication(
+    dto: DispenseMedicationDto,
+    userId: string,
+    branchId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Validate Prescription
       const prescription = await tx.prescription.findUnique({
@@ -69,11 +77,17 @@ export class PharmacyService {
           );
 
         if (prescriptionItem.isDispensed) {
-          throw new BadRequestException(`Item ${prescriptionItem.drug?.drugName || 'Unknown'} has already been dispensed`);
+          throw new BadRequestException(
+            `Item ${prescriptionItem.drug?.drugName || 'Unknown'} has already been dispensed`,
+          );
         }
 
         // ROW-LEVEL LOCKING: Lock the inventory record to prevent concurrent modifications
-        await tx.$executeRawUnsafe(`SELECT * FROM "DrugInventory" WHERE "drugId" = $1 AND "branchId" = $2 FOR UPDATE`, item.drugId, branchId);
+        await tx.$executeRawUnsafe(
+          `SELECT * FROM "DrugInventory" WHERE "drugId" = $1 AND "branchId" = $2 FOR UPDATE`,
+          item.drugId,
+          branchId,
+        );
 
         // Check Inventory
         const inventory = await tx.drugInventory.findUnique({
@@ -91,7 +105,10 @@ export class PharmacyService {
           },
         });
 
-        if (!inventory) throw new NotFoundException(`Inventory not found for drug ${item.drugId}`);
+        if (!inventory)
+          throw new NotFoundException(
+            `Inventory not found for drug ${item.drugId}`,
+          );
 
         if (inventory.totalStock < item.quantityDispensed) {
           throw new BadRequestException(
@@ -106,7 +123,10 @@ export class PharmacyService {
         for (const batch of inventory.batches) {
           if (remainingToDispense <= 0) break;
 
-          const dispenseFromBatch = Math.min(batch.stockQuantity, remainingToDispense);
+          const dispenseFromBatch = Math.min(
+            batch.stockQuantity,
+            remainingToDispense,
+          );
           const beforeQty = batch.stockQuantity;
           const afterQty = batch.stockQuantity - dispenseFromBatch;
 
@@ -170,7 +190,10 @@ export class PharmacyService {
           quantity: item.quantityDispensed,
           batches: touchedBatches,
           totalPrice: touchedBatches.reduce(
-            (acc, b) => acc.add(new Decimal(b.quantity).mul(new Decimal(b.mrp.toString()))),
+            (acc, b) =>
+              acc.add(
+                new Decimal(b.quantity).mul(new Decimal(b.mrp.toString())),
+              ),
             new Decimal(0),
           ),
         });
@@ -179,7 +202,7 @@ export class PharmacyService {
       // 3. Billing Integration
       const patientCase = await tx.patientCase.findUnique({
         where: { id: dto.caseId },
-        select: { patientId: true }
+        select: { patientId: true },
       });
 
       if (patientCase) {
@@ -211,7 +234,7 @@ export class PharmacyService {
       // 4. Update Queue Entry status
       await tx.queueEntry.update({
         where: { caseId: dto.caseId },
-        data: { status: 'COMPLETED' }, 
+        data: { status: 'COMPLETED' },
       });
 
       // 5. Create Audit Log
@@ -257,7 +280,9 @@ export class PharmacyService {
       let beforeBatchQty = 0;
       if (batch) {
         if (batch.inventoryId !== inventory.id) {
-          throw new BadRequestException('Batch number belongs to a different drug inventory');
+          throw new BadRequestException(
+            'Batch number belongs to a different drug inventory',
+          );
         }
         beforeBatchQty = batch.stockQuantity;
         batch = await tx.drugBatch.update({
@@ -265,7 +290,9 @@ export class PharmacyService {
           data: {
             stockQuantity: { increment: dto.quantity },
             expiryDate: new Date(dto.expiryDate),
-            manufacturingDate: dto.manufacturingDate ? new Date(dto.manufacturingDate) : null,
+            manufacturingDate: dto.manufacturingDate
+              ? new Date(dto.manufacturingDate)
+              : null,
             mrp: dto.mrp,
             purchasePrice: dto.purchasePrice,
             supplierId: dto.supplierId,
@@ -277,7 +304,9 @@ export class PharmacyService {
             inventoryId: inventory.id,
             batchNumber: dto.batchNumber,
             expiryDate: new Date(dto.expiryDate),
-            manufacturingDate: dto.manufacturingDate ? new Date(dto.manufacturingDate) : null,
+            manufacturingDate: dto.manufacturingDate
+              ? new Date(dto.manufacturingDate)
+              : null,
             mrp: dto.mrp,
             purchasePrice: dto.purchasePrice,
             stockQuantity: dto.quantity,
@@ -312,7 +341,11 @@ export class PharmacyService {
         },
       });
 
-      return { success: true, batchId: batch.id, newTotal: beforeTotal + dto.quantity };
+      return {
+        success: true,
+        batchId: batch.id,
+        newTotal: beforeTotal + dto.quantity,
+      };
     });
   }
 
@@ -336,7 +369,10 @@ export class PharmacyService {
       if (dto.type === 'INCREMENT') {
         afterQty += dto.quantity;
       } else {
-        if (beforeQty < dto.quantity) throw new BadRequestException('Insufficient stock in batch for adjustment');
+        if (beforeQty < dto.quantity)
+          throw new BadRequestException(
+            'Insufficient stock in batch for adjustment',
+          );
         afterQty -= dto.quantity;
       }
 
@@ -350,7 +386,10 @@ export class PharmacyService {
       await tx.drugInventory.update({
         where: { id: inventory.id },
         data: {
-          totalStock: dto.type === 'INCREMENT' ? { increment: dto.quantity } : { decrement: dto.quantity },
+          totalStock:
+            dto.type === 'INCREMENT'
+              ? { increment: dto.quantity }
+              : { decrement: dto.quantity },
         },
       });
 
@@ -428,7 +467,7 @@ export class PharmacyService {
     const batches = await this.prisma.drugBatch.findMany({
       where: {
         inventory: { branchId },
-        stockQuantity: { gt: 0 }
+        stockQuantity: { gt: 0 },
       },
     });
 
@@ -440,7 +479,10 @@ export class PharmacyService {
     return { totalValue, batchCount: batches.length };
   }
 
-  async getMovementHistory(filters: { drugId?: string; batchId?: string }, branchId: string) {
+  async getMovementHistory(
+    filters: { drugId?: string; batchId?: string },
+    branchId: string,
+  ) {
     return this.prisma.stockMovement.findMany({
       where: {
         branchId,
@@ -548,20 +590,27 @@ export class PharmacyService {
       // 5. Billing Adjustment (New Production Requirement)
       const bill = await tx.bill.findUnique({
         where: { caseId },
-        include: { items: true }
+        include: { items: true },
       });
 
       if (bill) {
         const refundValue = new Decimal(batch.mrp).mul(quantity);
-        
+
         // If bill is already finalized, we MUST use a formal refund
         if (bill.isFinalized) {
           // Only process refund if there's paid amount to refund from
           if (new Decimal(bill.paidAmount).gte(refundValue)) {
-            await this.billing.processRefund(bill.id, {
-              amount: refundValue.toNumber(),
-              reason: `Pharmacy Return: ${reason}`
-            }, userId, branchId, undefined, tx);
+            await this.billing.processRefund(
+              bill.id,
+              {
+                amount: refundValue.toNumber(),
+                reason: `Pharmacy Return: ${reason}`,
+              },
+              userId,
+              branchId,
+              undefined,
+              tx,
+            );
           } else {
             // If not enough paid, we just decrement the balance and gross
             await tx.bill.update({
@@ -569,8 +618,8 @@ export class PharmacyService {
               data: {
                 grossAmount: { decrement: refundValue },
                 netAmount: { decrement: refundValue },
-                balanceAmount: { decrement: refundValue }
-              }
+                balanceAmount: { decrement: refundValue },
+              },
             });
           }
         } else {
@@ -580,8 +629,8 @@ export class PharmacyService {
             data: {
               grossAmount: { decrement: refundValue },
               netAmount: { decrement: refundValue },
-              balanceAmount: { decrement: refundValue }
-            }
+              balanceAmount: { decrement: refundValue },
+            },
           });
         }
       }
@@ -589,5 +638,4 @@ export class PharmacyService {
       return { success: true, newTotal: afterBatchQty };
     });
   }
-
 }

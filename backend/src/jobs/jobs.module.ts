@@ -2,6 +2,8 @@ import { Module, Global } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CronService } from './cron.service';
+import { ReportsProcessor } from './processors/reports.processor';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Global()
 @Module({
@@ -25,8 +27,9 @@ import { CronService } from './cron.service';
     BullModule.registerQueue({
       name: 'reports',
     }),
+    AnalyticsModule,
   ],
-  providers: [CronService],
+  providers: [CronService, ReportsProcessor],
   exports: [BullModule, CronService],
 })
 export class JobsModule {}

@@ -4,6 +4,9 @@ import { AlertsService } from '../notifications/alerts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+
 @Injectable()
 export class CronService {
   private readonly logger = new Logger(CronService.name);
@@ -12,6 +15,7 @@ export class CronService {
     private readonly alertsService: AlertsService,
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    @InjectQueue('reports') private readonly reportsQueue: Queue,
   ) {}
 
   /**
@@ -25,12 +29,23 @@ export class CronService {
   }
 
   /**
+   * Run heavy analytics caching at 2:00 AM
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async handleAnalyticsWarmup() {
+    this.logger.log('Dispatching background job to warm up analytics cache...');
+    await this.reportsQueue.add('generate-daily-snapshot', {
+      timestamp: new Date(),
+    });
+  }
+
+  /**
    * Check for upcoming appointments every 4 hours and send reminders
    */
   @Cron(CronExpression.EVERY_4_HOURS)
   async handleAppointmentReminders() {
     this.logger.log('Checking for upcoming appointments to send reminders...');
-    
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);

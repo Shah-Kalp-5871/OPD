@@ -31,6 +31,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SocketModule } from './socket/socket.module';
 import { PatientPortalModule } from './patient-portal/patient-portal.module';
 import { StockTransferModule } from './inventory/stock-transfer/stock-transfer.module';
+import { RedisCacheModule } from './common/cache/redis-cache.module';
+import { ClinicalAiModule } from './clinical-ai/clinical-ai.module';
 
 @Module({
   imports: [
@@ -39,10 +41,13 @@ import { StockTransferModule } from './inventory/stock-transfer/stock-transfer.m
       validationSchema: envValidationSchema,
     }),
     ScheduleModule.forRoot(),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
+    RedisCacheModule,
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -67,6 +72,7 @@ import { StockTransferModule } from './inventory/stock-transfer/stock-transfer.m
     SocketModule,
     PatientPortalModule,
     StockTransferModule,
+    ClinicalAiModule,
   ],
 
   controllers: [AppController],

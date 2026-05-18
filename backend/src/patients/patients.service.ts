@@ -92,23 +92,23 @@ export class PatientsService {
   }
 
   async findAll(queryDto: PatientQueryDto) {
-    const { 
-      q, 
-      page = 1, 
-      limit = 20, 
-      gender, 
-      minAge, 
-      maxAge, 
-      startDate, 
-      endDate, 
+    const {
+      q,
+      page = 1,
+      limit = 20,
+      gender,
+      minAge,
+      maxAge,
+      startDate,
+      endDate,
       isActive,
-      doctorId
+      doctorId,
     } = queryDto;
-    
+
     const skip = (page - 1) * limit;
 
     const where: any = {
-      AND: []
+      AND: [],
     };
 
     if (q) {
@@ -154,9 +154,9 @@ export class PatientsService {
       where.AND.push({
         cases: {
           some: {
-            doctorId: doctorId
-          }
-        }
+            doctorId: doctorId,
+          },
+        },
       });
     }
 
@@ -192,7 +192,7 @@ export class PatientsService {
     };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, branchId?: string, userId?: string) {
     const patient = await this.prisma.patient.findUnique({
       where: { id },
       include: {
@@ -228,7 +228,7 @@ export class PatientsService {
     return patient;
   }
 
-  async findByMrd(mrd: string) {
+  async findByMrd(mrd: string, branchId?: string, userId?: string) {
     const patient = await this.prisma.patient.findUnique({
       where: { mrdNumber: mrd },
       include: {
@@ -258,7 +258,7 @@ export class PatientsService {
     });
 
     if (!patient) {
-      throw new NotFoundException(`Patient with MRD ${mrd} not found`);
+      throw new NotFoundException('Patient not found');
     }
 
     return patient;
@@ -323,7 +323,12 @@ export class PatientsService {
     return profile;
   }
 
-  async addVitals(id: string, vitalsDto: AddVitalsDto, userId: string, branchId: string) {
+  async addVitals(
+    id: string,
+    vitalsDto: AddVitalsDto,
+    userId: string,
+    branchId: string,
+  ) {
     const patient = await this.prisma.patient.findUnique({ where: { id } });
     if (!patient) throw new NotFoundException('Patient not found');
 
@@ -435,7 +440,11 @@ export class PatientsService {
     });
   }
 
-  async createCase(patientId: string, createCaseDto: CreateCaseDto, branchId: string) {
+  async createCase(
+    patientId: string,
+    createCaseDto: CreateCaseDto,
+    branchId: string,
+  ) {
     const patient = await this.prisma.patient.findUnique({
       where: { id: patientId },
     });

@@ -193,7 +193,10 @@ export class ConsultationController {
     @Param('orderId') orderId: string,
     @BranchId() branchId: string,
   ) {
-    return this.consultationService.getInvestigationOrderById(orderId, branchId);
+    return this.consultationService.getInvestigationOrderById(
+      orderId,
+      branchId,
+    );
   }
 
   @Post('investigations/:orderId/upload')

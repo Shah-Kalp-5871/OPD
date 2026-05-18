@@ -1,4 +1,15 @@
-import { IsString, IsOptional, IsBoolean, IsInt, Min, IsUUID, IsNumber, IsEnum, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  Min,
+  IsUUID,
+  IsNumber,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { Gender } from '@prisma/client';
 

@@ -77,46 +77,46 @@ export class AppointmentsService {
 
         const existing = await tx.appointment.findFirst({
           where: {
-              doctorId,
-              appointmentDate: appointmentDateOnly,
-              appointmentTime: fullAppointmentDateTime,
-              status: { notIn: [AppointmentStatus.CANCELLED] },
-            },
-          });
+            doctorId,
+            appointmentDate: appointmentDateOnly,
+            appointmentTime: fullAppointmentDateTime,
+            status: { notIn: [AppointmentStatus.CANCELLED] },
+          },
+        });
 
-          if (existing)
-            throw new ConflictException('This slot is already booked');
+        if (existing)
+          throw new ConflictException('This slot is already booked');
 
-          return tx.appointment.create({
-            data: {
-              patientId,
-              doctorId,
-              branchId,
-              appointmentDate: appointmentDateOnly,
-              appointmentTime: fullAppointmentDateTime,
-              purpose,
-              remarks,
-              status: AppointmentStatus.SCHEDULED,
-            },
-            include: {
-              patient: true,
-              doctor: {
-                include: {
-                  user: true,
-                },
+        return tx.appointment.create({
+          data: {
+            patientId,
+            doctorId,
+            branchId,
+            appointmentDate: appointmentDateOnly,
+            appointmentTime: fullAppointmentDateTime,
+            purpose,
+            remarks,
+            status: AppointmentStatus.SCHEDULED,
+          },
+          include: {
+            patient: true,
+            doctor: {
+              include: {
+                user: true,
               },
             },
-          });
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
-    }
+          },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
 
-    async getAvailableSlots(doctorId: string, dateStr: string, branchId: string) {
-      const date = this.parseDateOnly(dateStr);
-      const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
+  async getAvailableSlots(doctorId: string, dateStr: string, branchId: string) {
+    const date = this.parseDateOnly(dateStr);
+    const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
 
-      // 1. Get Doctor Profile & Schedules
+    // 1. Get Doctor Profile & Schedules
     const doctorProfile = await this.prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
@@ -128,20 +128,34 @@ export class AppointmentsService {
 
     if (!doctorProfile) throw new NotFoundException('Doctor profile not found');
 
-    // 2. Check Holiday
+    // 2. Check Holiday (Branch specific or Global)
     const slotDate = this.toDateOnlyUtc(date);
     const holiday = await this.prisma.holiday.findFirst({
-      where: { date: slotDate },
+      where: {
+        date: slotDate,
+        OR: [{ branchId: null }, { branchId }],
+      },
     });
     if (holiday) return [];
 
-    // 3. Get existing appointments
+    // 2b. Check Doctor Leave
+    const doctorLeave = await this.prisma.doctorLeave.findFirst({
+      where: {
+        doctorId,
+        status: 'APPROVED',
+        startDate: { lte: slotDate },
+        endDate: { gte: slotDate },
+      },
+    });
+    if (doctorLeave) return [];
+
+    // 3. Get existing appointments and blocked slots
     const bookedAppointments = await this.prisma.appointment.findMany({
       where: {
         doctorId,
         branchId,
-        appointmentDate: this.toDateOnlyUtc(date),
-        status: { notIn: [AppointmentStatus.CANCELLED] },
+        appointmentDate: slotDate,
+        status: { notIn: ['CANCELLED', 'RESCHEDULED'] },
       },
       select: { appointmentTime: true },
     });
@@ -150,8 +164,34 @@ export class AppointmentsService {
       format(a.appointmentTime, 'HH:mm'),
     );
 
-    const slots: { time: string; status: 'available' | 'booked' }[] = [];
+    const blockedSlotsDb = await this.prisma.doctorBlockedSlot.findMany({
+      where: {
+        doctorId,
+        branchId,
+        date: slotDate,
+      },
+    });
+
+    const slots: {
+      time: string;
+      status: 'available' | 'booked' | 'blocked';
+    }[] = [];
     const duration = doctorProfile.slotDuration || 15;
+
+    // Helper to check if a time string falls within any blocked slot
+    const isBlocked = (timeStr: string) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      const slotTime = h * 60 + m;
+      return blockedSlotsDb.some((b) => {
+        const startH = b.startTime.getHours();
+        const startM = b.startTime.getMinutes();
+        const endH = b.endTime.getHours();
+        const endM = b.endTime.getMinutes();
+        const blockStart = startH * 60 + startM;
+        const blockEnd = endH * 60 + endM;
+        return slotTime >= blockStart && slotTime < blockEnd;
+      });
+    };
 
     // 4. Generate slots based on schedules
     for (const schedule of doctorProfile.schedules) {
@@ -173,9 +213,17 @@ export class AppointmentsService {
 
       while (isBefore(current, end)) {
         const timeStr = format(current, 'HH:mm');
+        let status: 'available' | 'booked' | 'blocked' = 'available';
+
+        if (isBlocked(timeStr)) {
+          status = 'blocked';
+        } else if (bookedTimes.includes(timeStr)) {
+          status = 'booked';
+        }
+
         slots.push({
           time: timeStr,
-          status: bookedTimes.includes(timeStr) ? 'booked' : 'available',
+          status,
         });
         current = addMinutes(current, duration);
       }
@@ -226,7 +274,16 @@ export class AppointmentsService {
   }
 
   async findAll(query: AppointmentQueryDto, branchId: string) {
-    const { page = 1, limit = 10, q, doctorId, status, startDate, endDate, date } = query;
+    const {
+      page = 1,
+      limit = 10,
+      q,
+      doctorId,
+      status,
+      startDate,
+      endDate,
+      date,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.AppointmentWhereInput = { branchId };
@@ -235,8 +292,10 @@ export class AppointmentsService {
       where.appointmentDate = this.parseDateOnly(date);
     } else if (startDate || endDate) {
       where.appointmentDate = {};
-      if (startDate) (where.appointmentDate as any).gte = this.parseDateOnly(startDate);
-      if (endDate) (where.appointmentDate as any).lte = this.parseDateOnly(endDate);
+      if (startDate)
+        (where.appointmentDate as any).gte = this.parseDateOnly(startDate);
+      if (endDate)
+        (where.appointmentDate as any).lte = this.parseDateOnly(endDate);
     }
 
     if (doctorId) where.doctorId = doctorId;
@@ -249,7 +308,11 @@ export class AppointmentsService {
         { patient: { lastName: { contains: search, mode: 'insensitive' } } },
         { patient: { mobile: { contains: search } } },
         { id: { contains: search, mode: 'insensitive' } },
-        { patientCase: { caseNumber: { contains: search, mode: 'insensitive' } } },
+        {
+          patientCase: {
+            caseNumber: { contains: search, mode: 'insensitive' },
+          },
+        },
       ];
     }
 
@@ -355,7 +418,10 @@ export class AppointmentsService {
 
     return this.prisma.$transaction(
       async (tx) => {
-        await this.lockTransactionKey(tx, `appointment-checkin-${appointmentId}`);
+        await this.lockTransactionKey(
+          tx,
+          `appointment-checkin-${appointmentId}`,
+        );
 
         // 1. Get Appointment
         const appointment = await tx.appointment.findFirst({
@@ -467,7 +533,9 @@ export class AppointmentsService {
   }
 
   async getAdminStats(branchId: string, dateStr?: string) {
-    const targetDate = dateStr ? this.parseDateOnly(dateStr) : this.toDateOnlyUtc(new Date());
+    const targetDate = dateStr
+      ? this.parseDateOnly(dateStr)
+      : this.toDateOnlyUtc(new Date());
 
     const stats = await this.prisma.appointment.groupBy({
       by: ['status'],
@@ -492,106 +560,140 @@ export class AppointmentsService {
       const count = s._count;
       result.total += count;
       switch (s.status) {
-        case AppointmentStatus.SCHEDULED: result.scheduled = count; break;
-        case AppointmentStatus.CONFIRMED: result.confirmed = count; break;
-        case AppointmentStatus.CHECKED_IN: result.checkedIn = count; break;
-        case AppointmentStatus.COMPLETED: result.completed = count; break;
-        case AppointmentStatus.CANCELLED: result.cancelled = count; break;
-        case AppointmentStatus.NO_SHOW: result.noShow = count; break;
+        case AppointmentStatus.SCHEDULED:
+          result.scheduled = count;
+          break;
+        case AppointmentStatus.CONFIRMED:
+          result.confirmed = count;
+          break;
+        case AppointmentStatus.CHECKED_IN:
+          result.checkedIn = count;
+          break;
+        case AppointmentStatus.COMPLETED:
+          result.completed = count;
+          break;
+        case AppointmentStatus.CANCELLED:
+          result.cancelled = count;
+          break;
+        case AppointmentStatus.NO_SHOW:
+          result.noShow = count;
+          break;
       }
     });
 
     return result;
   }
 
-  async reschedule(id: string, newDate: string, newTime: string, userId: string, remarks: string, branchId: string) {
+  async reschedule(
+    id: string,
+    newDate: string,
+    newTime: string,
+    userId: string,
+    remarks: string,
+    branchId: string,
+  ) {
     const dateObj = this.parseDateOnly(newDate);
     const appointmentDateOnly = this.toDateOnlyUtc(dateObj);
-    const fullAppointmentDateTime = this.combineDateAndTime(appointmentDateOnly, newTime);
+    const fullAppointmentDateTime = this.combineDateAndTime(
+      appointmentDateOnly,
+      newTime,
+    );
 
-    return this.prisma.$transaction(async (tx) => {
-      await this.lockTransactionKey(tx, `appointment-${id}`);
-      
-      const appointment = await tx.appointment.findFirst({
-        where: { id, branchId },
-        include: { doctor: true }
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.lockTransactionKey(tx, `appointment-${id}`);
 
-      if (!appointment) throw new NotFoundException('Appointment not found');
-      
-      this.ensureValidStatusTransition(appointment.status, AppointmentStatus.RESCHEDULED);
+        const appointment = await tx.appointment.findFirst({
+          where: { id, branchId },
+          include: { doctor: true },
+        });
 
-      // Check slot availability
-      const existing = await tx.appointment.findFirst({
-        where: {
-          doctorId: appointment.doctorId,
-          appointmentDate: appointmentDateOnly,
-          appointmentTime: fullAppointmentDateTime,
-          status: { notIn: [AppointmentStatus.CANCELLED] },
-          id: { not: id }
-        },
-      });
+        if (!appointment) throw new NotFoundException('Appointment not found');
 
-      if (existing) throw new ConflictException('New slot is already booked');
+        this.ensureValidStatusTransition(
+          appointment.status,
+          AppointmentStatus.RESCHEDULED,
+        );
 
-      const updated = await tx.appointment.update({
-        where: { id },
-        data: {
-          appointmentDate: appointmentDateOnly,
-          appointmentTime: fullAppointmentDateTime,
-          status: AppointmentStatus.SCHEDULED, // Reset to scheduled after reschedule
-          rescheduledById: userId,
-          remarks: remarks || appointment.remarks,
-        }
-      });
+        // Check slot availability
+        const existing = await tx.appointment.findFirst({
+          where: {
+            doctorId: appointment.doctorId,
+            appointmentDate: appointmentDateOnly,
+            appointmentTime: fullAppointmentDateTime,
+            status: { notIn: [AppointmentStatus.CANCELLED] },
+            id: { not: id },
+          },
+        });
 
-      await tx.appointmentStatusHistory.create({
-        data: {
-          appointmentId: id,
-          previousStatus: appointment.status,
-          status: AppointmentStatus.RESCHEDULED,
-          changedById: userId,
-          remarks: `Rescheduled to ${newDate} ${newTime}. ${remarks}`,
-        }
-      });
+        if (existing) throw new ConflictException('New slot is already booked');
 
-      return updated;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        const updated = await tx.appointment.update({
+          where: { id },
+          data: {
+            appointmentDate: appointmentDateOnly,
+            appointmentTime: fullAppointmentDateTime,
+            status: AppointmentStatus.SCHEDULED, // Reset to scheduled after reschedule
+            rescheduledById: userId,
+            remarks: remarks || appointment.remarks,
+          },
+        });
+
+        await tx.appointmentStatusHistory.create({
+          data: {
+            appointmentId: id,
+            previousStatus: appointment.status,
+            status: AppointmentStatus.RESCHEDULED,
+            changedById: userId,
+            remarks: `Rescheduled to ${newDate} ${newTime}. ${remarks}`,
+          },
+        });
+
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   async cancel(id: string, reason: string, userId: string, branchId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      await this.lockTransactionKey(tx, `appointment-${id}`);
-      
-      const appointment = await tx.appointment.findFirst({
-        where: { id, branchId }
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        await this.lockTransactionKey(tx, `appointment-${id}`);
 
-      if (!appointment) throw new NotFoundException('Appointment not found');
-      
-      this.ensureValidStatusTransition(appointment.status, AppointmentStatus.CANCELLED);
+        const appointment = await tx.appointment.findFirst({
+          where: { id, branchId },
+        });
 
-      const updated = await tx.appointment.update({
-        where: { id },
-        data: {
-          status: AppointmentStatus.CANCELLED,
-          cancelReason: reason,
-          cancelledById: userId,
-        }
-      });
+        if (!appointment) throw new NotFoundException('Appointment not found');
 
-      await tx.appointmentStatusHistory.create({
-        data: {
-          appointmentId: id,
-          previousStatus: appointment.status,
-          status: AppointmentStatus.CANCELLED,
-          changedById: userId,
-          remarks: `Cancelled: ${reason}`,
-        }
-      });
+        this.ensureValidStatusTransition(
+          appointment.status,
+          AppointmentStatus.CANCELLED,
+        );
 
-      return updated;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        const updated = await tx.appointment.update({
+          where: { id },
+          data: {
+            status: AppointmentStatus.CANCELLED,
+            cancelReason: reason,
+            cancelledById: userId,
+          },
+        });
+
+        await tx.appointmentStatusHistory.create({
+          data: {
+            appointmentId: id,
+            previousStatus: appointment.status,
+            status: AppointmentStatus.CANCELLED,
+            changedById: userId,
+            remarks: `Cancelled: ${reason}`,
+          },
+        });
+
+        return updated;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
   private combineDateAndTime(date: Date, time: string) {

@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsInt, Min, IsEnum, IsBoolean, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsEnum,
+  IsBoolean,
+  IsDateString,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class PatientQueryDto {

@@ -12,7 +12,11 @@ import { PharmacyService } from './pharmacy.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { DispenseMedicationDto, ReceiveStockDto, AdjustStockDto } from './dto/pharmacy.dto';
+import {
+  DispenseMedicationDto,
+  ReceiveStockDto,
+  AdjustStockDto,
+} from './dto/pharmacy.dto';
 
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
@@ -63,7 +67,10 @@ export class PharmacyController {
     @Query('batchId') batchId: string,
     @BranchId() branchId: string,
   ) {
-    return this.pharmacyService.getMovementHistory({ drugId, batchId }, branchId);
+    return this.pharmacyService.getMovementHistory(
+      { drugId, batchId },
+      branchId,
+    );
   }
 
   @Post('inventory/receive')
@@ -86,7 +93,14 @@ export class PharmacyController {
 
   @Post('return')
   async returnMedication(
-    @Body() dto: { caseId: string; drugId: string; batchId: string; quantity: number; reason: string },
+    @Body()
+    dto: {
+      caseId: string;
+      drugId: string;
+      batchId: string;
+      quantity: number;
+      reason: string;
+    },
     @Request() req,
     @BranchId() branchId: string,
   ) {
@@ -101,4 +115,3 @@ export class PharmacyController {
     );
   }
 }
-

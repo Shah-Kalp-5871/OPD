@@ -33,15 +33,23 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('authenticate')
-  handleAuthenticate(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
+  handleAuthenticate(
+    @MessageBody() data: { userId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
     this.connectedClients.set(client.id, data.userId);
     client.join(`user:${data.userId}`);
-    this.logger.log(`User authenticated: ${data.userId} on socket ${client.id}`);
+    this.logger.log(
+      `User authenticated: ${data.userId} on socket ${client.id}`,
+    );
     return { status: 'authenticated' };
   }
 
   @SubscribeMessage('join-room')
-  handleJoinRoom(@MessageBody() data: { room: string }, @ConnectedSocket() client: Socket) {
+  handleJoinRoom(
+    @MessageBody() data: { room: string },
+    @ConnectedSocket() client: Socket,
+  ) {
     client.join(data.room);
     this.logger.log(`Socket ${client.id} joined room ${data.room}`);
     return { status: 'joined', room: data.room };

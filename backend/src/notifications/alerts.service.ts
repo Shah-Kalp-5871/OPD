@@ -28,7 +28,7 @@ export class AlertsService {
     for (const item of lowStockItems) {
       const title = 'Low Stock Alert';
       const message = `Drug ${item.drug.drugName} is low on stock (${item.totalStock} remaining).`;
-      
+
       await this.notifyStaffByRole('ADMIN', title, message, 'SEVERE');
       await this.notifyStaffByRole('PHARMACY', title, message, 'SEVERE');
     }
@@ -52,7 +52,7 @@ export class AlertsService {
     for (const batch of expiringBatches) {
       const title = 'Near Expiry Alert';
       const message = `Batch ${batch.batchNumber} of ${batch.inventory.drug.drugName} expires on ${batch.expiryDate.toDateString()}.`;
-      
+
       await this.notifyStaffByRole('PHARMACY', title, message, 'CRITICAL');
     }
   }
@@ -60,19 +60,25 @@ export class AlertsService {
   /**
    * Notify all users with a specific role
    */
-  private async notifyStaffByRole(role: string, title: string, message: string, severity: any) {
+  private async notifyStaffByRole(
+    role: string,
+    title: string,
+    message: string,
+    severity: any,
+  ) {
     const users = await this.prisma.user.findMany({
       where: { role: role as any, isActive: true },
     });
 
     for (const user of users) {
       // 1. Create In-App Notification
-      const notification = await this.notificationsService.createInAppNotification({
-        userId: user.id,
-        title,
-        message,
-        severity,
-      });
+      const notification =
+        await this.notificationsService.createInAppNotification({
+          userId: user.id,
+          title,
+          message,
+          severity,
+        });
 
       // 2. Push via WebSocket
       this.socketGateway.sendToUser(user.id, 'new-notification', notification);

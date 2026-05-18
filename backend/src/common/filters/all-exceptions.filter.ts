@@ -29,14 +29,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
-      message = typeof res === 'object' ? (res as any).message || (res as any).error : res;
+      message =
+        typeof res === 'object'
+          ? (res as any).message || (res as any).error
+          : res;
       errorCode = 'HTTP_EXCEPTION';
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       // Prisma errors hardening
       status = HttpStatus.BAD_REQUEST;
       message = 'Database request failed';
       errorCode = `DB_${exception.code}`;
-      this.logger.error(`Prisma Error: ${exception.code} - ${exception.message}`);
+      this.logger.error(
+        `Prisma Error: ${exception.code} - ${exception.message}`,
+      );
     } else if (exception instanceof Error) {
       message = exception.message;
       this.logger.error(`System Error: ${exception.message}`, exception.stack);
@@ -51,7 +56,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message: Array.isArray(message) ? message : [message],
       errorCode,
       correlationId,
-      ...(isProduction ? {} : { stack: exception instanceof Error ? exception.stack : null }),
+      ...(isProduction
+        ? {}
+        : { stack: exception instanceof Error ? exception.stack : null }),
     };
 
     this.logger.warn(

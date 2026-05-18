@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsBoolean, IsInt, IsNumber, Min, ValidateNested, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  Min,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ConsumableDto {

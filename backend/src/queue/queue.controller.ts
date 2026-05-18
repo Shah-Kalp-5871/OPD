@@ -28,7 +28,11 @@ export class QueueController {
 
   @Post('check-in')
   @Roles('RECEPTION', 'ADMIN')
-  async checkIn(@Body() dto: CreateQueueEntryDto, @Request() req, @BranchId() branchId: string) {
+  async checkIn(
+    @Body() dto: CreateQueueEntryDto,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
     return this.queueService.createEntry(dto, req.user.id, branchId);
   }
 
@@ -61,7 +65,12 @@ export class QueueController {
     @Request() req,
     @BranchId() branchId: string,
   ) {
-    return this.queueService.startSession(caseId, req.user.id, req.user.id, branchId);
+    return this.queueService.startSession(
+      caseId,
+      req.user.id,
+      req.user.id,
+      branchId,
+    );
   }
 
   @Post('session/end')

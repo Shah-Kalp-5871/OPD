@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+
+# Next.js build output (rebuilt in Docker)
+.next
+out
+
+# Development environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Test artifacts
+out.zip
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore

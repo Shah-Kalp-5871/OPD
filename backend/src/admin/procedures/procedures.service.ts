@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProcedureDto, UpdateProcedureDto } from './dto/procedure.dto';
 
@@ -8,8 +12,11 @@ export class ProcedureMasterService {
 
   async create(dto: CreateProcedureDto) {
     if (dto.code) {
-      const existing = await this.prisma.procedure.findUnique({ where: { code: dto.code } });
-      if (existing) throw new ConflictException('Procedure with this code already exists');
+      const existing = await this.prisma.procedure.findUnique({
+        where: { code: dto.code },
+      });
+      if (existing)
+        throw new ConflictException('Procedure with this code already exists');
     }
 
     const { consumables, ...procedureData } = dto;
@@ -17,9 +24,7 @@ export class ProcedureMasterService {
     return this.prisma.procedure.create({
       data: {
         ...procedureData,
-        consumableTemplates: consumables
-          ? { create: consumables }
-          : undefined,
+        consumableTemplates: consumables ? { create: consumables } : undefined,
       },
       include: { consumableTemplates: true },
     });
@@ -32,7 +37,13 @@ export class ProcedureMasterService {
     limit?: number;
     includeInactive?: boolean;
   }) {
-    const { search, category, page = 1, limit = 20, includeInactive = false } = query;
+    const {
+      search,
+      category,
+      page = 1,
+      limit = 20,
+      includeInactive = false,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -86,7 +97,12 @@ export class ProcedureMasterService {
         where: { id },
         data: {
           ...procedureData,
-          archivedAt: dto.isActive === false ? new Date() : proc.archivedAt === null ? null : undefined,
+          archivedAt:
+            dto.isActive === false
+              ? new Date()
+              : proc.archivedAt === null
+                ? null
+                : undefined,
           consumableTemplates: consumables
             ? { create: consumables }
             : undefined,
@@ -107,6 +123,6 @@ export class ProcedureMasterService {
       where: { category: { not: null } },
       orderBy: { category: 'asc' },
     });
-    return result.map(r => r.category).filter(Boolean);
+    return result.map((r) => r.category).filter(Boolean);
   }
 }

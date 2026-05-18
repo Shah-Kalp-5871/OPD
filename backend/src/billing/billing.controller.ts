@@ -16,9 +16,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
+import { Query } from '@nestjs/common';
 
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard, RolesGuard, BranchGuard)
@@ -32,7 +34,12 @@ export class BillingController {
     @Req() req,
     @BranchId() branchId: string,
   ) {
-    return this.billingService.createBill(createBillDto, req.user.id, branchId, req.ip);
+    return this.billingService.createBill(
+      createBillDto,
+      req.user.id,
+      branchId,
+      req.ip,
+    );
   }
 
   @Get('details/:id')
@@ -49,8 +56,22 @@ export class BillingController {
 
   @Get('list/pending')
   @Roles(Role.RECEPTION, Role.ADMIN)
-  async getPendingBills(@BranchId() branchId: string) {
-    return this.billingService.getPendingBills(branchId);
+  async getPendingBills(
+    @BranchId() branchId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    const { page = 1, limit = 10 } = paginationDto || {};
+    return this.billingService.getPendingBills(branchId, page, limit);
+  }
+
+  @Get('list/all')
+  @Roles(Role.RECEPTION, Role.ADMIN)
+  async getAllBills(
+    @BranchId() branchId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    const { page = 1, limit = 10 } = paginationDto || {};
+    return this.billingService.getAllBills(branchId, page, limit);
   }
 
   @Post(':id/pay')
@@ -74,7 +95,11 @@ export class BillingController {
 
   @Post(':id/finalize')
   @Roles(Role.RECEPTION, Role.ADMIN)
-  async finalizeBill(@Param('id') id: string, @Req() req, @BranchId() branchId: string) {
+  async finalizeBill(
+    @Param('id') id: string,
+    @Req() req,
+    @BranchId() branchId: string,
+  ) {
     return this.billingService.finalizeBill(id, req.user.id, branchId, req.ip);
   }
 
@@ -86,6 +111,12 @@ export class BillingController {
     @Req() req,
     @BranchId() branchId: string,
   ) {
-    return this.billingService.processRefund(id, refundDto, req.user.id, branchId, req.ip);
+    return this.billingService.processRefund(
+      id,
+      refundDto,
+      req.user.id,
+      branchId,
+      req.ip,
+    );
   }
 }

@@ -1,7 +1,17 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateLabCategoryDto, UpdateLabCategoryDto } from './dto/lab-category.dto';
-import { CreateLabParameterDto, UpdateLabParameterDto } from './dto/lab-parameter.dto';
+import {
+  CreateLabCategoryDto,
+  UpdateLabCategoryDto,
+} from './dto/lab-category.dto';
+import {
+  CreateLabParameterDto,
+  UpdateLabParameterDto,
+} from './dto/lab-parameter.dto';
 
 @Injectable()
 export class LabMasterService {
@@ -13,7 +23,10 @@ export class LabMasterService {
     const existing = await this.prisma.labCategory.findFirst({
       where: { OR: [{ name: dto.name }, { code: dto.code }] },
     });
-    if (existing) throw new ConflictException('Category with this name or code already exists');
+    if (existing)
+      throw new ConflictException(
+        'Category with this name or code already exists',
+      );
 
     return this.prisma.labCategory.create({ data: dto });
   }
@@ -26,7 +39,9 @@ export class LabMasterService {
   }
 
   async updateCategory(id: string, dto: UpdateLabCategoryDto) {
-    const category = await this.prisma.labCategory.findUnique({ where: { id } });
+    const category = await this.prisma.labCategory.findUnique({
+      where: { id },
+    });
     if (!category) throw new NotFoundException('Category not found');
 
     return this.prisma.labCategory.update({
@@ -47,26 +62,34 @@ export class LabMasterService {
 
   async createParameter(dto: CreateLabParameterDto) {
     const { referenceRanges, ...paramData } = dto;
-    
+
     return this.prisma.labParameter.create({
       data: {
         ...paramData,
-        referenceRanges: referenceRanges ? {
-          create: referenceRanges
-        } : undefined
+        referenceRanges: referenceRanges
+          ? {
+              create: referenceRanges,
+            }
+          : undefined,
       },
-      include: { referenceRanges: true }
+      include: { referenceRanges: true },
     });
   }
 
-  async getParameters(query: { 
-    categoryId?: string; 
-    search?: string; 
-    page?: number; 
+  async getParameters(query: {
+    categoryId?: string;
+    search?: string;
+    page?: number;
     limit?: number;
     includeInactive?: boolean;
   }) {
-    const { categoryId, search, page = 1, limit = 50, includeInactive = false } = query;
+    const {
+      categoryId,
+      search,
+      page = 1,
+      limit = 50,
+      includeInactive = false,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -85,7 +108,10 @@ export class LabMasterService {
       this.prisma.labParameter.findMany({
         where,
         include: { category: true, referenceRanges: true },
-        orderBy: [{ category: { displayOrder: 'asc' } }, { displayOrder: 'asc' }],
+        orderBy: [
+          { category: { displayOrder: 'asc' } },
+          { displayOrder: 'asc' },
+        ],
         skip,
         take: limit,
       }),
@@ -106,7 +132,7 @@ export class LabMasterService {
 
   async updateParameter(id: string, dto: UpdateLabParameterDto) {
     const { referenceRanges, ...paramData } = dto;
-    
+
     const param = await this.prisma.labParameter.findUnique({ where: { id } });
     if (!param) throw new NotFoundException('Parameter not found');
 
@@ -121,11 +147,13 @@ export class LabMasterService {
         data: {
           ...paramData,
           archivedAt: dto.isActive === false ? new Date() : null,
-          referenceRanges: referenceRanges ? {
-            create: referenceRanges
-          } : undefined
+          referenceRanges: referenceRanges
+            ? {
+                create: referenceRanges,
+              }
+            : undefined,
         },
-        include: { referenceRanges: true }
+        include: { referenceRanges: true },
       });
     });
   }
@@ -140,8 +168,8 @@ export class LabMasterService {
     const params = await this.prisma.labParameter.findMany({
       select: { unit: true },
       distinct: ['unit'],
-      where: { unit: { not: null } }
+      where: { unit: { not: null } },
     });
-    return params.map(p => p.unit).filter(Boolean);
+    return params.map((p) => p.unit).filter(Boolean);
   }
 }

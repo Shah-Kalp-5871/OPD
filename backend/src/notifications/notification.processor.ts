@@ -16,7 +16,9 @@ export class NotificationProcessor extends WorkerHost {
     const { logId, recipient, type, subject, body } = job.data;
 
     try {
-      this.logger.log(`Processing job ${job.id}: Sending ${type} to ${recipient}`);
+      this.logger.log(
+        `Processing job ${job.id}: Sending ${type} to ${recipient}`,
+      );
 
       // Simulate sending via external provider
       await this.simulateSending(type, recipient, subject, body);
@@ -33,7 +35,7 @@ export class NotificationProcessor extends WorkerHost {
       return { success: true };
     } catch (error) {
       this.logger.error(`Job ${job.id} failed: ${error.message}`);
-      
+
       // Update log to FAILED
       await this.prisma.communicationLog.update({
         where: { id: logId },
@@ -47,15 +49,22 @@ export class NotificationProcessor extends WorkerHost {
     }
   }
 
-  private async simulateSending(type: NotificationType, recipient: string, subject: string, body: string) {
+  private async simulateSending(
+    type: NotificationType,
+    recipient: string,
+    subject: string,
+    body: string,
+  ) {
     // Mock network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Simulate random failure (10% chance)
     if (Math.random() < 0.1) {
       throw new Error(`Provider for ${type} is temporarily unavailable`);
     }
 
-    this.logger.log(`[MOCK ${type}] To: ${recipient} | Subject: ${subject} | Body: ${body}`);
+    this.logger.log(
+      `[MOCK ${type}] To: ${recipient} | Subject: ${subject} | Body: ${body}`,
+    );
   }
 }

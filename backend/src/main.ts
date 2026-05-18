@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import { Request, Response, NextFunction } from 'express';
+import { RedisIoAdapter } from './socket/redis-io.adapter';
 
 // BigInt Serialization Fix for JSON.stringify
 (BigInt.prototype as any).toJSON = function () {
@@ -19,13 +20,17 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
+  const redisIoAdapter = new RedisIoAdapter(app);
+  app.useWebSocketAdapter(redisIoAdapter);
+
   // Security Hardening
   app.use(helmet());
   app.use(compression());
 
   // Correlation ID Middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const correlationId = req.headers['x-correlation-id'] || crypto.randomUUID();
+    const correlationId =
+      req.headers['x-correlation-id'] || crypto.randomUUID();
     req.headers['x-correlation-id'] = correlationId;
     res.setHeader('x-correlation-id', correlationId);
     next();
@@ -41,7 +46,10 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Global Interceptors & Filters
-  app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(),
+  );
   app.useGlobalFilters(new AllExceptionsFilter(configService));
 
   // Strict Validation
@@ -56,7 +64,9 @@ async function bootstrap() {
 
   const port = configService.get('PORT');
   await app.listen(port);
-  logger.log(`MedFlow API running on port: ${port} [${configService.get('NODE_ENV')}]`);
+  logger.log(
+    `MedFlow API running on port: ${port} [${configService.get('NODE_ENV')}]`,
+  );
   logger.log(`CORS allowed for: ${frontendOrigin}`);
 }
 bootstrap();

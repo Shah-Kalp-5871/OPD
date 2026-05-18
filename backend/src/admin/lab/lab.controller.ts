@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { LabMasterService } from './lab.service';
-import { CreateLabCategoryDto, UpdateLabCategoryDto } from './dto/lab-category.dto';
-import { CreateLabParameterDto, UpdateLabParameterDto } from './dto/lab-parameter.dto';
+import {
+  CreateLabCategoryDto,
+  UpdateLabCategoryDto,
+} from './dto/lab-category.dto';
+import {
+  CreateLabParameterDto,
+  UpdateLabParameterDto,
+} from './dto/lab-parameter.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RolesGuard } from '../../auth/roles.guard';
 import { Roles } from '../../auth/roles.decorator';

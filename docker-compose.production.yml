@@ -1,0 +1,232 @@
+# =============================================================================
+# MedFlow OPD — Production Docker Compose
+# Full stack: Nginx + Frontend + Backend + PostgreSQL + Redis
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.production.yml --env-file .env.production up -d
+#
+# CRITICAL: Copy .env.production from .env.example.enterprise and fill all values
+#           before starting in production.
+# =============================================================================
+
+version: '3.9'
+
+services:
+
+  # ──────────────────────────────────────────
+  # PostgreSQL Database
+  # ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: medflow_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medflow_db}
+      POSTGRES_USER: ${POSTGRES_USER:-medflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"   # Bind to localhost only — not exposed to internet
+    networks:
+      - medflow_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medflow} -d ${POSTGRES_DB:-medflow_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ──────────────────────────────────────────
+  # Redis Cache + Queue Broker
+  # ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: medflow_redis
+    restart: always
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"   # Bind to localhost only
+    networks:
+      - medflow_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+
+  # ──────────────────────────────────────────
+  # NestJS Backend API + BullMQ Workers
+  # ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: medflow_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-medflow}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-medflow_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    volumes:
+      - uploads_data:/app/uploads
+      - ./backend/logs:/app/logs
+    expose:
+      - "3001"
+    networks:
+      - medflow_internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ──────────────────────────────────────────
+  # Next.js Frontend (SSR Mode)
+  # ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+    container_name: medflow_frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+    expose:
+      - "3000"
+    networks:
+      - medflow_internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/opd"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ──────────────────────────────────────────
+  # Nginx Reverse Proxy (Entry Point)
+  # ──────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: medflow_nginx
+    restart: always
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - medflow_internal
+      - medflow_external
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+# ──────────────────────────────────────────
+# Networks
+# ──────────────────────────────────────────
+networks:
+  medflow_internal:
+    driver: bridge
+    internal: true        # Internal services cannot reach internet directly
+  medflow_external:
+    driver: bridge        # Nginx faces the outside world
+
+# ──────────────────────────────────────────
+# Persistent Volumes
+# ──────────────────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+    name: medflow_postgres_data
+  redis_data:
+    driver: local
+    name: medflow_redis_data
+  uploads_data:
+    driver: local
+    name: medflow_uploads_data
+  nginx_logs:
+    driver: local
+    name: medflow_nginx_logs

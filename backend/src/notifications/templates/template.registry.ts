@@ -34,7 +34,10 @@ export const TEMPLATES: Record<string, NotificationTemplate> = {
   },
 };
 
-export function compileTemplate(templateName: string, data: Record<string, any>): NotificationTemplate {
+export function compileTemplate(
+  templateName: string,
+  data: Record<string, any>,
+): NotificationTemplate {
   const template = TEMPLATES[templateName];
   if (!template) {
     throw new Error(`Template ${templateName} not found`);

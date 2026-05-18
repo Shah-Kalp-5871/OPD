@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -20,7 +24,9 @@ export class PatientPortalService {
     });
 
     if (!patient) {
-      throw new BadRequestException('Patient not registered with this mobile number');
+      throw new BadRequestException(
+        'Patient not registered with this mobile number',
+      );
     }
 
     // Generate 6-digit OTP
@@ -58,20 +64,29 @@ export class PatientPortalService {
       throw new UnauthorizedException('Invalid request');
     }
 
-    if (patient.auth.otp !== otp || !patient.auth.otpExpires || patient.auth.otpExpires < new Date()) {
+    if (
+      patient.auth.otp !== otp ||
+      !patient.auth.otpExpires ||
+      patient.auth.otpExpires < new Date()
+    ) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
 
     // Clear OTP after successful verify
     await this.prisma.patientAuth.update({
       where: { patientId: patient.id },
-      data: { otp: null, otpExpires: null, lastLogin: new Date(), mobileVerified: true },
+      data: {
+        otp: null,
+        otpExpires: null,
+        lastLogin: new Date(),
+        mobileVerified: true,
+      },
     });
 
-    const payload = { 
-      sub: patient.id, 
+    const payload = {
+      sub: patient.id,
       mrdNumber: patient.mrdNumber,
-      role: 'PATIENT' 
+      role: 'PATIENT',
     };
 
     return {

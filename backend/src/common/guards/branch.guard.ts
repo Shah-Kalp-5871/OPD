@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  BadRequestException,
+} from '@nestjs/common';
 
 @Injectable()
 export class BranchGuard implements CanActivate {
@@ -21,8 +26,8 @@ export class BranchGuard implements CanActivate {
     }
 
     // Check if user has access to this branch
-    const hasAccess = 
-      user.primaryBranchId === branchId || 
+    const hasAccess =
+      user.primaryBranchId === branchId ||
       user.branchAccess?.includes(branchId);
 
     if (!hasAccess) {

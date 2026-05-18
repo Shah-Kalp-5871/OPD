@@ -25,7 +25,11 @@ export class StockTransferController {
   create(@Body() createDto: CreateStockTransferDto, @Req() req: any) {
     const branchId = req.headers['x-branch-id'];
     const userId = req.user.id;
-    return this.stockTransferService.createTransfer(createDto, branchId, userId);
+    return this.stockTransferService.createTransfer(
+      createDto,
+      branchId,
+      userId,
+    );
   }
 
   @Get()

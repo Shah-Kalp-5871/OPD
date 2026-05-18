@@ -1,0 +1,130 @@
+# =============================================================================
+# MedFlow OPD — Development Docker Compose
+# Simplified stack for local development — exposes all ports directly
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.development.yml up -d
+#
+# NOTE: Hot-reload is via volume mounts. Backend/Frontend run in dev mode.
+# =============================================================================
+
+version: '3.9'
+
+services:
+
+  # ──────────────────────────────────────────
+  # PostgreSQL Database (Dev)
+  # ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: medflow_dev_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: opd_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev_password_local
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"     # Exposed directly for Prisma Studio, TablePlus etc.
+    networks:
+      - medflow_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d opd_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────
+  # Redis (Dev — no password for simplicity)
+  # ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: medflow_dev_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - dev_redis_data:/data
+    ports:
+      - "6379:6379"     # Exposed directly for redis-cli debugging
+    networks:
+      - medflow_dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────
+  # NestJS Backend (Dev — runs nest start --watch via volume mount)
+  # ──────────────────────────────────────────
+  # NOTE: For active development, run backend locally with:
+  #       cd backend && npm run start:dev
+  # This service is for full-stack Docker dev testing only.
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder      # Use builder stage — has devDependencies
+    container_name: medflow_dev_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:dev_password_local@postgres:5432/opd_db?schema=public
+      JWT_SECRET: dev-local-jwt-secret-key-not-for-production-32chars
+      CORS_ORIGIN: http://localhost:3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE: 10485760
+    volumes:
+      - ./backend/src:/app/src           # Hot reload source
+      - ./backend/prisma:/app/prisma     # Schema changes
+      - ./backend/uploads:/app/uploads   # Local uploads
+    ports:
+      - "3001:3001"
+    networks:
+      - medflow_dev
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run start:dev"
+
+  # ──────────────────────────────────────────
+  # Next.js Frontend (Dev)
+  # ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: deps         # Only install deps
+    container_name: medflow_dev_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+    volumes:
+      - ./frontend:/app                  # Full mount for hot-reload
+      - /app/node_modules                # Anonymous volume to protect node_modules
+      - /app/.next                       # Anonymous volume for .next cache
+    ports:
+      - "3000:3000"
+    networks:
+      - medflow_dev
+    command: npm run dev
+
+networks:
+  medflow_dev:
+    driver: bridge
+
+volumes:
+  dev_postgres_data:
+    name: medflow_dev_postgres_data
+  dev_redis_data:
+    name: medflow_dev_redis_data

@@ -44,23 +44,29 @@ export class NotificationsService {
       });
 
       // 2. Add to BullMQ Queue
-      await this.notificationQueue.add('send-message', {
-        logId: log.id,
-        recipient,
-        type,
-        subject,
-        body,
-      }, {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
+      await this.notificationQueue.add(
+        'send-message',
+        {
+          logId: log.id,
+          recipient,
+          type,
+          subject,
+          body,
         },
-      });
+        {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        },
+      );
 
       return log;
     } catch (error) {
-      this.logger.error(`Failed to queue notification ${templateName}: ${error.message}`);
+      this.logger.error(
+        `Failed to queue notification ${templateName}: ${error.message}`,
+      );
       throw error;
     }
   }

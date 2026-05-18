@@ -196,7 +196,9 @@ export class BillingService {
       });
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
-        return this.prisma.bill.findFirstOrThrow({ where: { caseId, branchId } });
+        return this.prisma.bill.findFirstOrThrow({
+          where: { caseId, branchId },
+        });
       }
 
       throw error;
@@ -362,7 +364,12 @@ export class BillingService {
     return bill;
   }
 
-  async finalizeBill(id: string, userId: string, branchId: string, requestIp?: string) {
+  async finalizeBill(
+    id: string,
+    userId: string,
+    branchId: string,
+    requestIp?: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const bill = await tx.bill.findFirst({
         where: { id, branchId },
@@ -370,8 +377,10 @@ export class BillingService {
       });
 
       if (!bill) throw new NotFoundException('Bill not found');
-      if (bill.isFinalized) throw new BadRequestException('Bill is already finalized');
-      if (bill.items.length === 0) throw new BadRequestException('Cannot finalize an empty bill');
+      if (bill.isFinalized)
+        throw new BadRequestException('Bill is already finalized');
+      if (bill.items.length === 0)
+        throw new BadRequestException('Cannot finalize an empty bill');
 
       await this.lockTransactionKey(tx, `bill-finalize-${bill.id}`);
 
@@ -402,32 +411,61 @@ export class BillingService {
     });
   }
 
-  async getPendingBills(branchId: string) {
-    return this.prisma.bill.findMany({
-      where: {
-        paymentStatus: {
-          in: ['PENDING', 'PARTIAL'],
-        },
-        branchId,
+  async getPendingBills(branchId: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const where = {
+      paymentStatusEnum: {
+        in: [BillStatus.PENDING, BillStatus.PARTIAL],
       },
-      include: {
-        patient: {
-          select: {
-            firstName: true,
-            lastName: true,
-            mrdNumber: true,
+      branchId,
+    };
+
+    const [total, data] = await Promise.all([
+      this.prisma.bill.count({ where }),
+      this.prisma.bill.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          patient: {
+            select: { firstName: true, lastName: true, mrdNumber: true },
           },
+          case: { select: { caseNumber: true } },
         },
-        case: {
-          select: {
-            caseNumber: true,
+        orderBy: { createdAt: 'desc' },
+      })
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    };
+  }
+
+  async getAllBills(branchId: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const where = { branchId };
+
+    const [total, data] = await Promise.all([
+      this.prisma.bill.count({ where }),
+      this.prisma.bill.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          patient: {
+            select: { firstName: true, lastName: true, mrdNumber: true },
           },
+          case: { select: { caseNumber: true } },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+      })
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    };
   }
 
   async payBill(
@@ -523,7 +561,9 @@ export class BillingService {
             );
           }
 
-          if (transactionPaidAmount.gt(new Decimal(bill.balanceAmount.toString()))) {
+          if (
+            transactionPaidAmount.gt(new Decimal(bill.balanceAmount.toString()))
+          ) {
             throw new BadRequestException(
               'Payment amount cannot exceed remaining balance',
             );
@@ -544,8 +584,12 @@ export class BillingService {
           }
         }
 
-        const totalPaidAmount = new Decimal(bill.paidAmount.toString()).plus(transactionPaidAmount);
-        const newBalance = payBillDto.isFoc ? new Decimal(0) : currentNet.minus(totalPaidAmount);
+        const totalPaidAmount = new Decimal(bill.paidAmount.toString()).plus(
+          transactionPaidAmount,
+        );
+        const newBalance = payBillDto.isFoc
+          ? new Decimal(0)
+          : currentNet.minus(totalPaidAmount);
 
         let newPaymentStatus = 'PARTIAL';
         let newPaymentStatusEnum: BillStatus = BillStatus.PARTIAL;
@@ -667,14 +711,16 @@ export class BillingService {
       });
 
       if (!bill) throw new NotFoundException('Bill not found');
-      
+
       await this.lockTransactionKey(tx, `bill-refund-${bill.id}`);
-      
+
       const refundAmount = new Decimal(refundDto.amount.toString());
       const paidAmount = new Decimal(bill.paidAmount.toString());
 
       if (refundAmount.gt(paidAmount)) {
-        throw new BadRequestException('Refund amount cannot exceed total paid amount');
+        throw new BadRequestException(
+          'Refund amount cannot exceed total paid amount',
+        );
       }
 
       const refund = await tx.billRefund.create({
@@ -688,14 +734,18 @@ export class BillingService {
       });
 
       const newPaidAmount = paidAmount.sub(refundAmount);
-      const newBalance = new Decimal(bill.netAmount.toString()).sub(newPaidAmount);
+      const newBalance = new Decimal(bill.netAmount.toString()).sub(
+        newPaidAmount,
+      );
 
       await tx.bill.update({
         where: { id: bill.id },
         data: {
           paidAmount: newPaidAmount.toNumber(),
           balanceAmount: newBalance.toNumber(),
-          paymentStatusEnum: newPaidAmount.eq(0) ? BillStatus.PENDING : BillStatus.PARTIAL,
+          paymentStatusEnum: newPaidAmount.eq(0)
+            ? BillStatus.PENDING
+            : BillStatus.PARTIAL,
         },
       });
 
@@ -774,7 +824,7 @@ export class BillingService {
 
         const itemTotal = price.mul(qty);
         const itemDiscount = itemTotal.mul(disc).div(100);
-        
+
         finalItems.push({
           serviceName: item.serviceName,
           description: item.description,
@@ -798,10 +848,10 @@ export class BillingService {
       const price = new Decimal(item.unitPrice.toString());
       const qty = new Decimal(item.quantity);
       const disc = new Decimal(item.discount || 0);
-      
+
       const lineGross = price.mul(qty);
       const lineDisc = lineGross.mul(disc).div(100);
-      
+
       grossAmount = grossAmount.add(lineGross);
       discountTotal = discountTotal.add(lineDisc);
     });

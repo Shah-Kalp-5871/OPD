@@ -13,9 +13,11 @@ import {
   History,
   FileText,
   ChevronRight,
-  ShoppingCart
+  ShoppingCart,
+  AlertTriangle
 } from 'lucide-react';
 import api from '@/lib/api';
+import { aiApi } from '@/lib/api/ai';
 import { toast } from 'sonner';
 import { Card, Button, Input, Badge, SectionHeader, TextArea } from './ClinicalDesignSystem';
 
@@ -39,6 +41,45 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
   const [frequency, setFrequency] = useState('1-0-1');
   const [duration, setDuration] = useState(5);
   const [instructions, setInstructions] = useState('After Food');
+
+  const [aiSafetyReport, setAiSafetyReport] = useState<any>(null);
+  const [checkingSafety, setCheckingSafety] = useState(false);
+
+  const patientId = data?.case?.patientId || '';
+  const branchId = data?.case?.branchId || 'default-branch';
+  const chiefComplaint = data?.complaint?.chiefComplaint || '';
+
+  // Trigger real-time clinical safety checks whenever items are modified
+  useEffect(() => {
+    if (selectedItems.length > 0) {
+      runSafetyCrossCheck();
+    } else {
+      setAiSafetyReport(null);
+    }
+  }, [selectedItems]);
+
+  const runSafetyCrossCheck = async () => {
+    try {
+      setCheckingSafety(true);
+      const drugList = selectedItems.map(item => item.drugName);
+      
+      const res = await aiApi.getClinicalSuggestions({
+        caseId,
+        patientId,
+        branchId,
+        chiefComplaint,
+        prescribedDrugs: drugList
+      });
+
+      if (res && res.data && res.data.suggestions) {
+        setAiSafetyReport(res.data.suggestions);
+      }
+    } catch (err) {
+      console.error('AI Safety cross check failed', err);
+    } finally {
+      setCheckingSafety(false);
+    }
+  };
 
   const addItem = () => {
     if (!currentDrug) return;
@@ -77,6 +118,20 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       });
       
       toast.success('Prescription created successfully');
+      
+      // Log accepted outcome in AI safety ledger
+      if (aiSafetyReport?.logId) {
+        try {
+          await aiApi.recordSuggestionOutcome({
+            logId: aiSafetyReport.logId,
+            outcome: 'ACCEPTED',
+            reviewNotes: 'Prescription signed and saved after AI safety checks.'
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
       setSelectedItems([]);
       setNotes('');
       if (onPrescriptionAdded) onPrescriptionAdded();
@@ -273,6 +328,68 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
           </div>
 
           <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-thin">
+            {/* Real-time AI Safety Cross Check Indicators */}
+            {checkingSafety && (
+              <div className="flex items-center justify-center gap-3 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl text-xs text-blue-600 font-bold animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                Cross-checking patient history, allergies & drug interactions...
+              </div>
+            )}
+
+            {aiSafetyReport && !checkingSafety && (
+              <div className="space-y-3">
+                {/* Allergy Warnings */}
+                {aiSafetyReport.allergyWarnings?.length > 0 && (
+                  <div className="p-4 bg-rose-50 border border-rose-100 rounded-[20px] text-[11px] text-rose-800 space-y-2 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 font-black uppercase tracking-wider text-rose-900">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      Allergy Safety Risk Detected
+                    </div>
+                    <ul className="list-disc pl-4 font-bold space-y-1">
+                      {aiSafetyReport.allergyWarnings.map((warning: string, i: number) => (
+                        <li key={i}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Drug Interactions */}
+                {aiSafetyReport.drugInteractions?.length > 0 && (
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-[20px] text-[11px] text-amber-800 space-y-2 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 font-black uppercase tracking-wider text-amber-900">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                      Drug-to-Drug Interaction Warn
+                    </div>
+                    <ul className="list-disc pl-4 font-bold space-y-1">
+                      {aiSafetyReport.drugInteractions.map((warning: string, i: number) => (
+                        <li key={i}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Duplicate Therapies */}
+                {aiSafetyReport.duplicateTherapies?.length > 0 && (
+                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-[20px] text-[11px] text-indigo-800 space-y-2 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 font-black uppercase tracking-wider text-indigo-900">
+                      <AlertCircle className="w-4 h-4 text-indigo-500 shrink-0" />
+                      Therapeutic Duplication Alert
+                    </div>
+                    <ul className="list-disc pl-4 font-bold space-y-1">
+                      {aiSafetyReport.duplicateTherapies.map((warning: string, i: number) => (
+                        <li key={i}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* AI Safety Clinical Disclaimer */}
+                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[9px] text-slate-400 font-medium">
+                  <strong>Clinical Safety Notice:</strong> AI advice is assistive only. Final clinical judgment remains entirely with the attending physician. All safety actions are logged securely.
+                </div>
+              </div>
+            )}
+
             {selectedItems.length > 0 ? (
               selectedItems.map((item, index) => (
                 <div key={index} className="group relative bg-slate-50/50 border border-slate-100 rounded-[24px] p-5 hover:border-blue-200 hover:bg-white transition-all animate-in slide-in-from-right-4">

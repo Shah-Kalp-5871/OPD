@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Activity, 
@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge, Card } from './ClinicalDesignSystem';
+import { aiApi } from '@/lib/api/ai';
+import { toast } from 'sonner';
 
 interface PatientSidePanelProps {
   patient: any;
@@ -24,6 +26,39 @@ interface PatientSidePanelProps {
 
 const PatientSidePanel: React.FC<PatientSidePanelProps> = ({ patient, vitals }) => {
   const latestVitals = vitals?.[0];
+  const [riskFlags, setRiskFlags] = useState<any[]>([]);
+  const [loadingRisk, setLoadingRisk] = useState(false);
+
+  useEffect(() => {
+    if (patient?.id) {
+      fetchRiskFlags();
+    }
+  }, [patient?.id]);
+
+  const fetchRiskFlags = async () => {
+    try {
+      setLoadingRisk(true);
+      const res = await aiApi.getPatientRiskFlags(patient.id);
+      if (res && res.data && res.data.flags) {
+        setRiskFlags(res.data.flags);
+      }
+    } catch (err) {
+      console.error('Failed to fetch clinical risk flags', err);
+    } finally {
+      setLoadingRisk(false);
+    }
+  };
+
+  const handleAcknowledgeFlag = async (flagId: string) => {
+    try {
+      await aiApi.acknowledgeRiskFlag(flagId);
+      toast.success('Clinical risk flag acknowledged and resolved');
+      fetchRiskFlags(); // Refresh list
+    } catch (err) {
+      console.error('Failed to resolve risk flag', err);
+      toast.error('Failed to acknowledge risk flag');
+    }
+  };
 
   return (
     <aside className="w-[340px] bg-white border-r border-slate-200 flex flex-col h-full clinical-sidebar">
@@ -66,18 +101,68 @@ const PatientSidePanel: React.FC<PatientSidePanelProps> = ({ patient, vitals }) 
         </div>
       </div>
 
-      {/* Allergies & Risks - High Visibility */}
-      {patient?.profile?.allergies && (
-        <div className="mx-6 my-4 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
-          <div className="flex items-center gap-2 text-rose-600 mb-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Medical Alerts</span>
+      {/* Allergies & Dynamic Clinical Risk Alerts - High Visibility */}
+      <div className="mx-6 my-4 space-y-3">
+        {patient?.profile?.allergies && (
+          <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+            <div className="flex items-center gap-2 text-rose-600 mb-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Medical Allergies</span>
+            </div>
+            <p className="text-xs font-bold text-rose-800 leading-relaxed">
+              {patient.profile.allergies}
+            </p>
           </div>
-          <p className="text-xs font-bold text-rose-800 leading-relaxed">
-            {patient.profile.allergies}
-          </p>
-        </div>
-      )}
+        )}
+
+        {/* Dynamic Risk Flags from AI Risk Engine */}
+        {riskFlags.map((flag: any) => (
+          <div 
+            key={flag.id} 
+            className={`p-4 border rounded-2xl transition-all shadow-sm ${
+              flag.severity === 'CRITICAL' 
+                ? 'bg-rose-50/50 border-rose-200 text-rose-900 shadow-rose-50/30' 
+                : flag.severity === 'HIGH'
+                ? 'bg-orange-50/50 border-orange-200 text-orange-950 shadow-orange-50/30'
+                : 'bg-amber-50/30 border-amber-200 text-amber-900'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className={`w-4 h-4 ${
+                  flag.severity === 'CRITICAL' ? 'text-rose-600 animate-pulse' : 'text-orange-500'
+                }`} />
+                <span className="text-[9px] font-black uppercase tracking-widest">
+                  {flag.severity} Risk Indicator
+                </span>
+              </div>
+              <Badge 
+                variant={flag.severity === 'CRITICAL' ? 'rose' : flag.severity === 'HIGH' ? 'amber' : 'blue'}
+                className="scale-90"
+              >
+                AI RISK
+              </Badge>
+            </div>
+            <p className="text-[11px] font-bold leading-relaxed mb-3">
+              {flag.reason}
+            </p>
+            <div className="flex justify-between items-center text-[10px] text-slate-400 font-medium">
+              <span>Auto-triage active</span>
+              <button 
+                onClick={() => handleAcknowledgeFlag(flag.id)}
+                className={`px-3 py-1 font-black uppercase tracking-widest border rounded-xl transition-all ${
+                  flag.severity === 'CRITICAL' 
+                    ? 'bg-rose-600 text-white hover:bg-rose-700 border-none' 
+                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                }`}
+              >
+                Resolve
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
 
       {/* Clinical Metrics / Vitals */}
       <div className="px-6 py-4">
