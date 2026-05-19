@@ -190,40 +190,14 @@ const MyProfileView = () => {
                     <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Password & Security</h3>
                  </div>
                  <div className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Password</label>
-                          <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs outline-none focus:border-blue-600 transition-all shadow-sm" />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Password</label>
-                          <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs outline-none focus:border-blue-600 transition-all shadow-sm" />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirm New Password</label>
-                          <input type="password" placeholder="••••••••" className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs outline-none focus:border-blue-600 transition-all shadow-sm" />
-                       </div>
-                    </div>
-                    
-                    <div className="mt-8 p-5 bg-blue-50/50 rounded-2xl border border-blue-100 flex gap-4 items-start">
-                       <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                    <div className="p-6 bg-amber-50/50 rounded-2xl border border-amber-100 flex gap-4 items-start">
+                       <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                        <div>
-                          <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Password Requirements</p>
-                          <p className="text-[9px] font-bold text-blue-600 leading-relaxed uppercase tracking-wider">
-                             Password must contain at least: 8 characters, uppercase, lowercase, number, and special character.
+                          <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Managed Security</p>
+                          <p className="text-[9px] font-bold text-amber-600 leading-relaxed uppercase tracking-wider">
+                             To change or reset your password, please contact the System Administrator. Reception accounts do not have self-service password modification privileges for compliance and security auditing purposes.
                           </p>
                        </div>
-                    </div>
-
-                    <div className="mt-10 flex justify-between items-center">
-                       <button className="flex items-center gap-3 px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all group border border-rose-100">
-                          <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                          Log out from all devices
-                       </button>
-                       <button className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl group">
-                          <KeyRound className="w-4 h-4 transition-transform group-hover:rotate-12" />
-                          Change Password
-                       </button>
                     </div>
                  </div>
               </div>
