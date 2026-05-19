@@ -72,6 +72,120 @@ const PatientRegistrationView = () => {
     }
   };
 
+  const handlePrintSticker = () => {
+    const printContent = document.getElementById('patient-sticker-card');
+    if (!printContent) return;
+
+    const windowUrl = 'about:blank';
+    const uniqueName = new Date().getTime();
+    const windowName = `PrintWindow_${uniqueName}`;
+    
+    const printWindow = window.open(windowUrl, windowName, 'left=50,top=50,width=400,height=400');
+    if (!printWindow) {
+      toast.error('Popup blocker enabled. Please allow popups to print.');
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Patient Sticker</title>
+          <style>
+            @page {
+              size: 80mm 50mm; /* Standard thermal sticker size */
+              margin: 0;
+            }
+            body {
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+              padding: 10px;
+              margin: 0;
+              background: #fff;
+              color: #000;
+              width: 80mm;
+              height: 50mm;
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+            }
+            .title {
+              font-size: 8px;
+              text-transform: uppercase;
+              color: #666;
+              margin-bottom: 2px;
+            }
+            .value {
+              font-size: 11px;
+              font-weight: bold;
+              margin-bottom: 8px;
+            }
+            .grid {
+              display: grid;
+              grid-template-cols: 1fr 1fr;
+              gap: 8px;
+            }
+            .barcode-container {
+              border-top: 1px dashed #ccc;
+              padding-top: 6px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+            }
+            .barcode {
+              display: flex;
+              gap: 1px;
+              height: 30px;
+              align-items: flex-end;
+              margin-bottom: 2px;
+            }
+            .barcode-line {
+              background: #000;
+              height: 100%;
+            }
+            .barcode-text {
+              font-size: 8px;
+              letter-spacing: 2px;
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div>
+            <div class="title">Patient Full Name</div>
+            <div class="value">${firstName || '---'} ${middleName} ${lastName || '---'}</div>
+            
+            <div class="grid">
+              <div>
+                <div class="title">MRD Number</div>
+                <div class="value" style="color: #0d9488;">${mrdPreview}</div>
+              </div>
+              <div>
+                <div class="title">Gender | Age</div>
+                <div class="value">${selectedGender} | -- Yrs</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="barcode-container">
+            <div class="barcode">
+              ${[2, 4, 1, 3, 2, 5, 2, 4, 1, 6, 2, 4, 2, 3, 1, 5, 2, 4].map(w => `<div class="barcode-line" style="width: ${w}px;"></div>`).join('')}
+            </div>
+            <div class="barcode-text">${mrdPreview}</div>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const onSubmit = async (data: PatientFormValues) => {
     setIsSubmitting(true);
     try {
@@ -260,6 +374,7 @@ const PatientRegistrationView = () => {
                       </button>
                       <button 
                         type="button"
+                        onClick={handlePrintSticker}
                         className="flex items-center justify-center gap-3 py-4 bg-white border border-slate-200 text-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-teal-300 transition-all shadow-sm"
                       >
                          <Printer className="w-4 h-4" />
@@ -287,7 +402,7 @@ const PatientRegistrationView = () => {
                    <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-widest">Live Preview</div>
                 </div>
 
-                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 font-mono relative overflow-hidden group max-w-sm mx-auto">
+                <div id="patient-sticker-card" className="bg-slate-50 rounded-2xl p-6 border border-slate-100 font-mono relative overflow-hidden group max-w-sm mx-auto">
                    <div className="space-y-4 relative z-10">
                       <div>
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Patient Full Name</p>
