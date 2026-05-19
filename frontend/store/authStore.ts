@@ -6,6 +6,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatar?: string | null;
   primaryBranchId?: string;
   branchAccess?: string[];
   permissions?: string[];
