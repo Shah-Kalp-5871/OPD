@@ -161,66 +161,60 @@ const BookAppointmentView = () => {
 
   return (
     <ReceptionLayout>
-      <div className="max-w-7xl mx-auto space-y-10 pb-20 px-6">
+      <div className="max-w-7xl mx-auto space-y-6 pb-20 px-6">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        {/* ─── Header ─── */}
+        <div className="flex items-center justify-between">
            <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none uppercase">Book Appointment</h1>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 flex items-center gap-2">
-                 <CalendarCheck className="w-3.5 h-3.5 text-teal-600" />
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">Book Appointment</h1>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-1.5">
+                 <CalendarCheck className="w-3 h-3 text-teal-600" />
                  OPD Scheduling Workflow
               </p>
            </div>
            
-           {/* 🔷 Premium Steps Wizard Progress Bar */}
-           <div className="flex items-center bg-white p-2.5 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden self-start">
-             <div className="flex items-center gap-2 z-10">
-               
-               {/* Step 1 Tab */}
-               <button 
-                 onClick={() => setCurrentStep(1)}
-                 className={`flex items-center gap-3.5 px-5 py-3 rounded-2xl transition-all duration-300 ${
-                   currentStep === 1 
-                     ? 'bg-slate-900 text-white shadow-lg' 
-                     : selectedPatient 
-                       ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' 
-                       : 'text-slate-400 hover:text-slate-650'
-                 }`}
-               >
-                 <div className={`w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center ${
-                   currentStep === 1 
-                     ? 'bg-teal-600 text-white' 
-                     : selectedPatient 
-                       ? 'bg-emerald-600 text-white' 
-                       : 'bg-slate-100 text-slate-400'
-                 }`}>
-                   {selectedPatient ? <Check className="w-3.5 h-3.5" /> : '1'}
-                 </div>
-                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">Select Patient</span>
-               </button>
+           {/* Step Wizard Indicator */}
+           <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-2xl p-1.5 shadow-sm">
+             {/* Step 1 */}
+             <button
+               onClick={() => setCurrentStep(1)}
+               className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                 currentStep === 1
+                   ? 'bg-white text-slate-900 shadow-sm'
+                   : selectedPatient
+                     ? 'text-emerald-600 hover:bg-white/60'
+                     : 'text-slate-400 hover:bg-white/60'
+               }`}
+             >
+               <div className={`w-5 h-5 rounded-lg text-[9px] font-black flex items-center justify-center shrink-0 ${
+                 currentStep === 1 ? 'bg-teal-600 text-white' :
+                 selectedPatient ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
+               }`}>
+                 {selectedPatient ? <Check className="w-3 h-3" /> : '1'}
+               </div>
+               <span className="text-[10px] font-black uppercase tracking-widest">Select Patient</span>
+             </button>
 
-               <div className="w-6 h-[2px] bg-slate-150 rounded-full"></div>
+             {/* Connector */}
+             <div className="w-4 h-px bg-slate-200 mx-0.5 shrink-0" />
 
-               {/* Step 2 Tab */}
-               <button 
-                 onClick={() => selectedPatient && setCurrentStep(2)}
-                 disabled={!selectedPatient}
-                 className={`flex items-center gap-3.5 px-5 py-3 rounded-2xl transition-all duration-300 ${
-                   currentStep === 2 
-                     ? 'bg-slate-900 text-white shadow-lg' 
-                     : 'text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50'
-                 }`}
-               >
-                 <div className={`w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center ${
-                   currentStep === 2 ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-400'
-                 }`}>
-                   2
-                 </div>
-                 <span className="text-[10px] font-black uppercase tracking-widest leading-none">Booking Matrix</span>
-               </button>
-
-             </div>
+             {/* Step 2 */}
+             <button
+               onClick={() => selectedPatient && setCurrentStep(2)}
+               disabled={!selectedPatient}
+               className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
+                 currentStep === 2
+                   ? 'bg-white text-slate-900 shadow-sm'
+                   : 'text-slate-400 hover:bg-white/60'
+               }`}
+             >
+               <div className={`w-5 h-5 rounded-lg text-[9px] font-black flex items-center justify-center shrink-0 ${
+                 currentStep === 2 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-400'
+               }`}>
+                 2
+               </div>
+               <span className="text-[10px] font-black uppercase tracking-widest">Booking</span>
+             </button>
            </div>
         </div>
 

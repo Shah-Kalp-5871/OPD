@@ -1,13 +1,7 @@
 'use client';
 
 import React from 'react';
-import { 
-  Search, 
-  User, 
-  Users, 
-  ArrowRight,
-  UserPlus
-} from 'lucide-react';
+import { Search, User, Users, ArrowRight, UserPlus, ScanLine } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface PatientSelectionStepProps {
@@ -31,112 +25,169 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
   isSearching,
   handleSearch,
   setSelectedPatient,
-  onNextStep
+  onNextStep,
 }) => {
   const router = useRouter();
 
-  // Local filter for quick search
-  const filteredRecentPatients = searchQuery.trim() === ''
+  const filteredRecent = searchQuery.trim() === ''
     ? recentPatients
-    : recentPatients.filter(p => 
+    : recentPatients.filter(p =>
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.mrdNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.mobile.includes(searchQuery)
+        p.mrdNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.mobile?.includes(searchQuery)
       );
 
-  const displayList = searchResults.length > 0 ? searchResults : filteredRecentPatients;
+  const displayList = searchResults.length > 0 ? searchResults : filteredRecent;
+
+  const handleSelect = (p: any) => {
+    setSelectedPatient(p);
+    onNextStep();
+  };
+
+  const avatarColor = (name: string) => {
+    const colors = [
+      'bg-teal-100 text-teal-700',
+      'bg-violet-100 text-violet-700',
+      'bg-amber-100 text-amber-700',
+      'bg-sky-100 text-sky-700',
+      'bg-rose-100 text-rose-700',
+      'bg-emerald-100 text-emerald-700',
+    ];
+    const idx = name.charCodeAt(0) % colors.length;
+    return colors[idx];
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
-      
-      {/* 🔷 Search & Quick Registration Controls */}
-      <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-        <div className="flex-1 relative group">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-teal-600 transition-colors" />
-          <input 
-            type="text" 
-            className="w-full pl-16 pr-6 py-4.5 bg-white border border-slate-200 rounded-[1.25rem] text-[13px] font-black outline-none focus:border-teal-600 transition-all uppercase placeholder:text-slate-300 shadow-sm"
-            placeholder="Type MRD, Name or Mobile to instantly filter bottom list, or press Enter..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          />
-        </div>
-        
-        <div className="flex gap-3">
-          <button 
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-0">
+
+      {/* ─── INTEGRATED SEARCH BAR ─── */}
+      <div className="bg-white border border-slate-200 rounded-t-3xl overflow-hidden shadow-sm">
+        <div className="flex items-center divide-x divide-slate-100">
+          {/* Search input */}
+          <div className="flex-1 flex items-center gap-3 px-5 py-4">
+            <Search className="w-4 h-4 text-slate-300 shrink-0" />
+            <input
+              type="text"
+              className="flex-1 bg-transparent text-sm font-medium text-slate-700 placeholder:text-slate-300 outline-none"
+              placeholder="Search by name, MRD, or mobile number…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-[9px] font-black text-slate-300 hover:text-slate-500 uppercase tracking-widest transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Search Registry button */}
+          <button
             onClick={handleSearch}
             disabled={isSearching}
-            className="px-8 bg-slate-900 text-white rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-sm"
+            className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] hover:bg-slate-50 hover:text-teal-600 transition-colors disabled:opacity-40"
           >
-            {isSearching ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <Search className="w-4 h-4" />}
-            Search Registry
+            {isSearching
+              ? <div className="w-3.5 h-3.5 border-2 border-teal-500/30 border-t-teal-500 rounded-full animate-spin" />
+              : <ScanLine className="w-3.5 h-3.5" />
+            }
+            Search DB
           </button>
-          
-          <button 
+
+          {/* New Register button */}
+          <button
             onClick={() => router.push('/reception/patients/register')}
-            className="px-6 bg-teal-550 border-2 border-teal-600 text-teal-700 hover:bg-teal-50 rounded-[1.25rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-sm"
+            className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-teal-600 uppercase tracking-[0.15em] hover:bg-teal-50 transition-colors"
           >
-            <UserPlus className="w-4 h-4" />
-            New Register
+            <UserPlus className="w-3.5 h-3.5" />
+            New Patient
           </button>
         </div>
       </div>
 
-      {/* 🔷 Patient Cards Grid */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-8 space-y-6 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Users className="w-3.5 h-3.5 text-teal-600" />
-            {searchResults.length > 0 ? 'Search Results' : searchQuery.trim() !== '' ? 'Matching Directory Patients' : 'Quick Access Patient Directory'}
-          </h4>
-          <span className="text-[9px] font-bold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-lg">
-            {searchResults.length > 0 ? `${searchResults.length} found` : `${filteredRecentPatients.length} active`}
+      {/* ─── PATIENT DIRECTORY ─── */}
+      <div className="bg-white border border-t-0 border-slate-200 rounded-b-3xl overflow-hidden shadow-sm">
+
+        {/* Section label row */}
+        <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <Users className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">
+              {searchResults.length > 0
+                ? 'Search Results'
+                : searchQuery.trim()
+                  ? 'Filtered Directory'
+                  : 'Patient Directory'}
+            </span>
+          </div>
+          <span className="text-[9px] font-bold text-slate-400 bg-white border border-slate-100 px-2 py-0.5 rounded-lg">
+            {displayList.length} {displayList.length === 1 ? 'patient' : 'patients'}
           </span>
         </div>
 
-        {isRecentLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="p-6 border border-slate-100 rounded-2xl bg-slate-50/50 animate-pulse h-[90px]"></div>
-            ))}
-          </div>
-        ) : displayList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayList.map(p => (
-              <div 
-                key={p.id}
-                onClick={() => {
-                  setSelectedPatient(p);
-                  onNextStep(); // Automatically transition to next step on select
-                }}
-                className="p-5 border border-slate-100 rounded-2xl bg-slate-50 hover:border-teal-500 hover:bg-white hover:shadow-md hover:shadow-slate-100/50 cursor-pointer transition-all duration-300 group flex items-center justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white rounded-xl border border-slate-100 text-slate-500 font-black text-xs uppercase flex items-center justify-center group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
-                    {p.firstName.charAt(0)}{p.lastName.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight group-hover:text-teal-700">{p.firstName} {p.lastName}</h4>
-                    <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{p.mrdNumber} | {p.mobile}</p>
-                  </div>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-teal-50 p-2 rounded-lg text-teal-600">
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-16 text-center bg-slate-50 rounded-3xl border border-slate-250 border-dashed">
-            <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-300 mx-auto mb-4">
-              <User className="w-6 h-6" />
+        {/* Grid of patients */}
+        <div className="p-4">
+          {isRecentLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-[72px] bg-slate-100 rounded-2xl animate-pulse" />
+              ))}
             </div>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No matching patients found</p>
-            <p className="text-[9px] font-bold text-slate-300 mt-1.5 uppercase">Try searching the database or register a new patient first.</p>
-          </div>
-        )}
+          ) : displayList.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {displayList.map((p) => {
+                const initials = `${p.firstName?.charAt(0) ?? ''}${p.lastName?.charAt(0) ?? ''}`;
+                const colorClass = avatarColor(p.firstName ?? 'A');
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => handleSelect(p)}
+                    className="group flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-teal-300 hover:bg-white hover:shadow-sm transition-all duration-200 text-left w-full"
+                  >
+                    {/* Avatar */}
+                    <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-[11px] font-black uppercase ${colorClass}`}>
+                      {initials}
+                    </div>
+                    {/* Info */}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-black text-slate-800 uppercase leading-tight truncate group-hover:text-teal-700 transition-colors">
+                        {p.firstName} {p.lastName}
+                      </p>
+                      <p className="text-[9px] font-semibold text-slate-400 mt-0.5 truncate">
+                        {p.mrdNumber}
+                      </p>
+                    </div>
+                    {/* Arrow */}
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-teal-500 shrink-0 transition-colors" />
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-16 flex flex-col items-center justify-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <User className="w-6 h-6 text-slate-300" />
+              </div>
+              <div className="text-center">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">No patients found</p>
+                <p className="text-[10px] font-medium text-slate-300 mt-1">
+                  Try a different search or{' '}
+                  <button
+                    onClick={() => router.push('/reception/patients/register')}
+                    className="text-teal-500 hover:underline font-bold"
+                  >
+                    register a new patient
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
     </div>
   );
 };
