@@ -27,7 +27,10 @@ import {
   PackageSearch,
   TestTube2,
   Cpu,
-  Code2
+  Code2,
+  Presentation,
+  LineChart,
+  Activity
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -59,6 +62,9 @@ const menuItems = [
   { label: 'Biomedical Ops', icon: Cpu, href: '/biomedical' },
   { label: 'Facility Ops', icon: Building2, href: '/facility-ops' },
   { label: 'Developer Portal', icon: Code2, href: '/developer' },
+  { label: 'Exec Command Center', icon: Presentation, href: '/executive' },
+  { label: 'Analytics Studio', icon: LineChart, href: '/analytics-studio' },
+  { label: 'BI Observability', icon: Activity, href: '/observability/analytics' },
 ];
 
 const AdminSidebar = () => {

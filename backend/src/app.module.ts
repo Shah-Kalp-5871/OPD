@@ -77,6 +77,37 @@ import { PharmacyIntelligenceModule } from './modules/pharmacy-intelligence/phar
 import { BiomedicalModule } from './modules/biomedical/biomedical.module';
 import { FacilityOpsModule } from './modules/facility-ops/facility-ops.module';
 import { ErpIntelligenceModule } from './modules/erp-intelligence/erp-intelligence.module';
+import { AnalyticsWarehouseModule } from './modules/analytics-warehouse/analytics-warehouse.module';
+import { KpiStreamingModule } from './modules/kpi-streaming/kpi-streaming.module';
+import { BiAnalyticsModule } from './modules/bi-analytics/bi-analytics.module';
+import { ExecutiveAiModule } from './modules/executive-ai/executive-ai.module';
+import { AnalyticsGovernanceModule } from './modules/analytics-governance/analytics-governance.module';
+import { SecurityResilienceModule } from './modules/security-resilience/security-resilience.module';
+import { InfrastructureControlPlaneModule } from './modules/infrastructure-control-plane/infrastructure-control-plane.module';
+import { CloudOrchestrationModule } from './modules/cloud-orchestration/cloud-orchestration.module';
+import { GlobalEdgeModule } from './modules/global-edge/global-edge.module';
+import { DistributedSystemsModule } from './modules/distributed-systems/distributed-systems.module';
+import { ReleaseEngineeringModule } from './modules/release-engineering/release-engineering.module';
+import { ObservabilityModule } from './modules/observability/observability.module';
+import { AutonomousOpsModule } from './modules/autonomous-ops/autonomous-ops.module';
+import { PatientAppModule } from './modules/patient-app/patient-app.module';
+import { ConsumerCommunicationModule } from './modules/consumer-communication/consumer-communication.module';
+import { SelfServiceModule } from './modules/self-service/self-service.module';
+import { WellnessModule } from './modules/wellness/wellness.module';
+import { PatientCommerceModule } from './modules/patient-commerce/patient-commerce.module';
+import { ConsumerAiModule } from './modules/consumer-ai/consumer-ai.module';
+import { ExperienceModule } from './modules/experience/experience.module';
+import { InsuranceClearinghouseModule } from './modules/insurance-clearinghouse/insurance-clearinghouse.module';
+import { InteroperabilityHubModule } from './modules/interoperability-hub/interoperability-hub.module';
+import { NationalRegistryModule } from './modules/national-registry/national-registry.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
+import { ReferralExchangeModule } from './modules/referral-exchange/referral-exchange.module';
+import { CrossBorderGovernanceModule } from './modules/cross-border-governance/cross-border-governance.module';
+import { DigitalTwinModule } from './modules/digital-twin/digital-twin.module';
+import { ClinicalNavigationModule } from './modules/clinical-navigation/clinical-navigation.module';
+import { KnowledgeMeshModule } from './modules/knowledge-mesh/knowledge-mesh.module';
+import { GlobalCommandCenterModule } from './modules/global-command-center/global-command-center.module';
+
 
 @Module({
   imports: [
@@ -159,6 +190,36 @@ import { ErpIntelligenceModule } from './modules/erp-intelligence/erp-intelligen
     BiomedicalModule,
     FacilityOpsModule,
     ErpIntelligenceModule,
+    AnalyticsWarehouseModule,
+    KpiStreamingModule,
+    BiAnalyticsModule,
+    ExecutiveAiModule,
+    AnalyticsGovernanceModule,
+    SecurityResilienceModule,
+    InfrastructureControlPlaneModule,
+    CloudOrchestrationModule,
+    GlobalEdgeModule,
+    DistributedSystemsModule,
+    ReleaseEngineeringModule,
+    ObservabilityModule,
+    AutonomousOpsModule,
+    PatientAppModule,
+    ConsumerCommunicationModule,
+    SelfServiceModule,
+    WellnessModule,
+    PatientCommerceModule,
+    ConsumerAiModule,
+    ExperienceModule,
+    InsuranceClearinghouseModule,
+    InteroperabilityHubModule,
+    NationalRegistryModule,
+    MarketplaceModule,
+    ReferralExchangeModule,
+    CrossBorderGovernanceModule,
+    DigitalTwinModule,
+    ClinicalNavigationModule,
+    KnowledgeMeshModule,
+    GlobalCommandCenterModule,
   ],
 
   controllers: [AppController],

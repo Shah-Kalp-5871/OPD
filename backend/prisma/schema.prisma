@@ -2039,33 +2039,33 @@ model DeviceSyncLog {
 }
 
 model ApiClient {
-  id                  String    @id @default(uuid())
-  name                String
-  clientId            String    @unique
-  clientSecret        String // hashed secret
-  apiKey              String?   @unique // hashed api key if using direct API keys
-  apiKeyPrefix        String? // prefix e.g., mf_live_
-  apiKeyActive        Boolean   @default(true)
-  scopes              String[] // e.g. ["appointments:read", "patients:read"]
-  environment         String    @default("production") // sandbox, production
-  isActive            Boolean   @default(true)
-  tenantId            String? // SaaS tenant isolation
-  branchId            String? // optional single-branch scope
-  rateLimitPerMinute  Int       @default(100)
-  monthlyQuota        Int       @default(100000)
-  monthlyUsageCount   Int       @default(0)
-  usageResetAt        DateTime?
-  lastUsedAt          DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  name               String
+  clientId           String    @unique
+  clientSecret       String // hashed secret
+  apiKey             String?   @unique // hashed api key if using direct API keys
+  apiKeyPrefix       String? // prefix e.g., mf_live_
+  apiKeyActive       Boolean   @default(true)
+  scopes             String[] // e.g. ["appointments:read", "patients:read"]
+  environment        String    @default("production") // sandbox, production
+  isActive           Boolean   @default(true)
+  tenantId           String? // SaaS tenant isolation
+  branchId           String? // optional single-branch scope
+  rateLimitPerMinute Int       @default(100)
+  monthlyQuota       Int       @default(100000)
+  monthlyUsageCount  Int       @default(0)
+  usageResetAt       DateTime?
+  lastUsedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  webhooks       ApiWebhookSubscription[]
-  auditLogs      ApiAuditLog[]
-  oauthTokens    OAuthToken[]
-  usageRecords   ApiUsageRecord[]
+  webhooks         ApiWebhookSubscription[]
+  auditLogs        ApiAuditLog[]
+  oauthTokens      OAuthToken[]
+  usageRecords     ApiUsageRecord[]
   monthlySummaries ApiUsageMonthlySummary[]
-  tenant         Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch         Branch?                  @relation("BranchApiClients", fields: [branchId], references: [id], onDelete: Cascade)
+  tenant           Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch           Branch?                  @relation("BranchApiClients", fields: [branchId], references: [id], onDelete: Cascade)
 
   @@index([clientId])
   @@index([tenantId])
@@ -3826,3 +3826,1836 @@ model IncidentReport {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 }
+
+// ==========================================
+// PHASE 27: ENTERPRISE DATA WAREHOUSE & BI
+// ==========================================
+
+// 27.1 ENTERPRISE DATA WAREHOUSE (EDW) - FACT & DIMENSION TABLES
+
+model AnalyticsDimensionDate {
+  dateId     String   @id // YYYYMMDD
+  date       DateTime
+  dayOfWeek  Int
+  dayOfMonth Int
+  month      Int
+  quarter    Int
+  year       Int
+  isWeekend  Boolean
+  isHoliday  Boolean  @default(false)
+
+  // Relations to Facts
+  factAppointments AnalyticsFactAppointment[]
+  factRevenues     AnalyticsFactRevenue[]
+  factPatients     AnalyticsFactPatient[]
+  factAdmissions   AnalyticsFactAdmission[]
+}
+
+model AnalyticsDimensionBranch {
+  id         String  @id @default(uuid())
+  tenantId   String
+  branchName String
+  region     String?
+  country    String?
+
+  // Relations to Facts
+  factAppointments AnalyticsFactAppointment[]
+  factRevenues     AnalyticsFactRevenue[]
+  factPatients     AnalyticsFactPatient[]
+  factAdmissions   AnalyticsFactAdmission[]
+}
+
+model AnalyticsDimensionDepartment {
+  id             String  @id @default(uuid())
+  tenantId       String
+  departmentName String
+  clinical       Boolean @default(true)
+
+  // Relations to Facts
+  factAppointments AnalyticsFactAppointment[]
+  factRevenues     AnalyticsFactRevenue[]
+}
+
+model AnalyticsFactAppointment {
+  id              String  @id @default(uuid())
+  tenantId        String
+  appointmentId   String  @unique
+  dateId          String
+  branchId        String
+  departmentId    String
+  patientId       String
+  doctorId        String
+  status          String // COMPLETED, CANCELLED, NO_SHOW
+  waitTimeMinutes Float?
+  consultMinutes  Float?
+  isTelemedicine  Boolean @default(false)
+  isFollowUp      Boolean @default(false)
+
+  // Dimensions
+  dateDim       AnalyticsDimensionDate       @relation(fields: [dateId], references: [dateId])
+  branchDim     AnalyticsDimensionBranch     @relation(fields: [branchId], references: [id])
+  departmentDim AnalyticsDimensionDepartment @relation(fields: [departmentId], references: [id])
+}
+
+model AnalyticsFactRevenue {
+  id               String @id @default(uuid())
+  tenantId         String
+  invoiceId        String @unique
+  dateId           String
+  branchId         String
+  departmentId     String
+  patientId        String
+  revenueType      String // OPD, IPD, LAB, PHARMACY
+  amountBilled     Float
+  amountCollected  Float
+  discountGiven    Float
+  insuranceClaimed Float  @default(0)
+
+  // Dimensions
+  dateDim       AnalyticsDimensionDate       @relation(fields: [dateId], references: [dateId])
+  branchDim     AnalyticsDimensionBranch     @relation(fields: [branchId], references: [id])
+  departmentDim AnalyticsDimensionDepartment @relation(fields: [departmentId], references: [id])
+}
+
+model AnalyticsFactPatient {
+  id                 String  @id @default(uuid())
+  tenantId           String
+  patientId          String  @unique
+  dateId             String // Date of Registration
+  branchId           String
+  ageAtReg           Int?
+  gender             String?
+  acquisitionChannel String? // WALK_IN, REFERRAL, ONLINE
+  isChronic          Boolean @default(false)
+
+  dateDim   AnalyticsDimensionDate   @relation(fields: [dateId], references: [dateId])
+  branchDim AnalyticsDimensionBranch @relation(fields: [branchId], references: [id])
+}
+
+model AnalyticsFactPrescription {
+  id              String  @id @default(uuid())
+  tenantId        String
+  prescriptionId  String  @unique
+  dateId          String
+  branchId        String
+  doctorId        String
+  patientId       String
+  itemCount       Int
+  antibioticCount Int     @default(0)
+  controlledCount Int     @default(0)
+  dispensed       Boolean @default(false)
+}
+
+model AnalyticsFactAdmission {
+  id              String  @id @default(uuid())
+  tenantId        String
+  admissionId     String  @unique
+  dateId          String // Admission Date
+  branchId        String
+  patientId       String
+  departmentId    String?
+  lengthOfStayHrs Float?
+  readmission     Boolean @default(false)
+  dischargeStatus String? // RECOVERED, REFERRED, DECEASED, AMA
+  icuDays         Float   @default(0)
+
+  dateDim   AnalyticsDimensionDate   @relation(fields: [dateId], references: [dateId])
+  branchDim AnalyticsDimensionBranch @relation(fields: [branchId], references: [id])
+}
+
+model EdwAnalyticsSnapshot {
+  id           String   @id @default(uuid())
+  tenantId     String
+  snapshotDate DateTime
+  metricName   String
+  metricValue  Float
+  dimensions   Json? // Optional JSON for ad-hoc dimension splitting
+}
+
+// 27.4 ADVANCED BUSINESS INTELLIGENCE
+
+model SavedDashboard {
+  id          String            @id @default(uuid())
+  tenantId    String
+  userId      String
+  name        String
+  description String?
+  isPublic    Boolean           @default(false) // Shared within tenant
+  layout      Json // Grid layout configuration
+  widgets     DashboardWidget[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model DashboardWidget {
+  id            String         @id @default(uuid())
+  dashboardId   String
+  title         String
+  widgetType    String // CHART_LINE, CHART_BAR, SCORECARD, TABLE, HEATMAP
+  queryConfig   Json // The underlying query parameters
+  displayConfig Json // Visualization settings
+  dashboard     SavedDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+}
+
+model ScheduledReport {
+  id           String            @id @default(uuid())
+  tenantId     String
+  userId       String
+  name         String
+  queryConfig  Json
+  scheduleCron String
+  recipients   String[] // Email addresses
+  format       String            @default("PDF") // PDF, CSV, EXCEL
+  lastRunAt    DateTime?
+  nextRunAt    DateTime?
+  status       String            @default("ACTIVE") // ACTIVE, PAUSED
+  executions   ReportExecution[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ReportExecution {
+  id         String          @id @default(uuid())
+  reportId   String
+  executedAt DateTime        @default(now())
+  status     String // SUCCESS, FAILED
+  fileUrl    String?
+  error      String?
+  report     ScheduledReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model AnalyticsQuery {
+  id          String   @id @default(uuid())
+  tenantId    String
+  userId      String
+  name        String
+  queryConfig Json
+  createdAt   DateTime @default(now())
+}
+
+// 27.5 AI EXECUTIVE INSIGHTS
+
+model ExecutiveInsight {
+  id              String            @id @default(uuid())
+  tenantId        String
+  insightType     String // REVENUE_ANOMALY, CAPACITY_RISK, STAFFING_REC, STRATEGIC_TREND
+  title           String
+  description     String
+  severity        String // LOW, MEDIUM, HIGH, CRITICAL
+  confidenceScore Float // 0.0 to 1.0
+  generatedAt     DateTime          @default(now())
+  actionTaken     Boolean           @default(false)
+  evidence        InsightEvidence[]
+}
+
+model InsightEvidence {
+  id            String           @id @default(uuid())
+  insightId     String
+  metricName    String
+  observedValue Float
+  expectedValue Float?
+  description   String?
+  insight       ExecutiveInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+}
+
+model StrategicForecast {
+  id             String   @id @default(uuid())
+  tenantId       String
+  forecastType   String // REVENUE, PATIENT_LOAD, BED_OCCUPANCY
+  targetDate     DateTime
+  predictedValue Float
+  lowerBound     Float?
+  upperBound     Float?
+  factors        Json? // Driving factors for this forecast
+  generatedAt    DateTime @default(now())
+}
+
+// 27.7 EXPORTS, COMPLIANCE & DATA GOVERNANCE
+
+model AnalyticsExport {
+  id          String    @id @default(uuid())
+  tenantId    String
+  userId      String
+  exportType  String // REPORT, RAW_DATA, DASHBOARD_PDF
+  description String?
+  fileUrl     String?
+  status      String // PENDING, COMPLETED, FAILED, DELETED
+  containsPhi Boolean   @default(false)
+  watermarked Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model AnalyticsAccessLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  userId       String
+  action       String // VIEW_DASHBOARD, RUN_QUERY, EXPORT_DATA
+  resourceId   String?
+  queryContext Json? // What was queried
+  ipAddress    String?
+  userAgent    String?
+  accessedAt   DateTime @default(now())
+}
+
+model ExportApproval {
+  id           String    @id @default(uuid())
+  tenantId     String
+  requesterId  String
+  approverId   String?
+  exportConfig Json
+  reason       String
+  status       String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  requestedAt  DateTime  @default(now())
+  resolvedAt   DateTime?
+}
+
+// ==========================================
+// PHASE 28: ENTERPRISE CYBERSECURITY & ZERO-TRUST SOC
+// ==========================================
+
+// Batch 1: Zero-Trust Security Core
+model SecurityPolicy {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  branchId              String?
+  mfaRequired           Boolean  @default(true)
+  maxConcurrentSessions Int      @default(3)
+  sessionTimeoutMins    Int      @default(30)
+  passwordExpiryDays    Int      @default(90)
+  allowedIpRanges       String[] // CIDR formats
+  allowedCountries      String[] // Geo limits
+  allowTor              Boolean  @default(false)
+  minDeviceTrustScore   Float    @default(70.0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model DeviceTrust {
+  id               String   @id @default(uuid())
+  tenantId         String
+  userId           String
+  deviceId         String   @unique
+  deviceName       String?
+  deviceOs         String?
+  browser          String?
+  antivirusEnabled Boolean  @default(true)
+  diskEncrypted    Boolean  @default(true)
+  osPatched        Boolean  @default(true)
+  isJailbroken     Boolean  @default(false)
+  trustScore       Float    @default(100.0)
+  status           String   @default("TRUSTED") // TRUSTED, UNTRUSTED, BANNED
+  lastActiveAt     DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model TrustedSession {
+  id          String    @id @default(uuid())
+  tenantId    String
+  userId      String
+  deviceId    String
+  tokenHash   String    @unique
+  ipAddress   String
+  locationGeo String?
+  userAgent   String?
+  isActive    Boolean   @default(true)
+  riskScore   Float     @default(0.0)
+  revokedAt   DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model IpAccessPolicy {
+  id          String   @id @default(uuid())
+  tenantId    String
+  cidrBlock   String
+  policyType  String // ALLOW, BLOCK
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model GeoAccessRule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  countryCode String
+  policyType  String // ALLOW, BLOCK
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model SessionRiskScore {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  userId              String
+  sessionId           String
+  impossibleTravel    Boolean  @default(false)
+  proxyOrTor          Boolean  @default(false)
+  suspiciousTiming    Boolean  @default(false)
+  geoMismatch         Boolean  @default(false)
+  privilegeEscalation Boolean  @default(false)
+  overallRisk         String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  calculatedScore     Float    @default(0.0)
+  evidence            Json?
+  createdAt           DateTime @default(now())
+}
+
+// Batch 2: Enterprise SIEM & Audit Correlation
+model SecurityEvent {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  userId    String?
+  eventType String // AUTH_FAILURE, PRIVILEGE_ESCALATION, etc.
+  severity  String   @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  ipAddress String?
+  userAgent String?
+  details   Json?
+  timestamp DateTime @default(now())
+}
+
+model SecurityAlert {
+  id            String   @id @default(uuid())
+  tenantId      String
+  title         String
+  description   String
+  severity      String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status        String   @default("NEW") // NEW, INVESTIGATING, RESOLVED, SUPPRESSED
+  assignedTo    String?
+  correlationId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model SecurityIncident {
+  id                String   @id @default(uuid())
+  tenantId          String
+  title             String
+  description       String
+  severity          String   @default("HIGH") // LOW, MEDIUM, HIGH, CRITICAL
+  status            String   @default("OPEN") // OPEN, CONTAINED, RESOLVED, CLOSED
+  assignedTo        String?
+  playbookId        String?
+  resolutionSummary String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ThreatIndicator {
+  id              String   @id @default(uuid())
+  tenantId        String
+  indicatorType   String // IP, DOMAIN, CREDENTIAL_HASH
+  value           String
+  sourceFeed      String
+  confidenceScore Float    @default(80.0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model AuditCorrelation {
+  id              String   @id @default(uuid())
+  tenantId        String
+  correlationType String // BRUTE_FORCE, EXCESSIVE_EXPORT, etc.
+  alertCount      Int
+  eventSummary    Json
+  startTime       DateTime
+  endTime         DateTime
+  createdAt       DateTime @default(now())
+}
+
+model SecurityTimeline {
+  id          String   @id @default(uuid())
+  tenantId    String
+  incidentId  String
+  actionTaken String
+  performedBy String
+  details     String?
+  occurredAt  DateTime @default(now())
+}
+
+// Batch 3: Threat Intelligence Platform
+model ThreatFeed {
+  id         String   @id @default(uuid())
+  tenantId   String
+  feedName   String
+  feedUrl    String?
+  feedType   String // IP_BLACKLIST, CREDENTIAL_LEAK
+  isActive   Boolean  @default(true)
+  lastSyncAt DateTime @default(now())
+}
+
+model ThreatIntelMatch {
+  id           String   @id @default(uuid())
+  tenantId     String
+  matchedValue String
+  matchType    String // IP_MATCH, CREDENTIAL_MATCH
+  severity     String   @default("HIGH")
+  details      Json?
+  matchedAt    DateTime @default(now())
+}
+
+model CompromisedCredential {
+  id                String   @id @default(uuid())
+  tenantId          String
+  emailHash         String   @unique
+  compromisedSource String?
+  discoveredAt      DateTime @default(now())
+}
+
+model MaliciousIp {
+  id         String   @id @default(uuid())
+  tenantId   String
+  ipAddress  String   @unique
+  threatType String // TOR_EXIT, PROXY, RANSOMWARE
+  confidence Float    @default(90.0)
+  createdAt  DateTime @default(now())
+}
+
+model MalwareSignature {
+  id            String   @id @default(uuid())
+  tenantId      String
+  fileHash      String   @unique
+  malwareFamily String
+  severity      String   @default("CRITICAL")
+  createdAt     DateTime @default(now())
+}
+
+// Batch 4: Backup & Disaster Recovery
+model BackupSnapshot {
+  id                String   @id @default(uuid())
+  tenantId          String
+  snapshotName      String
+  backupType        String // FULL, INCREMENTAL
+  sizeBytes         BigInt
+  isEncrypted       Boolean  @default(true)
+  fileUrl           String
+  replicationStatus String   @default("COMPLETED")
+  integrityChecked  Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+}
+
+model RecoveryPlan {
+  id               String   @id @default(uuid())
+  tenantId         String
+  planName         String
+  targetRtoMinutes Int      @default(15)
+  targetRpoMinutes Int      @default(5)
+  steps            Json
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+}
+
+model RecoveryExecution {
+  id               String    @id @default(uuid())
+  tenantId         String
+  planId           String
+  executedBy       String
+  status           String    @default("RUNNING")
+  actualRtoMinutes Float?
+  actualRpoMinutes Float?
+  verificationLog  Json?
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+}
+
+model FailoverRegion {
+  id             String   @id @default(uuid())
+  tenantId       String
+  regionName     String
+  endpointUrl    String
+  syncLagSeconds Int      @default(0)
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+}
+
+model BackupIntegrityCheck {
+  id            String   @id @default(uuid())
+  tenantId      String
+  snapshotId    String
+  verifiedAt    DateTime @default(now())
+  checksumMatch Boolean  @default(true)
+  status        String   @default("SUCCESS")
+  details       String?
+}
+
+// Batch 5: Incident Response Automation
+model IncidentPlaybook {
+  id           String  @id @default(uuid())
+  tenantId     String
+  triggerType  String // RANSOMWARE, PHI_BREACH
+  playbookName String
+  actions      Json
+  isActive     Boolean @default(true)
+}
+
+model IncidentTask {
+  id          String    @id @default(uuid())
+  tenantId    String
+  incidentId  String
+  taskName    String
+  status      String    @default("PENDING")
+  assignedTo  String?
+  startedAt   DateTime?
+  completedAt DateTime?
+}
+
+model IncidentEscalation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  incidentId  String
+  escalatedTo String // SOC_LEAD, CISO, etc.
+  reason      String
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+}
+
+model ForensicArtifact {
+  id           String   @id @default(uuid())
+  tenantId     String
+  incidentId   String
+  artifactType String // IP_LOG, DISK_IMAGE_URL
+  fileUrl      String
+  checksum     String
+  capturedBy   String
+  createdAt    DateTime @default(now())
+}
+
+// Batch 6: Enterprise Key Vault & Secrets Management
+model VaultSecret {
+  id             String    @id @default(uuid())
+  tenantId       String
+  secretName     String
+  encryptedValue String
+  secretType     String // OAUTH_TOKEN, API_KEY
+  rotationDays   Int       @default(90)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([tenantId, secretName])
+}
+
+model SecretAccessLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  secretId  String
+  userId    String
+  action    String // READ, ROTATE
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model EncryptionKey {
+  id        String   @id @default(uuid())
+  tenantId  String
+  keyAlias  String
+  keyType   String // AES_256
+  isActive  Boolean  @default(true)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+}
+
+model KeyRotationPolicy {
+  id                   String   @id @default(uuid())
+  tenantId             String
+  rotationIntervalDays Int      @default(30)
+  nextRotationAt       DateTime
+  isActive             Boolean  @default(true)
+}
+
+// Batch 7: Endpoint & Biomedical Device Security
+model ManagedDevice {
+  id              String   @id @default(uuid())
+  tenantId        String
+  deviceName      String
+  deviceType      String // CLINICAL_TABLET, NURSING_STATION
+  osVersion       String
+  antivirusStatus String   @default("COMPLIANT")
+  diskEncrypted   Boolean  @default(true)
+  complianceScore Float    @default(100.0)
+  lastSyncAt      DateTime @default(now())
+}
+
+model DeviceCompliance {
+  id         String   @id @default(uuid())
+  tenantId   String
+  deviceId   String
+  policyName String
+  passed     Boolean  @default(true)
+  details    String?
+  checkedAt  DateTime @default(now())
+}
+
+model DeviceSecurityIncident {
+  id         String   @id @default(uuid())
+  tenantId   String
+  deviceId   String
+  threatType String // MALWARE, ROOTED
+  severity   String   @default("HIGH")
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+}
+
+model BiomedicalDeviceSecurity {
+  id                String   @id @default(uuid())
+  tenantId          String
+  assetId           String
+  firmwareVersion   String
+  isFirmwareSigned  Boolean  @default(true)
+  insecureProtocols String[]
+  lastScanAt        DateTime @default(now())
+  threatScore       Float    @default(0.0)
+  status            String   @default("SECURE") // SECURE, VULNERABLE
+}
+
+// Batch 8: Security Governance & Compliance Command Center
+model ComplianceFramework {
+  id              String   @id @default(uuid())
+  tenantId        String
+  frameworkName   String // HIPAA, GDPR, SOC2
+  description     String?
+  complianceScore Float    @default(100.0)
+  lastAssessedAt  DateTime @default(now())
+}
+
+model ComplianceControl {
+  id          String   @id @default(uuid())
+  tenantId    String
+  frameworkId String
+  controlCode String
+  controlName String
+  status      String   @default("IMPLEMENTED") // IMPLEMENTED, PARTIAL
+  evidenceUrl String?
+  updatedAt   DateTime @updatedAt
+}
+
+model SecurityAssessment {
+  id             String   @id @default(uuid())
+  tenantId       String
+  assessorName   String
+  assessmentType String // INTERNAL, EXTERNAL
+  findingsCount  Int      @default(0)
+  overallScore   Float    @default(90.0)
+  assessedAt     DateTime @default(now())
+}
+
+model VulnerabilityScan {
+  id            String   @id @default(uuid())
+  tenantId      String
+  scannerName   String
+  criticalCount Int      @default(0)
+  highCount     Int      @default(0)
+  mediumCount   Int      @default(0)
+  lowCount      Int      @default(0)
+  scanLogUrl    String?
+  scannedAt     DateTime @default(now())
+}
+
+model PenetrationTest {
+  id                String   @id @default(uuid())
+  tenantId          String
+  testerName        String
+  targetScope       String
+  criticalFindings  Int      @default(0)
+  highFindings      Int      @default(0)
+  remediationStatus String   @default("PENDING")
+  conductedAt       DateTime @default(now())
+}
+
+// Phase 29: Global Cloud Infrastructure & Autonomous DevOps
+model CloudRegion {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  regionCode  String // us-east-1, eu-west-1, ap-south-1
+  regionName  String // N. Virginia, Ireland, Mumbai
+  provider    String // AWS, GCP, Azure
+  status      String   @default("HEALTHY") // HEALTHY, DEGRADED, OFFLINE
+  latencyMs   Int      @default(0)
+  activeUsers Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ClusterNode {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  nodeName    String
+  regionCode  String
+  status      String   @default("READY") // READY, NOT_READY
+  cpuUsage    Float    @default(0.0)
+  memoryUsage Float    @default(0.0)
+  podCount    Int      @default(0)
+  kubeVersion String   @default("v1.28.2")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DeploymentRegion {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  deploymentName String
+  regionCode     String
+  replicaCount   Int      @default(3)
+  targetReplicas Int      @default(3)
+  version        String   @default("v1.0.0")
+  status         String   @default("RUNNING") // RUNNING, DEPLOYING, FAILED
+  updatedAt      DateTime @updatedAt
+}
+
+model FailoverEvent {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  sourceRegion    String
+  targetRegion    String
+  triggerReason   String
+  status          String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, FAILED
+  durationSeconds Int      @default(0)
+  initiatedBy     String   @default("SYSTEM")
+  createdAt       DateTime @default(now())
+}
+
+model InfrastructureIncident {
+  id               String    @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  incidentTitle    String
+  severity         String    @default("HIGH") // CRITICAL, HIGH, MEDIUM, LOW
+  affectedRegion   String
+  status           String    @default("OPEN") // OPEN, INVESTIGATING, MITIGATED, RESOLVED
+  rootCause        String?
+  remediationSteps String?
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+}
+
+model RegionHealthMetric {
+  id               String   @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  regionCode       String
+  cpuLoad          Float    @default(0.0)
+  memoryLoad       Float    @default(0.0)
+  networkLatencyMs Int      @default(0)
+  packetLoss       Float    @default(0.0)
+  errorRate        Float    @default(0.0)
+  timestamp        DateTime @default(now())
+}
+
+model TrafficRoutingPolicy {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  policyName     String
+  routingMethod  String // LATENCY, GEOLOCATION, ROUND_ROBIN, FAILOVER
+  primaryRegion  String
+  failoverRegion String
+  activeRules    Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ==========================================
+// PHASE 30: ENTERPRISE PATIENT ENGAGEMENT
+// ==========================================
+
+model PatientDevice {
+  id                String   @id @default(uuid())
+  tenantId          String
+  branchId          String?
+  patientId         String
+  deviceFingerprint String
+  pushToken         String?
+  deviceName        String?
+  osVersion         String?
+  lastLoginAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+}
+
+model PatientPreference {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  branchId              String?
+  patientId             String
+  language              String   @default("en")
+  theme                 String   @default("light")
+  emailNotifications    Boolean  @default(true)
+  smsNotifications      Boolean  @default(true)
+  pushNotifications     Boolean  @default(true)
+  whatsAppNotifications Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model PatientSession {
+  id                String   @id @default(uuid())
+  tenantId          String
+  branchId          String?
+  patientId         String
+  deviceFingerprint String
+  sessionToken      String   @unique
+  expiresAt         DateTime
+  isActive          Boolean  @default(true)
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+}
+
+model PatientNotificationPreference {
+  id               String  @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  patientId        String
+  notificationType String
+  channel          String
+  isEnabled        Boolean @default(true)
+}
+
+model PatientLanguage {
+  id        String  @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  code      String  @unique
+  name      String
+  isDefault Boolean @default(false)
+}
+
+model PatientThemePreference {
+  id           String  @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  patientId    String
+  themeMode    String  @default("system")
+  primaryColor String  @default("#3b82f6")
+}
+
+model PatientMessage {
+  id            String    @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  subject       String?
+  body          String
+  channel       String
+  senderId      String?
+  status        String    @default("PENDING")
+  deliveryError String?
+  scheduledAt   DateTime?
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model CommunicationTemplate {
+  id           String   @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  templateName String
+  channel      String
+  subject      String?
+  bodyContent  String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model CommunicationCampaign {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  branchId            String?
+  campaignName        String
+  channel             String
+  templateId          String?
+  targetAudienceQuery Json?
+  scheduledAt         DateTime?
+  status              String    @default("DRAFT")
+  sentCount           Int       @default(0)
+  deliveredCount      Int       @default(0)
+  failedCount         Int       @default(0)
+  createdAt           DateTime  @default(now())
+}
+
+model NotificationDelivery {
+  id               String    @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  patientId        String
+  messageId        String?
+  channel          String
+  status           String    @default("QUEUED")
+  attempts         Int       @default(0)
+  nextRetryAt      DateTime?
+  lastAttemptError String?
+  createdAt        DateTime  @default(now())
+}
+
+model PatientInbox {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  patientId String
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  category  String   @default("GENERAL")
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model QueueToken {
+  id                   String   @id @default(uuid())
+  tenantId             String
+  branchId             String?
+  patientId            String
+  tokenNumber          String
+  departmentId         String?
+  doctorId             String?
+  status               String   @default("WAITING")
+  estimatedWaitMinutes Int      @default(30)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model DigitalCheckin {
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  appointmentId String?
+  checkinTime   DateTime @default(now())
+  status        String   @default("COMPLETED")
+  deviceType    String?
+}
+
+model AppointmentFeedback {
+  id               String   @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  patientId        String
+  appointmentId    String
+  rating           Int
+  feedbackComments String?
+  sentimentScore   Float?
+  createdAt        DateTime @default(now())
+}
+
+model WaitTimeMetric {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  departmentId   String?
+  avgWaitMinutes Float
+  sampleCount    Int
+  recordedAt     DateTime @default(now())
+}
+
+model HealthGoal {
+  id           String    @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  patientId    String
+  goalType     String
+  targetValue  Float
+  currentValue Float     @default(0.0)
+  unit         String
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  status       String    @default("IN_PROGRESS")
+  createdAt    DateTime  @default(now())
+}
+
+model WellnessMetric {
+  id         String   @id @default(uuid())
+  tenantId   String
+  branchId   String?
+  patientId  String
+  metricType String
+  value      Float
+  unit       String
+  loggedAt   DateTime @default(now())
+}
+
+model CarePlan {
+  id                   String    @id @default(uuid())
+  tenantId             String
+  branchId             String?
+  patientId            String
+  planName             String
+  description          String?
+  startDate            DateTime  @default(now())
+  endDate              DateTime?
+  medicationReminders  Json?
+  exerciseInstructions String?
+  adherenceScore       Float     @default(100.0)
+  createdAt            DateTime  @default(now())
+}
+
+model HabitTracking {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  patientId   String
+  habitName   String
+  isCompleted Boolean  @default(false)
+  trackedDate DateTime @default(now())
+}
+
+model PatientAchievement {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  patientId   String
+  badgeName   String
+  badgeIcon   String?
+  streakCount Int      @default(0)
+  unlockedAt  DateTime @default(now())
+}
+
+model PatientWallet {
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  balance       Decimal  @default(0.0) @db.Decimal(10, 2)
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  walletId    String
+  amount      Decimal  @db.Decimal(10, 2)
+  type        String
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model PaymentMethod {
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  methodType    String
+  provider      String?
+  maskedDetails String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model ConsumerInvoice {
+  id            String    @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  invoiceNumber String
+  amount        Decimal   @db.Decimal(10, 2)
+  status        String    @default("UNPAID")
+  downloadUrl   String?
+  dueDate       DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model SubscriptionPlan {
+  id           String  @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  planName     String
+  price        Decimal @db.Decimal(10, 2)
+  billingCycle String  @default("MONTHLY")
+  features     Json?
+  isActive     Boolean @default(true)
+}
+
+model LoyaltyReward {
+  id         String    @id @default(uuid())
+  tenantId   String
+  branchId   String?
+  patientId  String
+  rewardName String
+  pointsCost Int
+  isRedeemed Boolean   @default(false)
+  redeemedAt DateTime?
+}
+
+model PatientCopilotConversation {
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  messages      Json
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+}
+
+model SymptomAssessment {
+  id               String   @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  patientId        String
+  reportedSymptoms String
+  severity         String   @default("LOW")
+  aiTriageSummary  String?
+  doctorEscalated  Boolean  @default(false)
+  createdAt        DateTime @default(now())
+}
+
+model ConsumerAiRecommendation {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  branchId           String?
+  patientId          String
+  recommendationText String
+  sourceType         String
+  createdAt          DateTime @default(now())
+}
+
+model PatientSurvey {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  surveyTitle String
+  questions   Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model SurveyResponse {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  surveyId    String
+  patientId   String
+  answers     Json
+  submittedAt DateTime @default(now())
+}
+
+model NpsScore {
+  id                String   @id @default(uuid())
+  tenantId          String
+  branchId          String?
+  patientId         String
+  score             Int
+  feedbackText      String?
+  sentimentCategory String?
+  createdAt         DateTime @default(now())
+}
+
+model ExperienceIncident {
+  id                String    @id @default(uuid())
+  tenantId          String
+  branchId          String?
+  patientId         String
+  complaintText     String
+  severity          String    @default("MEDIUM")
+  status            String    @default("OPEN")
+  resolutionSummary String?
+  createdAt         DateTime  @default(now())
+  resolvedAt        DateTime?
+}
+
+// ==========================================
+// PHASE 31 — ENTERPRISE INTEROPERABILITY MARKETPLACE, INSURANCE CLEARINGHOUSE & GLOBAL ECOSYSTEM
+// ==========================================
+
+// BATCH 1 — ENTERPRISE INSURANCE CLEARINGHOUSE
+model InsuranceClaim {
+  id              String            @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  patientId       String
+  payerId         String
+  claimNumber     String            @unique
+  status          String            @default("DRAFT") // DRAFT, SUBMITTED, BATCHED, PAID, DENIED, REJECTED
+  totalAmount     Decimal           @db.Decimal(10, 2)
+  paidAmount      Decimal?          @db.Decimal(10, 2)
+  submittedAt     DateTime?
+  processedAt     DateTime?
+  rejectionReason String?
+  lineItems       ClaimLineItem[]
+  auditTrails     ClaimAuditTrail[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model ClaimLineItem {
+  id             String         @id @default(uuid())
+  tenantId       String
+  claimId        String
+  serviceCode    String
+  description    String?
+  quantity       Int            @default(1)
+  unitPrice      Decimal        @db.Decimal(10, 2)
+  totalAmount    Decimal        @db.Decimal(10, 2)
+  allowedAmount  Decimal?       @db.Decimal(10, 2)
+  copayAmount    Decimal?       @db.Decimal(10, 2)
+  coinsuranceAmt Decimal?       @db.Decimal(10, 2)
+  deductibleAmt  Decimal?       @db.Decimal(10, 2)
+  claim          InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+}
+
+model PriorAuthorization {
+  id            String    @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  payerId       String
+  authNumber    String?   @unique
+  requestType   String // INPATIENT, SURGERY, SPECIALLAB, TELEHEALTH
+  status        String    @default("PENDING") // PENDING, APPROVED, DENIED, ADDITIONAL_INFO
+  requestedDate DateTime  @default(now())
+  decidedDate   DateTime?
+  validUntil    DateTime?
+  clinicalNotes String?
+  approvedCodes String[]  @default([])
+  createdAt     DateTime  @default(now())
+}
+
+model PayerIntegration {
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  payerName     String
+  clearinghouse String   @default("MEDFLOW_EXCHANGE")
+  apiEndpoint   String?
+  apiKeySecret  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model ClaimAuditTrail {
+  id             String         @id @default(uuid())
+  tenantId       String
+  claimId        String
+  actionType     String // SUBMIT, ROUTE, PAID, REJECT, OVERRIDE
+  performedBy    String
+  previousStatus String?
+  newStatus      String
+  notes          String?
+  createdAt      DateTime       @default(now())
+  claim          InsuranceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+}
+
+model EligibilityCheck {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  patientId      String
+  payerId        String
+  coverageStatus String // ACTIVE, INACTIVE, SUSPENDED
+  coPayDetails   Json?
+  checkedAt      DateTime @default(now())
+}
+
+// BATCH 2 — GLOBAL INTEROPERABILITY HUB
+model Hl7TranslationLog {
+  id           String   @id @default(uuid())
+  tenantId     String
+  messageType  String // ADT_A08, ORU_R01, SIU_S12
+  direction    String // INBOUND, OUTBOUND
+  rawContent   String
+  parsedJson   Json?
+  status       String   @default("SUCCESS") // SUCCESS, FAILED
+  errorMessage String?
+  createdAt    DateTime @default(now())
+}
+
+model FhirResourceSync {
+  id           String   @id @default(uuid())
+  tenantId     String
+  resourceType String // Patient, Observation, Encounter, DiagnosticReport
+  externalId   String
+  localId      String
+  direction    String // PUSH, PULL
+  lastSyncAt   DateTime @default(now())
+}
+
+model DicomRouteLog {
+  id               String   @id @default(uuid())
+  tenantId         String
+  studyInstanceUid String
+  modality         String // MR, CT, XR
+  externalNode     String
+  status           String   @default("TRANSFERRED")
+  transferredAt    DateTime @default(now())
+}
+
+model ExternalFacilityConnection {
+  id             String   @id @default(uuid())
+  tenantId       String
+  facilityName   String
+  connectionType String // FHIR_API, HL7_TCP, SFTP
+  endpoint       String
+  authToken      String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+// BATCH 3 — NATIONAL HEALTH REGISTRY INTEGRATION
+model NationalRegistrySync {
+  id           String   @id @default(uuid())
+  tenantId     String
+  registryType String // VACCINE, SURVEILLANCE, COMPLIANCE
+  recordId     String
+  status       String   @default("SYNCED") // SYNCED, PENDING, ERROR
+  retryCount   Int      @default(0)
+  errorMessage String?
+  lastSyncAt   DateTime @default(now())
+}
+
+model CitizenHealthIdVerify {
+  id              String   @id @default(uuid())
+  tenantId        String
+  healthId        String
+  verifiedName    String
+  verificationDoc String?
+  status          String   @default("VERIFIED") // VERIFIED, REJECTED
+  verifiedAt      DateTime @default(now())
+}
+
+// BATCH 4 — HEALTHCARE MARKETPLACE ECOSYSTEM
+model MarketplaceApp {
+  id           String              @id @default(uuid())
+  tenantId     String
+  appName      String
+  developer    String
+  category     String // INTEROP, ANALYTICS, CARE, BILLING
+  price        Decimal             @db.Decimal(10, 2)
+  isSubscribed Boolean             @default(false)
+  installedAt  DateTime?
+  reviews      MarketplaceReview[]
+  createdAt    DateTime            @default(now())
+}
+
+model PartnerBillingInvoice {
+  id            String   @id @default(uuid())
+  tenantId      String
+  appId         String
+  invoiceNumber String
+  amount        Decimal  @db.Decimal(10, 2)
+  status        String   @default("UNPAID") // UNPAID, PAID
+  dueDate       DateTime
+  createdAt     DateTime @default(now())
+}
+
+model MarketplaceReview {
+  id        String         @id @default(uuid())
+  tenantId  String
+  appId     String
+  rating    Int
+  comment   String?
+  app       MarketplaceApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+}
+
+// BATCH 5 — SMART REFERRAL & NETWORK EXCHANGE
+model CrossHospitalReferral {
+  id             String   @id @default(uuid())
+  tenantId       String
+  patientId      String
+  targetFacility String
+  specialty      String
+  referralReason String
+  status         String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED
+  createdAt      DateTime @default(now())
+}
+
+model ProviderNetworkSpecialist {
+  id             String   @id @default(uuid())
+  tenantId       String
+  specialistName String
+  specialty      String
+  facilityName   String
+  contactInfo    String?
+  rating         Float    @default(5.0)
+  createdAt      DateTime @default(now())
+}
+
+model SharedCareCoordination {
+  id              String   @id @default(uuid())
+  tenantId        String
+  patientId       String
+  providerNodes   String[] @default([])
+  sharedDataTypes String[] @default([])
+  lastActivityAt  DateTime @default(now())
+}
+
+// BATCH 6 — ADVANCED COMPLIANCE & CROSS-BORDER GOVERNANCE
+model CrossBorderConsent {
+  id            String    @id @default(uuid())
+  tenantId      String
+  patientId     String
+  targetCountry String
+  consentGiven  Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model DataResidencyAudit {
+  id         String   @id @default(uuid())
+  tenantId   String
+  region     String // US, EU, CA, AS
+  actionType String // ACCESS, EXPORT, TRANSIT
+  phiType    String
+  auditedBy  String
+  createdAt  DateTime @default(now())
+}
+
+// ==========================================
+// PHASE 32 — AUTONOMOUS HEALTHCARE AI OPERATING SYSTEM, DIGITAL TWIN SIMULATION & QUANTUM-SCALE INTELLIGENCE
+// ==========================================
+
+// BATCH 1 — ENTERPRISE DIGITAL TWIN ENGINE
+model DigitalTwinScenario {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  name        String
+  description String?
+  config      Json     // Parameters for the simulation (e.g. disaster type, casualty counts)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  runs        SimulationRun[]
+}
+
+model SimulationRun {
+  id              String              @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  scenarioId      String
+  status          String              @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  startedAt       DateTime?
+  completedAt     DateTime?
+  inputConfig     Json
+  outputMetrics   Json?               // Simulated ICU occupancy, ER wait times, staff saturation
+  scenario        DigitalTwinScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  createdAt       DateTime            @default(now())
+}
+
+model OperationalForecast {
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  forecastType  String   // ER_CONGESTION, BED_DEMAND, STAFF_SATURATION
+  targetTime    DateTime
+  forecastValue Float
+  confidence    Float    // 0.0 to 1.0 confidence score
+  metadata      Json?    // Detailed simulation values & metrics
+  createdAt     DateTime @default(now())
+}
+
+model CapacitySimulation {
+  id               String   @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  resourceType     String   // BED, ICU, VENTILATOR, STAFF
+  simulatedLoad    Float
+  bottleneckRisk   String   // LOW, MEDIUM, HIGH, CRITICAL
+  mitigationAdvice String?
+  createdAt        DateTime @default(now())
+}
+
+model TwinEvent {
+  id        String   @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  severity  String   // INFO, WARNING, CRITICAL
+  category  String   // AMBULANCE_ROUTE, STAFF_SHORTAGE, PATIENT_SPIKE
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model TwinRecommendation {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  title       String
+  description String
+  impactScore Float    // Estimated efficiency gain
+  isApplied   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// BATCH 2 — AUTONOMOUS AI OPERATIONS LAYER
+model AutonomousDecision {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  decisionType    String   // STAFF_REBALANCE, OVERFLOW_ROOM, TRIAGE_ROUTING
+  rationale       String
+  confidenceScore Float
+  evidence        Json
+  status          String   @default("PENDING") // PENDING, APPROVED, EXECUTED, REJECTED
+  actionedBy      String?
+  actionedAt      DateTime?
+  createdAt       DateTime @default(now())
+}
+
+model AiOperationalDirective {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  directive   String
+  targetDept  String
+  priority    String   @default("HIGH") // MEDIUM, HIGH, IMMEDIATE
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, SUPERSEDED
+  createdAt   DateTime @default(now())
+}
+
+model OptimizationPolicy {
+  id           String   @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  policyName   String
+  parameterKey String
+  currentValue String
+  optimalValue String
+  isAutoApply  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model AiEscalation {
+  id            String    @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  issueSummary  String
+  urgency       String    @default("CRITICAL")
+  assignedRole  String    @default("SUPERADMIN")
+  status        String    @default("OPEN") // OPEN, RESOLVED
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model AutonomousWorkflowExecution {
+  id           String   @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  workflowName String
+  triggerEvent String
+  stepsRun     Json
+  executionTime Int      // in ms
+  status       String   @default("SUCCESS") // SUCCESS, FAILED
+  createdAt    DateTime @default(now())
+}
+
+// BATCH 3 — COGNITIVE CLINICAL NAVIGATION AI
+model CareJourney {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  patientId      String
+  conditionName  String
+  currentStage   String
+  predictedRisk  String   @default("LOW") // LOW, MEDIUM, HIGH
+  progressPct    Float    @default(0.0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  milestones     CareMilestone[]
+}
+
+model CareMilestone {
+  id          String      @id @default(uuid())
+  tenantId    String
+  journeyId   String
+  title       String
+  status      String      @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  targetDate  DateTime?
+  completedAt DateTime?
+  journey     CareJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+}
+
+model NavigationRecommendation {
+  id           String   @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  patientId    String
+  suggestedStep String
+  clinicalBasis String
+  priority     String   @default("ROUTINE") // ROUTINE, URGENT
+  isDismissed  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model CareRiskSignal {
+  id          String   @id @default(uuid())
+  tenantId    String
+  branchId    String?
+  patientId   String
+  signalType  String   // READMISSION_RISK, DROP_OUT_RISK, TREATMENT_ADHERENCE
+  riskScore   Float    // 0.0 to 100.0
+  indicators  String[]
+  isAddressed Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+// BATCH 4 — ENTERPRISE KNOWLEDGE GRAPH & MEDICAL INTELLIGENCE MESH
+model KnowledgeNode {
+  id           String   @id @default(uuid())
+  tenantId     String
+  nodeType     String   // DISEASE, DRUG, SYMPTOM, TREATMENT
+  conceptCode  String   @unique // e.g. RxNorm, SNOMED-CT code
+  label        String
+  description  String?
+  createdAt    DateTime @default(now())
+}
+
+model KnowledgeRelation {
+  id             String   @id @default(uuid())
+  tenantId       String
+  sourceNodeCode String
+  targetNodeCode String
+  relationType   String   // TREATS, CAUSES, CONTRAINDICATED, COMPLICATES
+  weight         Float    @default(1.0)
+  createdAt      DateTime @default(now())
+}
+
+model ClinicalOntology {
+  id          String   @id @default(uuid())
+  tenantId    String
+  domainName  String   // CARDIOLOGY, ONCOLOGY, PEDIATRICS
+  rulesCount  Int      @default(0)
+  version     String   @default("1.0.0")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model InferenceGraph {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  queryContext   String   // Patient context, query terms
+  inferredChain  String[] // Array of logical steps
+  executionTimeMs Int
+  createdAt      DateTime @default(now())
+}
+
+model SemanticRecommendation {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  contextId       String   // Patient Case, Prescription ID
+  recommendation  String
+  cognitivePath   String   // Graph path details showing rationale
+  confidenceScore Float
+  createdAt       DateTime @default(now())
+}
+
+// BATCH 5 — GLOBAL AI COORDINATION & SWARM INTELLIGENCE
+model RegionalAiNode {
+  id             String   @id @default(uuid())
+  tenantId       String
+  regionName     String   // NORTH, WEST, SOUTH-EAST
+  endpointUrl    String
+  healthStatus   String   @default("ONLINE") // ONLINE, OFFLINE
+  lastSyncAt     DateTime @default(now())
+}
+
+model DistributedInference {
+  id             String   @id @default(uuid())
+  tenantId       String
+  branchId       String?
+  modelName      String
+  subTaskName    String
+  nodeContributed String
+  inferenceData  Json
+  createdAt      DateTime @default(now())
+}
+
+model FederatedModel {
+  id            String   @id @default(uuid())
+  tenantId      String
+  modelName     String
+  version       String   @default("1.0.0")
+  accuracy      Float
+  sampleSize    Int
+  weightsHash   String
+  isGlobalChamp Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model SwarmOptimization {
+  id              String   @id @default(uuid())
+  tenantId        String
+  optimizationKey String   // SUPPLY_CHAIN, PATIENT_ROUTING, REVENUE_CYCLE
+  localStatus     String
+  globalTarget    String
+  deltaValue      Float
+  createdAt       DateTime @default(now())
+}
+
+model GlobalLearningEvent {
+  id          String   @id @default(uuid())
+  tenantId    String
+  eventName   String   // OUTBREAK_PATTERN, TREATMENT_VARIANT
+  sourceNode  String
+  payloadData Json
+  sharedAt    DateTime @default(now())
+}
+
+// ==========================================
+// PHASE 33 — FINAL ENTERPRISE COMMAND CENTER & QUANTUM OPTIMIZATION
+// ==========================================
+
+model GlobalCommandCenterTelemetry {
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  platformHealth  String   // HEALTHY, WARNING, CRITICAL
+  activeIncidents Int      @default(0)
+  throughputRate  Float    @default(0.0) // patients/hr
+  revenueSummary  Decimal  @db.Decimal(10, 2) @default(0.0)
+  securityAlerts  Int      @default(0)
+  interopTraffic  Int      @default(0)
+  cpuUsage        Float    @default(0.0)
+  memoryUsage     Float    @default(0.0)
+  createdAt       DateTime @default(now())
+}
+
+model QuantumOptimizationRecommendation {
+  id               String   @id @default(uuid())
+  tenantId         String
+  branchId         String?
+  targetAsset      String   // STAFFING, BED_FLOW, QUEUE_BALANCING, APPOINTMENT_SPOTS
+  recommendation   String
+  rationale        String
+  confidenceScore  Float    @default(0.95)
+  isSimulated      Boolean  @default(false)
+  isApplied        Boolean  @default(false)
+  appliedAt        DateTime?
+  createdAt        DateTime @default(now())
+}
+
+model SystemLiveIncident {
+  id            String    @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  sourceModule  String    // SOC, TELEMETRY, INSURANCE, INTEROP
+  title         String
+  severity      String    @default("WARNING") // INFO, WARNING, CRITICAL
+  status        String    @default("OPEN") // OPEN, MITIGATED, RESOLVED
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model OperationalTimelineEvent {
+  id           String   @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  eventType    String   // SECURITY, PATIENT, INFRASTRUCTURE, BILLING, INTEROP, AI_ESCALATION
+  severity     String   @default("INFO") // INFO, WARNING, CRITICAL
+  message      String
+  metadata     Json?
+  regionName   String   @default("GLOBAL")
+  createdAt    DateTime @default(now())
+}
+
