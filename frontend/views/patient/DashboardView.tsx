@@ -67,8 +67,8 @@ export default function PatientDashboardView() {
                 localStorage.removeItem('token');
                 localStorage.removeItem('auth-storage');
                 sessionStorage.clear();
-                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/opd/;";
+                document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/opd/;";
                 toast.success('Logged out successfully');
                 setTimeout(() => {
                   window.location.href = '/patient/login';

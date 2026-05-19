@@ -26,7 +26,7 @@ import { ROUTES, ROLE_REDIRECT_MAP } from '@/constants/routes';
 // Helper to set cookies
 const setCookie = (name: string, value: string, days: number) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+  document.cookie = `${name}=${value}; expires=${expires}; path=/opd/; SameSite=Lax`;
 };
 
 const StaticLoginView = () => {
@@ -51,13 +51,13 @@ const StaticLoginView = () => {
     setErrorMsg(null);
 
     try {
-      const response = await api.post('/auth/login', {
+      const response = await api.post('/api/auth/login', {
         email,
         password,
       });
 
-      // API interceptor already unwrapped this to { access_token, user }
-      const { access_token, user } = response.data;
+      // Interceptor returns { success, data: { access_token, user }, message }
+      const { access_token, user } = (response as any).data;
       
       // Strict Role Check: Selected role must match account role
       // Note: Frontend role labels (Admin) might need mapping to backend Role enum (ADMIN)
