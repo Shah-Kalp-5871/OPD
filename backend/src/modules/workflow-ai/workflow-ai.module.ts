@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { WorkflowAiService } from './workflow-ai.service';
 import { WorkflowAiController } from './workflow-ai.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { CommunicationsModule } from '../../communications/communications.module';
+import { TenancyModule } from '../tenancy/tenancy.module';
 
 @Module({
-  imports: [PrismaModule, CommunicationsModule],
+  imports: [PrismaModule, TenancyModule],
   providers: [WorkflowAiService],
   controllers: [WorkflowAiController],
   exports: [WorkflowAiService],

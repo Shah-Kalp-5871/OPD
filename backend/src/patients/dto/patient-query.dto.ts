@@ -62,6 +62,15 @@ export class PatientQueryDto {
   status?: string;
 
   @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  includeInactive?: boolean;
+
+  @IsOptional()
   @IsString()
   doctorId?: string;
 }

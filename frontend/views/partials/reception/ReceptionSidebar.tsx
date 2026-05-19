@@ -15,23 +15,36 @@ import {
   Upload, 
   UserCircle,
   Activity,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
+import { ROUTES } from '@/constants/routes';
 
 const ReceptionSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    router.push(ROUTES.LOGIN);
+  };
 
   const menuItems = [
-    { title: 'Dashboard', href: '/reception/dashboard', icon: LayoutDashboard },
-    { title: 'Register Patient', href: '/reception/register', icon: UserPlus },
-    { title: 'Search Patient', href: '/reception/search', icon: Search },
-    { title: 'Book Appointment', href: '/reception/appointments', icon: CalendarPlus },
-    { title: 'OPD Queue', href: '/reception/queue', icon: Users },
-    { title: 'Check-In', href: '/reception/checkin', icon: CheckSquare },
-    { title: 'Billing', href: '/reception/billing', icon: Wallet },
-    { title: 'Consent Form', href: '/reception/consent', icon: FileSignature },
-    { title: 'Lab Upload', href: '/reception/lab-upload', icon: Upload },
-    { title: 'My Profile', href: '/reception/profile', icon: UserCircle },
+    { title: 'Dashboard', href: ROUTES.reception.dashboard, icon: LayoutDashboard },
+    { title: 'Register Patient', href: ROUTES.reception.register, icon: UserPlus },
+    { title: 'Search Patient', href: ROUTES.reception.search, icon: Search },
+    { title: 'Book Appointment', href: ROUTES.reception.appointments, icon: CalendarPlus },
+    { title: 'OPD Queue', href: ROUTES.reception.queue, icon: Users },
+    { title: 'Check-In', href: ROUTES.reception.checkin, icon: CheckSquare },
+    { title: 'Billing', href: ROUTES.reception.billing, icon: Wallet },
+    { title: 'Consent Form', href: ROUTES.reception.consent, icon: FileSignature },
+    { title: 'Lab Upload', href: ROUTES.reception.labUpload, icon: Upload },
+    { title: 'My Profile', href: ROUTES.reception.myProfile, icon: UserCircle },
   ];
 
   return (
@@ -72,16 +85,24 @@ const ReceptionSidebar = () => {
       </nav>
 
       {/* Footer / Status */}
-      <div className="p-6 border-t border-slate-50">
+      <div className="p-6 border-t border-slate-100 space-y-3">
         <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
            <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 font-black text-xs">
-              JD
+              {user?.name?.substring(0, 2) || 'RC'}
            </div>
-           <div>
-              <p className="text-[10px] font-black text-slate-800 leading-none">Jane Doe</p>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Front Desk</p>
+           <div className="flex-1 overflow-hidden">
+              <p className="text-[10px] font-black text-slate-800 leading-none truncate">{user?.name || 'Jane Doe'}</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{user?.email || 'receptionist@medflow.com'}</p>
            </div>
         </div>
+
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all animate-pulse-subtle"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out System
+        </button>
       </div>
     </div>
   );

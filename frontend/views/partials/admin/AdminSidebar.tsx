@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { ROUTES, buildAppUrl } from '@/constants/routes';
+import { toast } from 'sonner';
 
 const menuItems = [
   { label: 'Dashboard', icon: LayoutDashboard, href: ROUTES.ADMIN_DASHBOARD },
@@ -48,23 +49,23 @@ const menuItems = [
   { label: 'Procedure Master', icon: Stethoscope, href: ROUTES.ADMIN_PROCEDURES },
   { label: 'Discounts', icon: Percent, href: ROUTES.ADMIN_DISCOUNTS },
   { label: 'Notifications', icon: Bell, href: ROUTES.ADMIN_NOTIFICATIONS },
-  { label: 'Financial Reports', icon: ReceiptIndianRupee, href: '/admin/reports/financial' },
-  { label: 'Inventory Intelligence', icon: BarChart3, href: '/admin/reports/inventory' },
+  { label: 'Financial Reports', icon: ReceiptIndianRupee, href: ROUTES.GLOBAL.FINANCIAL_REPORTS },
+  { label: 'Inventory Intelligence', icon: BarChart3, href: ROUTES.GLOBAL.INVENTORY_INTELLIGENCE },
   { label: 'Settings', icon: Settings, href: ROUTES.ADMIN_SETTINGS },
   { label: 'Support', icon: LifeBuoy, href: ROUTES.ADMIN_SUPPORT },
   { label: 'My Profile', icon: UserCircle, href: ROUTES.ADMIN_PROFILE },
-  { label: 'Enterprise ERP', icon: BrainCircuit, href: '/erp-intelligence' },
-  { label: 'HRMS', icon: Building2, href: '/hrms' },
-  { label: 'Workforce', icon: HardHat, href: '/workforce' },
-  { label: 'Payroll', icon: BadgeDollarSign, href: '/payroll' },
-  { label: 'Procurement', icon: PackageSearch, href: '/procurement' },
-  { label: 'Pharmacy AI', icon: TestTube2, href: '/pharmacy-intelligence' },
-  { label: 'Biomedical Ops', icon: Cpu, href: '/biomedical' },
-  { label: 'Facility Ops', icon: Building2, href: '/facility-ops' },
-  { label: 'Developer Portal', icon: Code2, href: '/developer' },
-  { label: 'Exec Command Center', icon: Presentation, href: '/executive' },
-  { label: 'Analytics Studio', icon: LineChart, href: '/analytics-studio' },
-  { label: 'BI Observability', icon: Activity, href: '/observability/analytics' },
+  { label: 'Enterprise ERP', icon: BrainCircuit, href: ROUTES.GLOBAL.ERP_INTELLIGENCE },
+  { label: 'HRMS', icon: Building2, href: ROUTES.GLOBAL.HRMS },
+  { label: 'Workforce', icon: HardHat, href: ROUTES.GLOBAL.WORKFORCE },
+  { label: 'Payroll', icon: BadgeDollarSign, href: ROUTES.GLOBAL.PAYROLL },
+  { label: 'Procurement', icon: PackageSearch, href: ROUTES.GLOBAL.PROCUREMENT },
+  { label: 'Pharmacy AI', icon: TestTube2, href: ROUTES.GLOBAL.PHARMACY_INTELLIGENCE },
+  { label: 'Biomedical Ops', icon: Cpu, href: ROUTES.GLOBAL.BIOMEDICAL },
+  { label: 'Facility Ops', icon: Building2, href: ROUTES.GLOBAL.FACILITY_OPS },
+  { label: 'Developer Portal', icon: Code2, href: ROUTES.GLOBAL.DEVELOPER },
+  { label: 'Exec Command Center', icon: Presentation, href: ROUTES.GLOBAL.EXECUTIVE },
+  { label: 'Analytics Studio', icon: LineChart, href: ROUTES.GLOBAL.ANALYTICS_STUDIO },
+  { label: 'BI Observability', icon: Activity, href: ROUTES.GLOBAL.OBSERVABILITY_ANALYTICS },
 ];
 
 const AdminSidebar = () => {
@@ -74,6 +75,7 @@ const AdminSidebar = () => {
 
   const handleLogout = () => {
     logout();
+    toast.success('Logged out successfully');
     router.push(ROUTES.LOGIN);
   };
 

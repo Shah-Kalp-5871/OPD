@@ -15,22 +15,35 @@ import {
   UserCircle,
   Activity,
   ChevronRight,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
+import { ROUTES } from '@/constants/routes';
 
 const DoctorSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    router.push(ROUTES.LOGIN);
+  };
 
   const menuItems = [
-    { title: 'Dashboard', href: '/doctor/dashboard', icon: LayoutDashboard },
-    { title: 'OPD Queue', href: '/doctor/queue', icon: Users },
-    { title: 'Consultation', href: '/doctor/consultation/complaints', icon: Stethoscope },
-    { title: 'Appointment Mgmt', href: '/doctor/appointments', icon: CalendarDays },
-    { title: 'F/U Call List', href: '/doctor/followup-call-list', icon: PhoneCall },
-    { title: 'Billing View', href: '/doctor/billing-view', icon: Wallet },
-    { title: 'Pharmacy View', href: '/doctor/pharmacy', icon: Pill },
-    { title: 'Reports', href: '/doctor/reports', icon: BarChart3 },
-    { title: 'My Profile', href: '/doctor/profile', icon: UserCircle },
+    { title: 'Dashboard', href: ROUTES.doctor.dashboard, icon: LayoutDashboard },
+    { title: 'OPD Queue', href: ROUTES.doctor.queue, icon: Users },
+    { title: 'Consultation', href: ROUTES.doctor.consultationComplaints, icon: Stethoscope },
+    { title: 'Appointment Mgmt', href: ROUTES.doctor.appointments, icon: CalendarDays },
+    { title: 'F/U Call List', href: ROUTES.doctor.followupCallList, icon: PhoneCall },
+    { title: 'Billing View', href: ROUTES.doctor.billingView, icon: Wallet },
+    { title: 'Pharmacy View', href: ROUTES.doctor.pharmacy, icon: Pill },
+    { title: 'Reports', href: ROUTES.doctor.reports, icon: BarChart3 },
+    { title: 'My Profile', href: ROUTES.doctor.profile, icon: UserCircle },
   ];
 
   return (
@@ -71,16 +84,24 @@ const DoctorSidebar = () => {
       </nav>
 
       {/* Footer / Status */}
-      <div className="p-6 border-t border-slate-800/50">
+      <div className="p-6 border-t border-slate-800/50 space-y-3">
         <div className="bg-slate-800/30 rounded-2xl p-4 flex items-center gap-3 border border-slate-800/50">
            <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-600/30 flex items-center justify-center text-blue-400 font-black text-xs">
-              DR
+              {user?.name?.substring(0, 2) || 'DR'}
            </div>
-           <div>
-              <p className="text-[10px] font-black text-white leading-none">Dr. Sameer Khan</p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Sr. Consultant</p>
+           <div className="flex-1 overflow-hidden">
+              <p className="text-[10px] font-black text-white leading-none truncate">{user?.name || 'Dr. Sameer Khan'}</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 truncate">{user?.email || 'doctor@clinic.com'}</p>
            </div>
         </div>
+        
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 hover:text-red-300 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out System
+        </button>
       </div>
     </div>
   );

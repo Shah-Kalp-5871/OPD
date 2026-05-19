@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 export interface UsePaginatedAdminDataProps<T, F> {
@@ -24,10 +24,16 @@ export function usePaginatedAdminData<T, F extends Record<string, any>>({
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(initialLimit);
 
+  // Maintain a stable ref of the fetch function to immunize from inline parent creations
+  const fetchFnRef = useRef(fetchFn);
+  useEffect(() => {
+    fetchFnRef.current = fetchFn;
+  }, [fetchFn]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchFn({
+      const res = await fetchFnRef.current({
         search: search || undefined,
         page,
         limit,
@@ -43,7 +49,7 @@ export function usePaginatedAdminData<T, F extends Record<string, any>>({
     } finally {
       setLoading(false);
     }
-  }, [fetchFn, search, page, limit, filters]);
+  }, [search, page, limit, filters]);
 
   useEffect(() => {
     if (fetchOnMount) {

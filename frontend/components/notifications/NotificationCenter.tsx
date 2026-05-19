@@ -40,11 +40,18 @@ export const NotificationCenter = () => {
 
   const fetchNotifications = async () => {
     try {
-      const data = await api.get('/notifications/in-app');
-      setNotifications(data as any);
-      setUnreadCount((data as any).filter((n: any) => !n.isRead).length);
+      const response = await api.get('/notifications/in-app');
+      const list = Array.isArray(response) 
+        ? response 
+        : (response && (response as any).success === true && Array.isArray((response as any).data))
+          ? (response as any).data 
+          : (response && Array.isArray((response as any).data))
+            ? (response as any).data
+            : [];
+      setNotifications(list);
+      setUnreadCount(list.filter((n: any) => !n.isRead).length);
     } catch (err) {
-      console.error('Failed to fetch notifications');
+      console.error('Failed to fetch notifications', err);
     }
   };
 

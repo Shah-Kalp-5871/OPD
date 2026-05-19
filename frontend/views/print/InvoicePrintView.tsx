@@ -19,6 +19,8 @@ import {
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
+import { getAssetPath } from '@/lib/path-utils';
+
 interface InvoicePrintViewProps {
   data: any; // The full bill record from getBillById
 }
@@ -98,7 +100,7 @@ const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ data }) => {
            <div className="flex items-center gap-6">
               <div className="relative w-20 h-20">
                 <Image 
-                  src="/hospital-logo.png" 
+                  src={getAssetPath('/hospital-logo.png')} 
                   alt="MedFlow Logo" 
                   fill 
                   className="object-contain"

@@ -11,6 +11,8 @@ interface ClinicalEvent {
   vitals?: any;
 }
 
+import { getApiUrl } from '@/lib/path-utils';
+
 export const useClinicalSSE = () => {
   const [lastEvent, setLastEvent] = useState<ClinicalEvent | null>(null);
 
@@ -21,7 +23,7 @@ export const useClinicalSSE = () => {
       return;
     }
 
-    const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/events/clinical?token=${encodeURIComponent(token)}`);
+    const eventSource = new EventSource(getApiUrl(`/events/clinical?token=${encodeURIComponent(token)}`));
 
     eventSource.onmessage = (event) => {
       try {

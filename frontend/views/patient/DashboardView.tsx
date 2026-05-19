@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/card';
 import { patientPortalApi } from '@/lib/api/patient-portal';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { FullPageLoader } from '@/components/common/PremiumLoaders';
 
 export default function PatientDashboardView() {
   const [profile, setProfile] = useState<any>(null);
@@ -38,7 +39,7 @@ export default function PatientDashboardView() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
+  if (loading) return <FullPageLoader message="Loading your patient profile..." />;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white pb-20">
@@ -64,7 +65,14 @@ export default function PatientDashboardView() {
               className="text-slate-400 hover:text-white"
               onClick={() => {
                 localStorage.removeItem('token');
-                window.location.href = '/patient/login';
+                localStorage.removeItem('auth-storage');
+                sessionStorage.clear();
+                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                toast.success('Logged out successfully');
+                setTimeout(() => {
+                  window.location.href = '/patient/login';
+                }, 500);
               }}
             >
               <LogOut className="w-5 h-5" />

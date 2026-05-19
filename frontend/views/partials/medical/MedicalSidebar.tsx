@@ -16,16 +16,29 @@ import {
   Settings
 } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
+import { ROUTES } from '@/constants/routes';
+
 const MedicalSidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    router.push(ROUTES.LOGIN);
+  };
 
   const menuItems = [
-    { title: 'Dashboard', href: '/medical/dashboard', icon: LayoutDashboard },
-    { title: 'Dispensing Queue', href: '/medical/dispensing', icon: ClipboardList },
-    { title: 'Stock Management', href: '/medical/stock', icon: Package },
-    { title: 'Drug Returns', href: '/medical/returns', icon: RotateCcw },
-    { title: 'Alerts', href: '/medical/alerts', icon: Bell },
-    { title: 'My Profile', href: '/medical/profile', icon: UserCircle },
+    { title: 'Dashboard', href: ROUTES.medical.dashboard, icon: LayoutDashboard },
+    { title: 'Dispensing Queue', href: ROUTES.medical.dispensing, icon: ClipboardList },
+    { title: 'Stock Management', href: ROUTES.medical.stock, icon: Package },
+    { title: 'Drug Returns', href: ROUTES.medical.returns, icon: RotateCcw },
+    { title: 'Alerts', href: ROUTES.medical.alerts, icon: Bell },
+    { title: 'My Profile', href: ROUTES.medical.profile, icon: UserCircle },
   ];
 
   return (
@@ -66,19 +79,24 @@ const MedicalSidebar = () => {
       </nav>
 
       {/* Footer / Status */}
-      <div className="p-6 border-t border-slate-800 space-y-4">
+      <div className="p-6 border-t border-slate-800 space-y-3">
         <div className="bg-slate-800/50 rounded-2xl p-4 flex items-center gap-3 border border-slate-700/50">
            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-[10px]">
-              PM
+              {user?.name?.substring(0, 2) || 'PM'}
            </div>
-           <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black text-white leading-none truncate">Pharm. A. Mehta</p>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Shift B1</p>
+           <div className="flex-1 min-w-0 overflow-hidden">
+              <p className="text-[10px] font-black text-white leading-none truncate">{user?.name || 'Pharm. A. Mehta'}</p>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 truncate">{user?.email || 'pharmacy@clinic.com'}</p>
            </div>
-           <button className="text-slate-500 hover:text-rose-400 transition-colors">
-              <LogOut className="w-4 h-4" />
-           </button>
         </div>
+
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-850 hover:text-red-300 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out System
+        </button>
       </div>
     </div>
   );

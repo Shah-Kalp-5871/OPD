@@ -1,8 +1,8 @@
 const CACHE_NAME = 'medflow-app-shell-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/favicon.ico',
-  '/manifest.json',
+  '/opd/',
+  '/opd/favicon.ico',
+  '/opd/manifest.json',
 ];
 
 // Install Service Worker
@@ -49,7 +49,7 @@ self.addEventListener('fetch', (event) => {
       return fetch(event.request).catch(() => {
         // Fallback for document navigation when offline
         if (event.request.mode === 'navigate') {
-          return caches.match('/');
+          return caches.match('/opd/');
         }
       });
     })

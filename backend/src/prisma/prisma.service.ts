@@ -12,9 +12,21 @@ export class PrismaService
   private readonly modelsWithBranchId = new Set<string>();
   private readonly modelsWithDeletedAt = new Set<string>();
 
+  private extendedClient: any;
+
   constructor() {
     super();
     this.introspectSchema();
+
+    const self = this;
+    return new Proxy(this, {
+      get(target, prop, receiver) {
+        if (self.extendedClient && prop in self.extendedClient) {
+          return Reflect.get(self.extendedClient, prop, receiver);
+        }
+        return Reflect.get(target, prop, receiver);
+      }
+    });
   }
 
   /**
@@ -49,56 +61,94 @@ export class PrismaService
     }
   }
 
+  private extend(client: PrismaClient) {
+    const self = this;
+    return client.$extends({
+      query: {
+        $allModels: {
+          async $allOperations({ model, operation, args, query }) {
+            const store = tenancyStore.getStore();
+            if (!store) {
+              return query(args);
+            }
+
+            const anyArgs = (args || {}) as any;
+
+            if ([
+              'findFirst', 'findMany', 'findUnique', 'findUniqueOrThrow', 
+              'count', 'aggregate', 'groupBy',
+              'update', 'updateMany', 'delete', 'deleteMany'
+            ].includes(operation)) {
+              anyArgs.where = anyArgs.where || {};
+
+              // 1. Tenant Isolation
+              if (store.tenantId && self.modelsWithTenantId.has(model)) {
+                if (anyArgs.where.tenantId === undefined) {
+                  anyArgs.where.tenantId = store.tenantId;
+                }
+              }
+
+              // 2. Branch Isolation
+              if (store.branchId && self.modelsWithBranchId.has(model)) {
+                if (anyArgs.where.branchId === undefined) {
+                  anyArgs.where.branchId = store.branchId;
+                }
+              }
+
+              // 3. Soft Delete Filtration
+              if (self.modelsWithDeletedAt.has(model)) {
+                if (anyArgs.where.deletedAt === undefined) {
+                  anyArgs.where.deletedAt = null;
+                }
+              }
+            }
+
+            if (['create', 'createMany'].includes(operation)) {
+              if (operation === 'create') {
+                anyArgs.data = anyArgs.data || {};
+                if (store.tenantId && self.modelsWithTenantId.has(model) && anyArgs.data.tenantId === undefined) {
+                  anyArgs.data.tenantId = store.tenantId;
+                }
+                if (store.branchId && self.modelsWithBranchId.has(model) && anyArgs.data.branchId === undefined) {
+                  anyArgs.data.branchId = store.branchId;
+                }
+              } else if (operation === 'createMany') {
+                anyArgs.data = anyArgs.data || [];
+                if (Array.isArray(anyArgs.data)) {
+                  anyArgs.data.forEach((item: any) => {
+                    if (store.tenantId && self.modelsWithTenantId.has(model) && item.tenantId === undefined) {
+                      item.tenantId = store.tenantId;
+                    }
+                    if (store.branchId && self.modelsWithBranchId.has(model) && item.branchId === undefined) {
+                      item.branchId = store.branchId;
+                    }
+                  });
+                }
+              }
+            }
+
+            return query(anyArgs);
+          }
+        }
+      }
+    });
+  }
+
   async onModuleInit() {
     await this.$connect();
-
-    // Hook dynamic tenant and branch isolation middleware
-    (this as any).$use(async (params: any, next: any) => {
-      const store = tenancyStore.getStore();
-      
-      // Bypass query isolation if there is no active tenancy session
-      if (!store || !params.model) {
-        return next(params);
-      }
-
-      const modelName = params.model;
-      params.args = params.args || {};
-      params.args.where = params.args.where || {};
-
-      // 1. Inject Tenant Isolation
-      if (store.tenantId && this.modelsWithTenantId.has(modelName)) {
-        if (params.args.where.tenantId === undefined) {
-          params.args.where.tenantId = store.tenantId;
-        }
-      }
-
-      // 2. Inject Branch-level Isolation
-      if (store.branchId && this.modelsWithBranchId.has(modelName)) {
-        if (params.args.where.branchId === undefined) {
-          params.args.where.branchId = store.branchId;
-        }
-      }
-
-      // 3. Inject Soft Delete Filtration
-      if (this.modelsWithDeletedAt.has(modelName)) {
-        if (params.args.where.deletedAt === undefined) {
-          params.args.where.deletedAt = null;
-        }
-      }
-
-      return next(params);
-    });
+    this.extendedClient = this.extend(this);
 
     const readReplicaUrl = process.env.DB_READ_REPLICA_URL;
     if (readReplicaUrl) {
-      this.readReplicaClient = new PrismaClient({
+      const baseReplica = new PrismaClient({
         datasources: {
           db: {
             url: readReplicaUrl,
           },
         },
       });
-      await this.readReplicaClient.$connect();
+      await baseReplica.$connect();
+      this.readReplicaClient = this.extend(baseReplica) as any;
     }
   }
 

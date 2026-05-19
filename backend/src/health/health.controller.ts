@@ -1,7 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import {
   HealthCheckService,
-  HttpHealthIndicator,
   HealthCheck,
   PrismaHealthIndicator,
   DiskHealthIndicator,
@@ -16,10 +15,10 @@ import { Queue } from 'bullmq';
 @Controller('health')
 export class HealthController {
   private readonly redisClient: Redis;
+  private readonly logger = new Logger(HealthController.name);
 
   constructor(
     private health: HealthCheckService,
-    private http: HttpHealthIndicator,
     private prismaHealth: PrismaHealthIndicator,
     private prisma: PrismaService,
     private disk: DiskHealthIndicator,
@@ -48,6 +47,7 @@ export class HealthController {
           sentinelPassword: password || undefined,
           lazyConnect: true,
           connectTimeout: 5000,
+          maxRetriesPerRequest: null,
         }
       : {
           host,
@@ -55,9 +55,13 @@ export class HealthController {
           password,
           lazyConnect: true,
           connectTimeout: 5000,
+          maxRetriesPerRequest: null,
         };
 
     this.redisClient = new Redis(redisOptions);
+    this.redisClient.on('error', (err) => {
+      this.logger.warn(`HealthController Redis error: ${err.message}`);
+    });
   }
 
   /**

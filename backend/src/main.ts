@@ -6,7 +6,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
-import * as compression from 'compression';
+import compression from 'compression';
 import { Request, Response, NextFunction } from 'express';
 import { RedisIoAdapter } from './socket/redis-io.adapter';
 import { StructuredLogger } from './common/logging/structured-logger.service';
@@ -15,6 +15,27 @@ import { StructuredLogger } from './common/logging/structured-logger.service';
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
+
+import * as net from 'net';
+
+async function checkRedisAlive(host: string, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+    socket.setTimeout(400);
+    socket.on('connect', () => {
+      socket.end();
+      resolve(true);
+    });
+    socket.on('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.on('error', () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
 
 async function bootstrap() {
   const logger = new StructuredLogger('Bootstrap');
@@ -27,8 +48,37 @@ async function bootstrap() {
   // Enable Graceful Container Shutdown hooks
   app.enableShutdownHooks();
 
-  const redisIoAdapter = new RedisIoAdapter(app);
-  app.useWebSocketAdapter(redisIoAdapter);
+  const host = configService.get<string>('REDIS_HOST') || 'localhost';
+  const redisPort = Number(configService.get('REDIS_PORT')) || 6379;
+  const isSentinel = configService.get('REDIS_SENTINEL_ENABLED') === 'true';
+  const sentinelNodesStr = configService.get('REDIS_SENTINEL_NODES') || '';
+
+  let redisAvailable = false;
+  try {
+    if (isSentinel && sentinelNodesStr) {
+      const nodes = sentinelNodesStr.split(',');
+      for (const node of nodes) {
+        const [shost, sport] = node.trim().split(':');
+        const alive = await checkRedisAlive(shost, parseInt(sport, 10));
+        if (alive) {
+          redisAvailable = true;
+          break;
+        }
+      }
+    } else {
+      redisAvailable = await checkRedisAlive(host, redisPort);
+    }
+  } catch (err) {
+    redisAvailable = false;
+  }
+
+  if (redisAvailable) {
+    logger.log('Redis is reachable. Registering RedisIoAdapter for horizontal WebSocket scaling.');
+    const redisIoAdapter = new RedisIoAdapter(app);
+    app.useWebSocketAdapter(redisIoAdapter);
+  } else {
+    logger.warn(`Redis is not reachable at ${host}:${redisPort}. Falling back gracefully to NestJS standard in-memory WebSocket adapter.`);
+  }
 
   // Security Hardening
   app.use(

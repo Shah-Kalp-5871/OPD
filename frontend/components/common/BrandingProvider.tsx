@@ -17,7 +17,7 @@ export default function BrandingProvider({
     // Register Service Worker for Offline operational capability
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(
+        navigator.serviceWorker.register('/opd/sw.js').then(
           (registration) => {
             console.log('[PWA] ServiceWorker successfully registered with scope: ', registration.scope);
           },

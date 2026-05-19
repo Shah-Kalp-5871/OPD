@@ -16,7 +16,7 @@ import { TenantGuard } from '../guards/tenant.guard';
 // Custom metadata helper to mark routes as public
 const Public = () => SetMetadata('isPublic', true);
 
-@Controller('api/v2/tenants')
+@Controller('v2/tenants')
 export class TenantController {
   constructor(private readonly onboardingService: TenantOnboardingService) {}
 

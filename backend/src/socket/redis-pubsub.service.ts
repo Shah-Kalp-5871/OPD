@@ -2,12 +2,33 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { AppGateway } from './app.gateway';
+import * as net from 'net';
+
+async function checkRedisAlive(host: string, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port });
+    socket.setTimeout(400);
+    socket.on('connect', () => {
+      socket.end();
+      resolve(true);
+    });
+    socket.on('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.on('error', () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
 
 @Injectable()
 export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisPubSubService.name);
-  private pubClient: Redis;
-  private subClient: Redis;
+  private pubClient: Redis | null = null;
+  private subClient: Redis | null = null;
+  private isFallbackMode = false;
   private readonly channel = 'opd:queue:sync';
 
   constructor(
@@ -25,6 +46,27 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
     const sentinelMaster = this.configService.get<string>('REDIS_SENTINEL_MASTER') || 'mymaster';
     const sentinelNodesStr = this.configService.get<string>('REDIS_SENTINEL_NODES') || '';
 
+    let redisAvailable = false;
+    if (isSentinel && sentinelNodesStr) {
+      const nodes = sentinelNodesStr.split(',');
+      for (const node of nodes) {
+        const [shost, sport] = node.trim().split(':');
+        const alive = await checkRedisAlive(shost, parseInt(sport, 10));
+        if (alive) {
+          redisAvailable = true;
+          break;
+        }
+      }
+    } else {
+      redisAvailable = await checkRedisAlive(host, port);
+    }
+
+    if (!redisAvailable) {
+      this.logger.warn(`Redis is not reachable at ${host}:${port}. Falling back gracefully to LOCAL Pub/Sub mode.`);
+      this.isFallbackMode = true;
+      return;
+    }
+
     const redisOptions: any = isSentinel && sentinelNodesStr
       ? {
           sentinels: sentinelNodesStr.split(',').map((node) => {
@@ -41,10 +83,18 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
     redisOptions.retryStrategy = (times: number) => Math.min(times * 150, 5000);
     redisOptions.reconnectOnError = (err: Error) =>
       err.message.includes('READONLY') || err.message.includes('LOADING');
+    redisOptions.maxRetriesPerRequest = null;
 
     try {
       this.pubClient = new Redis(redisOptions);
       this.subClient = this.pubClient.duplicate();
+
+      this.pubClient.on('error', (err) => {
+        this.logger.warn(`RedisPubSubService pubClient error: ${err.message}`);
+      });
+      this.subClient.on('error', (err) => {
+        this.logger.warn(`RedisPubSubService subClient error: ${err.message}`);
+      });
 
       // Listen for messages
       this.subClient.on('message', (channel, message) => {
@@ -53,8 +103,13 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
         }
       });
 
-      await this.subClient.subscribe(this.channel);
-      this.logger.log(`Successfully subscribed to Redis channel: ${this.channel}`);
+      this.subClient.subscribe(this.channel)
+        .then(() => {
+          this.logger.log(`Successfully subscribed to Redis channel: ${this.channel}`);
+        })
+        .catch((error) => {
+          this.logger.error(`Failed to subscribe to Redis channel: ${error.message}`);
+        });
     } catch (error) {
       this.logger.error(`Failed to initialize Redis Pub/Sub: ${error.message}`);
     }
@@ -75,6 +130,16 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
    * Publish an event to the Redis Pub/Sub channel
    */
   async publish(event: string, payload: any) {
+    if (this.isFallbackMode) {
+      try {
+        const message = JSON.stringify({ event, payload, timestamp: new Date().toISOString() });
+        this.handleIncomingMessage(message);
+      } catch (error: any) {
+        this.logger.error(`Local fallback publish failed: ${error.message}`);
+      }
+      return;
+    }
+
     if (!this.pubClient) {
       this.logger.error('Redis publisher client is not initialized');
       return;
@@ -84,7 +149,7 @@ export class RedisPubSubService implements OnModuleInit, OnModuleDestroy {
       const message = JSON.stringify({ event, payload, timestamp: new Date().toISOString() });
       await this.pubClient.publish(this.channel, message);
       this.logger.debug(`Published event [${event}] to Redis channel [${this.channel}]`);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Failed to publish event to Redis: ${error.message}`);
     }
   }

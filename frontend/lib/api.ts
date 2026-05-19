@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { ROUTES, buildAppUrl } from '@/constants/routes';
+import { APP_CONFIG } from '@/lib/config';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: `${APP_CONFIG.API_BASE_URL}/api`,
 });
 
 export const secureFileUrl = (url: string) => {
@@ -10,7 +13,7 @@ export const secureFileUrl = (url: string) => {
   let resolvedUrl = url;
 
   if (typeof window !== 'undefined') {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin;
+    const baseUrl = APP_CONFIG.API_BASE_URL || window.location.origin;
 
     if (url.startsWith('/')) {
       resolvedUrl = `${baseUrl.replace(/\/$/, '')}${url}`;
@@ -51,8 +54,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Auto logout on unauthorized
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('auth-storage'); // Zustand persist key
+        useAuthStore.getState().logout();
+        toast.error('Session expired. Please login again.');
         
         const loginUrl = buildAppUrl(ROUTES.LOGIN);
         if (!window.location.pathname.includes(loginUrl)) {

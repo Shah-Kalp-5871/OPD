@@ -6,6 +6,8 @@ interface QueueSSEOptions {
   doctorId?: string;
 }
 
+import { getApiUrl } from '@/lib/path-utils';
+
 export const useQueueSSE = (options: QueueSSEOptions = {}) => {
   const [entries, setEntries] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
@@ -18,7 +20,7 @@ export const useQueueSSE = (options: QueueSSEOptions = {}) => {
       return;
     }
 
-    const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/events/queue?token=${encodeURIComponent(token)}`);
+    const eventSource = new EventSource(getApiUrl(`/events/queue?token=${encodeURIComponent(token)}`));
 
     eventSource.onmessage = (event) => {
       try {

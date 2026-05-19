@@ -8,7 +8,7 @@ import { TelemetryService } from '../metrics/telemetry.service';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('SUPERADMIN', 'BRANCH_ADMIN', 'CLINIC_MANAGER', 'CENTRAL_FINANCE', 'CENTRAL_PHARMACY')
+@Roles('SUPERADMIN', 'BRANCH_ADMIN', 'CLINIC_MANAGER', 'CENTRAL_FINANCE', 'CENTRAL_PHARMACY', 'ADMIN')
 export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
@@ -26,7 +26,7 @@ export class AnalyticsController {
   }
 
   @Get('enterprise/branch-comparison')
-  @Roles('SUPERADMIN', 'CENTRAL_FINANCE')
+  @Roles('SUPERADMIN', 'CENTRAL_FINANCE', 'ADMIN')
   async getEnterpriseBranchComparison(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,

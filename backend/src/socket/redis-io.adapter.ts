@@ -37,9 +37,17 @@ export class RedisIoAdapter extends IoAdapter {
     redisOptions.reconnectOnError = (err: Error) => {
       return err.message.includes('READONLY') || err.message.includes('LOADING');
     };
+    redisOptions.maxRetriesPerRequest = null;
 
     const pubClient = new Redis(redisOptions);
     const subClient = pubClient.duplicate();
+
+    pubClient.on('error', (err) => {
+      // Suppress unhandled error crash
+    });
+    subClient.on('error', (err) => {
+      // Suppress unhandled error crash
+    });
 
     this.adapterConstructor = createAdapter(pubClient, subClient);
   }
