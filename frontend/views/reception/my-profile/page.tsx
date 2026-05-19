@@ -64,11 +64,7 @@ const MyProfileView = () => {
     fetchProfile();
   }, []);
 
-  const attendanceStats = [
-    { label: 'Present Days', value: '22 Days', color: 'text-teal-600', bg: 'bg-teal-50' },
-    { label: 'Absent Days', value: '2 Days', color: 'text-rose-500', bg: 'bg-rose-50' },
-    { label: 'Total Hours', value: '198 hrs', color: 'text-blue-600', bg: 'bg-blue-50' }
-  ];
+
 
   if (loading) {
     return (
@@ -225,23 +221,6 @@ const MyProfileView = () => {
                     <button className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all border border-rose-100">
                        <Trash2 className="w-4 h-4" />
                     </button>
-                 </div>
-              </div>
-
-              {/* 🔷 SECTION 5: ATTENDANCE SNAPSHOT */}
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                 <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">This Month Attendance</h3>
-                 </div>
-                 <div className="p-8 space-y-4">
-                    {attendanceStats.map((stat, idx) => (
-                      <div key={idx} className={`${stat.bg} p-5 rounded-2xl border border-slate-50 flex items-center justify-between`}>
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
-                         <span className={`text-xs font-black uppercase tracking-widest ${stat.color}`}>{stat.value}</span>
-                      </div>
-                    ))}
-                    <p className="text-[9px] font-bold text-slate-300 text-center uppercase tracking-widest pt-2 italic">Data synced from biometric portal</p>
                  </div>
               </div>
 
