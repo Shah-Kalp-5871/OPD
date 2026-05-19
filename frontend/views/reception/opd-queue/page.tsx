@@ -71,8 +71,10 @@ const OpdQueueView = () => {
         ? `/appointments?date=${today}` 
         : `/appointments?date=${today}&doctorId=${selectedDoctor}`;
       const response = await api.get(url);
+      // Backend returns { data: [...], meta: { total, page, ... } }
+      const list: any[] = response.data?.data ?? response.data ?? [];
       // Only show scheduled ones (not yet arrived)
-      setAppointments(response.data.filter((a: any) => a.status === 'SCHEDULED'));
+      setAppointments(list.filter((a: any) => a.status === 'SCHEDULED'));
     } catch (error) {
       toast.error('Failed to load appointments');
     } finally {
