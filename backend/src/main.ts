@@ -7,7 +7,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import compression from 'compression';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, json, urlencoded } from 'express';
 import { RedisIoAdapter } from './socket/redis-io.adapter';
 import { StructuredLogger } from './common/logging/structured-logger.service';
 
@@ -79,6 +79,9 @@ async function bootstrap() {
   } else {
     logger.warn(`Redis is not reachable at ${host}:${redisPort}. Falling back gracefully to NestJS standard in-memory WebSocket adapter.`);
   }
+
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ limit: '10mb', extended: true }));
 
   // Security Hardening
   app.use(
