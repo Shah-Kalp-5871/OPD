@@ -6,6 +6,9 @@ interface User {
   name: string;
   email: string;
   role: string;
+  primaryBranchId?: string;
+  branchAccess?: string[];
+  permissions?: string[];
 }
 
 interface AuthState {

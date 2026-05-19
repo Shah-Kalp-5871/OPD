@@ -28,9 +28,48 @@ async function main() {
   await prisma.adminProfile.deleteMany();
   await prisma.receptionProfile.deleteMany();
   await prisma.terminologyConcept.deleteMany();
+  
+  // Clean Tenancy and Workspace structure
+  await prisma.tenantDomain.deleteMany();
+  await prisma.tenantBranding.deleteMany();
+  await prisma.tenantSubscription.deleteMany();
+  await prisma.tenantUser.deleteMany();
+  await prisma.branch.deleteMany();
+  await prisma.clinic.deleteMany();
+  await prisma.tenant.deleteMany();
   await prisma.user.deleteMany();
 
+
   const password = await bcrypt.hash('123456', 10);
+
+  console.log('Seeding default tenant and subscription...');
+  const defaultTenant = await prisma.tenant.create({
+    data: {
+      id: 'DEFAULT-TENANT',
+      name: 'Default Tenant',
+      slug: 'default',
+      isActive: true,
+      subscription: {
+        create: {
+          plan: 'TRIAL',
+          status: 'TRIAL',
+          seatsCount: 10,
+          trialEndsAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        },
+      },
+      branding: {
+        create: {
+          companyName: 'MedFlow Healthcare Group',
+        },
+      },
+      domains: {
+        create: [
+          { domain: 'localhost', isVerified: true, dnsToken: 'local-dev-token-localhost' },
+          { domain: '127.0.0.1', isVerified: true, dnsToken: 'local-dev-token-127.0.0.1' },
+        ],
+      },
+    },
+  });
 
   // 1. Create Users & Profiles
   console.log('Creating fresh users and profiles...');
@@ -166,15 +205,53 @@ async function main() {
     },
   });
 
+  // Link all users to the default tenant
+  console.log('Linking seeded users to default tenant...');
+  const seededUsers = await prisma.user.findMany();
+  for (const user of seededUsers) {
+    let tenantRole = 'TENANT_ADMIN';
+    if (user.role === Role.ADMIN) {
+      tenantRole = 'SUPER_ADMIN';
+    } else if (user.role === Role.DOCTOR) {
+      tenantRole = 'DOCTOR';
+    } else if (user.role === Role.RECEPTION) {
+      tenantRole = 'RECEPTIONIST';
+    } else if (user.role === Role.NURSING) {
+      tenantRole = 'NURSING';
+    } else if (user.role === Role.MEDICAL) {
+      tenantRole = 'STAFF';
+    }
+
+    await prisma.tenantUser.upsert({
+      where: {
+        tenantId_userId: {
+          tenantId: 'DEFAULT-TENANT',
+          userId: user.id,
+        },
+      },
+      update: {
+        role: tenantRole,
+      },
+      create: {
+        tenantId: 'DEFAULT-TENANT',
+        userId: user.id,
+        role: tenantRole,
+      },
+    });
+  }
+
   // 1.5. Create Default Clinic and Branch
   console.log('Creating default clinic and branch...');
   const clinic = await prisma.clinic.upsert({
     where: { id: 'DEFAULT-CLINIC' },
-    update: {},
+    update: {
+      tenantId: 'DEFAULT-TENANT',
+    },
     create: {
       id: 'DEFAULT-CLINIC',
       name: 'MedFlow Healthcare Group',
       country: 'India',
+      tenantId: 'DEFAULT-TENANT',
     },
   });
 
@@ -192,6 +269,29 @@ async function main() {
     },
   });
   const branchId = mainBranch.id;
+
+  // Link all users to the default branch and set primaryBranchId
+  console.log('Linking seeded users to default branch...');
+  for (const user of seededUsers) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { primaryBranchId: branchId },
+    });
+
+    await prisma.userBranchAccess.upsert({
+      where: {
+        userId_branchId: {
+          userId: user.id,
+          branchId: branchId,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        branchId: branchId,
+      },
+    });
+  }
 
   // 2. Create Sample Patients
   console.log('Creating sample patients...');

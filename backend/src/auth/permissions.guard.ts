@@ -108,8 +108,8 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    // 3. Verify each required permission is present
-    const hasPermission = requiredPermissions.every((perm) => userPermissionsSet.has(perm));
+    // 3. Verify at least one of the required permissions is present (OR logic)
+    const hasPermission = requiredPermissions.some((perm) => userPermissionsSet.has(perm));
 
     if (!hasPermission) {
       throw new ForbiddenException('Access denied: insufficient permissions');

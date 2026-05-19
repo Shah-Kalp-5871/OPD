@@ -56,7 +56,7 @@ const BookAppointmentView = () => {
       const res = await api.get('/doctors');
       setDoctors(res.data);
       if (res.data.length > 0) {
-        setSelectedDoctorId(res.data[0].id);
+        setSelectedDoctorId(res.data[0].doctorProfile?.id || res.data[0].id);
       }
     } catch (error) {
       toast.error('Failed to load doctors');
@@ -265,25 +265,28 @@ const BookAppointmentView = () => {
                     <div className="space-y-3">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Assign Consultant *</label>
                        <div className="grid grid-cols-1 gap-3">
-                          {doctors.map(doc => (
+                          {doctors.map(doc => {
+                             const profileId = doc.doctorProfile?.id || doc.id;
+                             return (
                             <button 
                             key={doc.id}
-                            onClick={() => setSelectedDoctorId(doc.id)}
+                            onClick={() => setSelectedDoctorId(profileId)}
                               disabled={isSubmitting}
-                              className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedDoctorId === doc.id ? 'bg-teal-50 border-teal-600' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}
+                              className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedDoctorId === profileId ? 'bg-teal-50 border-teal-600' : 'bg-slate-50 border-transparent hover:border-slate-200'}`}
                             >
                                <div className="flex items-center gap-3">
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${selectedDoctorId === doc.id ? 'bg-teal-600 text-white' : 'bg-white text-slate-400'}`}>
-                                     {doc.user.name.charAt(0)}
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${selectedDoctorId === profileId ? 'bg-teal-600 text-white' : 'bg-white text-slate-400'}`}>
+                                     {(doc.name || doc.user?.name || '').charAt(0)}
                                   </div>
                                   <div className="text-left">
-                                     <p className={`text-[11px] font-black uppercase tracking-tight leading-none mb-1 ${selectedDoctorId === doc.id ? 'text-teal-700' : 'text-slate-700'}`}>DR. {doc.user.name.toUpperCase()}</p>
-                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{doc.specialization || 'Consultant'}</p>
+                                     <p className={`text-[11px] font-black uppercase tracking-tight leading-none mb-1 ${selectedDoctorId === profileId ? 'text-teal-700' : 'text-slate-700'}`}>DR. {(doc.name || doc.user?.name || '').toUpperCase()}</p>
+                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{(doc.doctorProfile?.specialization || doc.specialization) || 'Consultant'}</p>
                                   </div>
                                </div>
-                               {selectedDoctorId === doc.id && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
+                               {selectedDoctorId === profileId && <CheckCircle2 className="w-5 h-5 text-teal-600" />}
                             </button>
-                          ))}
+                             );
+                          })}
                        </div>
                     </div>
 

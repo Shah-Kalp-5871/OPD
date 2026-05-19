@@ -30,12 +30,18 @@ export const secureFileUrl = (url: string) => {
   return resolvedUrl;
 };
 
-// Add a request interceptor to include the JWT token
+// Add a request interceptor to include the JWT token and active branch ID
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Retrieve the active branch ID from the auth store and add to headers
+    const user = useAuthStore.getState().user;
+    if (user && user.primaryBranchId) {
+      config.headers['x-branch-id'] = user.primaryBranchId;
     }
   }
   return config;

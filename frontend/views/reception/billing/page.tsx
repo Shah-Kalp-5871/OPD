@@ -88,7 +88,11 @@ const BillingView = () => {
     setIsLoading(true);
     try {
       const response = await api.get('/billing/list/pending');
-      setPendingBills(response.data);
+      // Handle either paginated envelope { data: [...], meta: ... } or direct array
+      const bills = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.data || []);
+      setPendingBills(bills);
     } catch (error) {
       toast.error('Failed to fetch pending bills');
     } finally {
