@@ -37,7 +37,7 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Retrieve the active branch ID from the auth store and add to headers
     const user = useAuthStore.getState().user;
     if (user && user.primaryBranchId) {
@@ -62,7 +62,7 @@ api.interceptors.response.use(
       if (typeof window !== 'undefined') {
         useAuthStore.getState().logout();
         toast.error('Session expired. Please login again.');
-        
+
         const loginUrl = buildAppUrl(ROUTES.LOGIN);
         if (!window.location.pathname.includes(loginUrl)) {
           window.location.href = loginUrl;
