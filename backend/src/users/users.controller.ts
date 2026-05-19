@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Request, ConflictException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -15,5 +15,25 @@ export class UsersController {
       return result;
     }
     return null;
+  }
+
+  @Patch('me')
+  async updateMe(
+    @Request() req,
+    @Body() body: { name?: string; email?: string; mobile?: string },
+  ) {
+    try {
+      const user = await this.usersService.updateMe(req.user.id, body);
+      const { password, ...result } = user;
+      return result;
+    } catch (error) {
+      if (error.message === 'EMAIL_EXISTS') {
+        throw new ConflictException('Email address already in use by another user');
+      }
+      if (error.message === 'MOBILE_EXISTS') {
+        throw new ConflictException('Mobile number already in use by another user');
+      }
+      throw error;
+    }
   }
 }

@@ -30,6 +30,7 @@ import {
 
 const MyProfileView = () => {
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [profileData, setProfileData] = useState({
     fullName: '',
     email: '',
@@ -38,6 +39,33 @@ const MyProfileView = () => {
     role: '',
     branch: 'Surat Main Clinic' // Still hardcoded as branch is not in DB yet
   });
+
+  const handleUpdateProfile = async () => {
+    if (!profileData.fullName.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+    if (!profileData.email.trim()) {
+      toast.error('Email cannot be empty');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const response = await api.patch('/users/me', {
+        name: profileData.fullName,
+        email: profileData.email,
+        mobile: profileData.contact
+      });
+      toast.success('Profile updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update profile';
+      toast.error(errorMessage);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -169,11 +197,16 @@ const MyProfileView = () => {
                     
                     <div className="mt-10 flex justify-end">
                        <button 
-                         onClick={() => toast.success('Profile update feature coming soon!')}
-                         className="flex items-center gap-3 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-100 group"
+                         onClick={handleUpdateProfile}
+                         disabled={isUpdating}
+                         className="flex items-center gap-3 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-100 group"
                        >
-                          <Save className="w-4 h-4 transition-transform group-hover:scale-110" />
-                          Update Profile
+                          {isUpdating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4 transition-transform group-hover:scale-110" />
+                          )}
+                          {isUpdating ? 'Updating...' : 'Update Profile'}
                        </button>
                     </div>
                  </div>

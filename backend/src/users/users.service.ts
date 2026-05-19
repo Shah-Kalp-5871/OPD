@@ -67,4 +67,35 @@ export class UsersService {
       data: { permissions },
     });
   }
+
+  async updateMe(id: string, data: { name?: string; email?: string; mobile?: string }) {
+    if (data.email) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          email: data.email,
+          NOT: { id },
+        },
+      });
+      if (existing) {
+        throw new Error('EMAIL_EXISTS');
+      }
+    }
+
+    if (data.mobile) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          mobile: data.mobile,
+          NOT: { id },
+        },
+      });
+      if (existing) {
+        throw new Error('MOBILE_EXISTS');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
 }
