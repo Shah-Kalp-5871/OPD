@@ -20,7 +20,7 @@ export class UsersController {
   @Patch('me')
   async updateMe(
     @Request() req,
-    @Body() body: { name?: string; email?: string; mobile?: string },
+    @Body() body: { name?: string; email?: string; mobile?: string; avatar?: string },
   ) {
     try {
       const user = await this.usersService.updateMe(req.user.id, body);

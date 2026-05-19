@@ -18,6 +18,7 @@ model User {
   isActive                Boolean                  @default(true)
   role                    Role
   mobile                  String?
+  avatar                  String?
   mfaSecret               String?
   mfaEnabled              Boolean                  @default(false)
   mfaBackupCodes          String?

@@ -11,9 +11,26 @@ import {
   Calendar,
   Clock
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 const ReceptionHeader = () => {
   const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
+
+  const displayName = user?.name || 'Jane Doe';
+  const displayRole = user?.role || 'Receptionist';
+  const avatar = user?.avatar;
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
+  const initials = getInitials(displayName) || 'JD';
 
   // Simple breadcrumb logic based on pathname
   const getBreadcrumbs = () => {
@@ -61,11 +78,15 @@ const ReceptionHeader = () => {
 
            <div className="flex items-center gap-3 pl-4 cursor-pointer group">
               <div className="text-right hidden sm:block">
-                 <p className="text-[10px] font-black text-slate-800 uppercase tracking-tighter leading-none">Jane Doe</p>
-                 <p className="text-[8px] font-bold text-teal-600 uppercase tracking-widest mt-1">Receptionist</p>
+                 <p className="text-[10px] font-black text-slate-800 uppercase tracking-tighter leading-none">{displayName}</p>
+                 <p className="text-[8px] font-bold text-teal-600 uppercase tracking-widest mt-1">{displayRole}</p>
               </div>
-              <div className="w-10 h-10 bg-teal-50 rounded-xl border border-teal-100 flex items-center justify-center text-teal-600 font-black text-xs group-hover:scale-105 transition-transform">
-                 JD
+              <div className="w-10 h-10 bg-teal-50 rounded-xl border border-teal-100 flex items-center justify-center text-teal-600 font-black text-xs group-hover:scale-105 transition-transform overflow-hidden">
+                 {avatar ? (
+                   <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
+                 ) : (
+                   initials
+                 )}
               </div>
               <ChevronDown className="w-4 h-4 text-slate-300 group-hover:text-teal-500 transition-colors" />
            </div>

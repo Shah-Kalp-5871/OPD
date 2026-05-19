@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
 import { 
   User, 
   Mail, 
@@ -37,8 +38,65 @@ const MyProfileView = () => {
     contact: '',
     empId: '---',
     role: '',
-    branch: 'Surat Main Clinic' // Still hardcoded as branch is not in DB yet
+    branch: 'Surat Main Clinic', // Still hardcoded as branch is not in DB yet
+    avatar: ''
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64String = reader.result as string;
+      
+      setProfileData((prev) => ({ ...prev, avatar: base64String }));
+      
+      try {
+        await api.patch('/users/me', { avatar: base64String });
+        
+        const currentAuthUser = useAuthStore.getState().user;
+        if (currentAuthUser) {
+          useAuthStore.getState().setAuth(
+            { ...currentAuthUser, avatar: base64String },
+            useAuthStore.getState().token || ''
+          );
+        }
+        
+        toast.success('Profile photo updated successfully!');
+      } catch (error) {
+        console.error('Error uploading avatar:', error);
+        toast.error('Failed to save profile photo');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeletePhoto = async () => {
+    try {
+      await api.patch('/users/me', { avatar: null });
+      setProfileData((prev) => ({ ...prev, avatar: '' }));
+      
+      const currentAuthUser = useAuthStore.getState().user;
+      if (currentAuthUser) {
+        useAuthStore.getState().setAuth(
+          { ...currentAuthUser, avatar: null },
+          useAuthStore.getState().token || ''
+        );
+      }
+      toast.success('Profile photo removed!');
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+      toast.error('Failed to remove profile photo');
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!profileData.fullName.trim()) {
@@ -79,8 +137,22 @@ const MyProfileView = () => {
           contact: user.mobile || '',
           empId: user.id.split('-')[0].toUpperCase(), // Using short ID as Emp ID for now
           role: user.role || '',
-          branch: 'Surat Main Clinic'
+          branch: 'Surat Main Clinic',
+          avatar: user.avatar || ''
         });
+
+        const currentAuthUser = useAuthStore.getState().user;
+        if (currentAuthUser) {
+          useAuthStore.getState().setAuth(
+            { 
+              ...currentAuthUser, 
+              name: user.name || currentAuthUser.name,
+              email: user.email || currentAuthUser.email,
+              avatar: user.avatar 
+            },
+            useAuthStore.getState().token || ''
+          );
+        }
       } catch (error) {
         console.error('Error fetching profile:', error);
         toast.error('Failed to load profile data');
@@ -236,26 +308,57 @@ const MyProfileView = () => {
            <div className="lg:col-span-4 space-y-10">
               
               {/* 🔷 SECTION 2: PROFILE PHOTO */}
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 flex flex-col items-center text-center space-y-6">
-                 <div className="relative group">
-                    <div className="w-32 h-32 rounded-full bg-slate-100 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center text-slate-300">
-                       <UserCircle2 className="w-20 h-20" />
-                    </div>
-                    <button className="absolute bottom-0 right-0 p-2.5 bg-teal-600 text-white rounded-full border-4 border-white shadow-lg hover:scale-110 transition-transform">
-                       <Camera className="w-4 h-4" />
-                    </button>
-                 </div>
-                 <div>
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-1">Profile Photo</h4>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Allowed JPG, GIF or PNG. Max size 2MB</p>
-                 </div>
-                 <div className="flex gap-3 w-full">
-                    <button className="flex-1 py-3 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all border border-slate-100">Upload New</button>
-                    <button className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all border border-rose-100">
-                       <Trash2 className="w-4 h-4" />
-                    </button>
-                 </div>
-              </div>
+               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 flex flex-col items-center text-center space-y-6">
+                  <div className="relative group">
+                     <div 
+                       onClick={() => fileInputRef.current?.click()}
+                       className="w-32 h-32 rounded-full bg-slate-100 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center text-slate-300 relative cursor-pointer hover:opacity-90 transition-opacity"
+                     >
+                        {profileData.avatar ? (
+                          <img src={profileData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          profileData.fullName ? (
+                            <span className="text-2xl font-black text-teal-600 uppercase tracking-widest">
+                              {profileData.fullName.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                            </span>
+                          ) : (
+                            <UserCircle2 className="w-20 h-20" />
+                          )
+                        )}
+                     </div>
+                     <button 
+                       onClick={() => fileInputRef.current?.click()}
+                       className="absolute bottom-0 right-0 p-2.5 bg-teal-600 text-white rounded-full border-4 border-white shadow-lg hover:scale-110 transition-transform"
+                     >
+                        <Camera className="w-4 h-4" />
+                     </button>
+                  </div>
+                  <div>
+                     <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-1">Profile Photo</h4>
+                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Allowed JPG, GIF or PNG. Max size 2MB</p>
+                  </div>
+                  <div className="flex gap-3 w-full">
+                     <input 
+                       type="file" 
+                       ref={fileInputRef} 
+                       accept="image/*" 
+                       onChange={handleFileChange} 
+                       className="hidden" 
+                     />
+                     <button 
+                       onClick={() => fileInputRef.current?.click()}
+                       className="flex-1 py-3 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all border border-slate-100"
+                     >
+                       Upload New
+                     </button>
+                     <button 
+                       onClick={handleDeletePhoto}
+                       className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-all border border-rose-100"
+                     >
+                        <Trash2 className="w-4 h-4" />
+                     </button>
+                  </div>
+               </div>
 
               {/* 🔷 SECTION 4: DEVICE / SESSION INFO */}
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">

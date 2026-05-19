@@ -68,7 +68,7 @@ export class UsersService {
     });
   }
 
-  async updateMe(id: string, data: { name?: string; email?: string; mobile?: string }) {
+  async updateMe(id: string, data: { name?: string; email?: string; mobile?: string; avatar?: string }) {
     if (data.email) {
       const existing = await this.prisma.user.findFirst({
         where: {

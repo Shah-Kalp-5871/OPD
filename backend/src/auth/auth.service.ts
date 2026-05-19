@@ -61,6 +61,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar,
         primaryBranchId: user.primaryBranchId,
         branchAccess: user.branchAccess?.map((b: any) => b.branchId) || [],
         permissions: user.permissions || [],
