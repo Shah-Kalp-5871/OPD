@@ -37,10 +37,15 @@ const PatientSearchView = () => {
     setIsLoading(true);
     try {
       const response = await api.get(`/patients/search?q=${query}&page=${page}&limit=${pagination?.limit || 10}`);
-      console.log('Search API Response:', response);
-      if (response.data && response.data.meta) {
-        setPatients(response.data.data || []);
-        setPagination(response.data.meta);
+      const data = response.data || response;
+      if (data) {
+        setPatients(data.items || []);
+        setPagination({
+          total: data.total || 0,
+          page: Number(data.page) || 1,
+          limit: Number(data.limit) || 10,
+          totalPages: data.totalPages || 1
+        });
       }
     } catch (error) {
       console.error('Failed to fetch patients:', error);
