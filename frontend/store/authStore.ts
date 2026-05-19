@@ -32,9 +32,14 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('token');
         localStorage.removeItem('auth-storage');
         sessionStorage.clear();
-        // Clear cookies (must match path used in login)
-        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/opd/;";
-        document.cookie = "user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/opd/;";
+        
+        // Clear cookies across all potential paths to ensure complete deletion and prevent redirect loop
+        const paths = ['/', '/opd', '/opd/'];
+        paths.forEach(p => {
+          document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${p};`;
+          document.cookie = `user_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${p};`;
+        });
+        
         set({ user: null, token: null });
       },
     }),
