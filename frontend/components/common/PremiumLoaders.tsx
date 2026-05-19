@@ -4,51 +4,102 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, AlertCircle, Database } from 'lucide-react';
 
-// Cybernetic dark-mode full-screen glass panel with neon pulse
-export const FullPageLoader: React.FC<{ message?: string }> = ({ message = 'Initializing MedFlow Quantum Core...' }) => {
+// Elegant, clinical-grade full-screen glass panel with moving ECG heartbeat (pulse) and cycling workspace tasks
+export const FullPageLoader: React.FC<{ message?: string }> = ({ message }) => {
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const steps = [
+    'Verifying credentials & session layers...',
+    'Establishing secure branch isolation...',
+    'Synchronizing patient data indexes...',
+    'Pre-fetching local pharmacy cache...',
+    'Loading live queue monitors...',
+    'Securing clinical communications...'
+  ];
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => (prev + 1) % steps.length);
+    }, 1600);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-xl flex flex-col items-center justify-center overflow-hidden">
-      {/* Ambient background glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] animate-pulse-slow" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] animate-pulse-slow" />
+    <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center overflow-hidden">
+      {/* Soft floating diagnostic ambient glows */}
+      <div className="absolute top-1/3 left-1/3 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px] animate-pulse-slow pointer-events-none" />
+      <div className="absolute bottom-1/3 right-1/3 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] animate-pulse-slow pointer-events-none" />
       
-      <div className="relative flex flex-col items-center space-y-6 max-w-md text-center p-8 rounded-3xl bg-slate-900/40 border border-slate-800/60 shadow-2xl backdrop-blur-md">
-        {/* Animated outer ring spinner */}
-        <div className="relative w-20 h-20">
-          <div className="absolute inset-0 rounded-full border-4 border-slate-800" />
-          <motion.div 
-            className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-indigo-500"
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-          />
-          <div className="absolute inset-2 rounded-full border-4 border-slate-800/30" />
-          <motion.div 
-            className="absolute inset-2 rounded-full border-4 border-transparent border-b-teal-500 border-l-cyan-500"
-            animate={{ rotate: -360 }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+      <div className="relative flex flex-col items-center space-y-8 max-w-md text-center p-10 rounded-[32px] bg-white/70 border border-slate-200/80 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-lg">
+        {/* Animated Clinical ECG Heartbeat (ECG Loop) */}
+        <div className="relative w-48 h-20 bg-slate-50 rounded-2xl border border-slate-100/50 flex items-center justify-center p-4 overflow-hidden">
+          {/* Diagnostic Grid Background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:10px_10px] opacity-60" />
+          
+          <svg className="w-full h-full relative z-10" viewBox="0 0 160 80">
+            <defs>
+              <linearGradient id="ecg-gradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.4" />
+                <stop offset="50%" stopColor="#06b6d4" stopOpacity="1" />
+                <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.4" />
+              </linearGradient>
+            </defs>
+            {/* Background trace line */}
+            <path
+              d="M 0 40 L 40 40 L 48 30 L 52 50 L 60 15 L 68 65 L 72 40 L 78 45 L 82 40 L 160 40"
+              fill="none"
+              stroke="#e2e8f0"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Animating heartbeat path */}
+            <motion.path
+              d="M 0 40 L 40 40 L 48 30 L 52 50 L 60 15 L 68 65 L 72 40 L 78 45 L 82 40 L 160 40"
+              fill="none"
+              stroke="url(#ecg-gradient)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              initial={{ pathLength: 0, strokeDasharray: '40 120' }}
+              animate={{ strokeDashoffset: -160 }}
+              transition={{
+                repeat: Infinity,
+                duration: 1.8,
+                ease: 'linear'
+              }}
+            />
+          </svg>
+        </div>
+
+        {/* Brand Signage & Realtime Activity */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-teal-500 animate-ping" />
+            <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-teal-600">
+              MedFlow Clinical Core
+            </h3>
+          </div>
+          
+          <div className="h-6 overflow-hidden">
+            <motion.p 
+              key={currentStep}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="text-xs font-black text-slate-700 uppercase tracking-wide font-mono"
+            >
+              {message || steps[currentStep]}
+            </motion.p>
           </div>
         </div>
 
-        {/* Loading text with pulse & shine effect */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-black uppercase tracking-widest bg-gradient-to-r from-blue-400 via-indigo-400 to-teal-400 bg-clip-text text-transparent animate-pulse">
-            SYSTEM LOAD IN PROGRESS
-          </h3>
-          <p className="text-xs font-bold text-slate-400/80 uppercase tracking-wider font-mono">
-            {message}
-          </p>
-        </div>
-
-        {/* Linear progress simulation */}
-        <div className="w-48 h-1 bg-slate-800/80 rounded-full overflow-hidden relative">
+        {/* High-fidelity Micro Progress bar */}
+        <div className="w-40 h-[4px] bg-slate-100 rounded-full overflow-hidden relative">
           <motion.div 
-            className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-blue-500 via-indigo-500 to-teal-500 rounded-full"
+            className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full"
             initial={{ width: '0%' }}
             animate={{ width: '100%' }}
-            transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+            transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
           />
         </div>
       </div>
