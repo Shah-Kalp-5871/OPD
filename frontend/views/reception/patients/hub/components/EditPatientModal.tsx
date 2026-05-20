@@ -159,6 +159,16 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
                   {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
                 </select>
               </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Marital Status</label>
+                <select {...profileForm.register('maritalStatus')} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-teal-600">
+                  <option value="">Select</option>
+                  <option value="SINGLE">Single</option>
+                  <option value="MARRIED">Married</option>
+                  <option value="DIVORCED">Divorced</option>
+                  <option value="WIDOWED">Widowed</option>
+                </select>
+              </div>
               <div className="col-span-2 space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Residential Address</label>
                 <textarea {...profileForm.register('address')} rows={3} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-teal-600" placeholder="Full home address..." />
@@ -166,6 +176,10 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">City</label>
                 <input {...profileForm.register('city')} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-teal-600" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">State</label>
+                <input {...profileForm.register('state')} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-teal-600" placeholder="e.g. Gujarat" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Occupation</label>
