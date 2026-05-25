@@ -454,7 +454,7 @@ export class PharmacyService {
 
     // Low stock needs raw query for field comparison
     const lowStock: any[] = await this.prisma.$queryRaw`
-      SELECT di.*, d.name as "drugName"
+      SELECT di.*, d."drugName"
       FROM "DrugInventory" di
       JOIN "Drug" d ON d.id = di."drugId"
       WHERE di."branchId" = ${branchId} AND (di."totalStock" <= di."reorderLevel" OR di."totalStock" = 0)

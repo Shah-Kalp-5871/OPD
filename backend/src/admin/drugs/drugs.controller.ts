@@ -22,25 +22,25 @@ export class DrugsController {
   constructor(private readonly drugsService: DrugsService) {}
 
   @Post()
-  @Roles('ADMIN', 'SUPERADMIN')
+  @Roles('ADMIN', 'SUPERADMIN', 'PHARMACY', 'MEDICAL')
   create(@Body() createDrugDto: CreateDrugDto) {
     return this.drugsService.create(createDrugDto);
   }
 
   @Get('masters/categories')
-  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING')
+  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING', 'MEDICAL')
   getCategories() {
     return this.drugsService.getCategories();
   }
 
   @Get('masters/formulations')
-  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING')
+  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING', 'MEDICAL')
   getFormulations() {
     return this.drugsService.getFormulations();
   }
 
   @Get()
-  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING')
+  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING', 'MEDICAL')
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -62,7 +62,7 @@ export class DrugsController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING')
+  @Roles('ADMIN', 'SUPERADMIN', 'DOCTOR', 'PHARMACY', 'NURSING', 'MEDICAL')
   findOne(@Param('id') id: string) {
     return this.drugsService.findOne(id);
   }

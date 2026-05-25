@@ -14,7 +14,7 @@ const MedicalLayout: React.FC<MedicalLayoutProps> = ({ children }) => {
       <MedicalSidebar />
       <div className="pl-64">
         <MedicalHeader />
-        <main className="pt-20 p-8 min-h-[calc(100vh-80px)]">
+        <main className="mt-20 p-8 min-h-[calc(100vh-80px)]">
           {children}
         </main>
       </div>
