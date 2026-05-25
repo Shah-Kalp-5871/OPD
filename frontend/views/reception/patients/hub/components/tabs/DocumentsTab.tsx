@@ -25,6 +25,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [documentType, setDocumentType] = useState('Prescription');
   const [documentNumber, setDocumentNumber] = useState('');
+  const [labName, setLabName] = useState('');
+  const [reportDate, setReportDate] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -124,6 +126,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
       await api.post(`/patients/${patient.id}/documents`, {
         documentType,
         documentNumber: documentNumber.trim() || undefined,
+        labName: labName.trim() || undefined,
+        reportDate: reportDate || undefined,
         fileUrl,
       });
 
@@ -166,6 +170,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
   const resetForm = () => {
     setDocumentType('Prescription');
     setDocumentNumber('');
+    setLabName('');
+    setReportDate('');
     setUploadedFile(null);
     setUploadProgress(0);
     setUploadError(null);
@@ -198,7 +204,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
             <thead className="bg-slate-50/80 border-b border-slate-100">
               <tr>
                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Type</th>
-                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference Number</th>
+                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Report Date</th>
+                <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Source / Ref</th>
                 <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Upload Date</th>
                 <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
               </tr>
@@ -218,14 +225,28 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                     </div>
                   </td>
                   <td className="px-6 py-6">
-                    {doc.documentNumber ? (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                        <FileDigit className="w-3.5 h-3.5 text-slate-400" />
-                        {doc.documentNumber}
+                    {doc.reportDate ? (
+                      <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        {new Date(doc.reportDate).toLocaleDateString()}
                       </div>
                     ) : (
                       <span className="text-xs font-bold text-slate-400">—</span>
                     )}
+                  </td>
+                  <td className="px-6 py-6 space-y-1">
+                    {doc.labName ? (
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                        {doc.labName}
+                      </div>
+                    ) : null}
+                    {doc.documentNumber ? (
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                        <FileDigit className="w-3.5 h-3.5" />
+                        {doc.documentNumber}
+                      </div>
+                    ) : null}
+                    {!doc.labName && !doc.documentNumber && <span className="text-xs font-bold text-slate-400">—</span>}
                   </td>
                   <td className="px-6 py-6">
                     <div className="flex items-center gap-1.5 text-xs font-black text-slate-800">
@@ -309,7 +330,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                   
                   {/* Document Type Dropdown */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Category</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Report Type / Category</label>
                     <select 
                       value={documentType}
                       onChange={(e) => setDocumentType(e.target.value)}
@@ -321,9 +342,32 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                     </select>
                   </div>
 
+                  {/* Report Date */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Report Date</label>
+                    <input 
+                      type="date" 
+                      value={reportDate}
+                      onChange={(e) => setReportDate(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black outline-none focus:border-slate-950 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  {/* Lab Name / Source */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lab Name / Source</label>
+                    <input 
+                      type="text" 
+                      value={labName}
+                      onChange={(e) => setLabName(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black outline-none focus:border-slate-950 focus:bg-white transition-all placeholder:text-slate-300"
+                      placeholder="e.g. Apollo Diagnostics"
+                    />
+                  </div>
+
                   {/* Document Number / Reference */}
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference / ID Number (Optional)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference Number (Optional)</label>
                     <input 
                       type="text" 
                       value={documentNumber}

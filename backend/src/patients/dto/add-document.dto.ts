@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
 
 export class AddPatientDocumentDto {
   @IsString()
@@ -8,6 +8,14 @@ export class AddPatientDocumentDto {
   @IsString()
   @IsOptional()
   documentNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  labName?: string;
+
+  @IsDateString()
+  @IsOptional()
+  reportDate?: string;
 
   @IsString()
   @IsNotEmpty()

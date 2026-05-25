@@ -510,6 +510,8 @@ export class PatientsService {
         patientId,
         documentType: dto.documentType,
         documentNumber: dto.documentNumber,
+        labName: dto.labName,
+        reportDate: dto.reportDate ? new Date(dto.reportDate) : undefined,
         fileUrl: dto.fileUrl,
       },
     });

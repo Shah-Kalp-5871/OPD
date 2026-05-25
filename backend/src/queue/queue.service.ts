@@ -346,10 +346,18 @@ export class QueueService {
       include: {
         patient: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             mrdNumber: true,
             gender: true,
+            isFoc: true,
+            profile: {
+              select: {
+                age: true,
+                dob: true
+              }
+            }
           },
         },
         case: {

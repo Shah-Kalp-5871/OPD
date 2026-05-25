@@ -11,19 +11,18 @@ import {
   Users, 
   Clock, 
   CheckCircle2, 
-  XCircle, 
   Activity, 
-  MoreVertical, 
-  Stethoscope,
   Search,
-  AlertCircle,
-  BellRing,
   PhoneCall,
   UserX,
-  UserCheck,
-  ChevronRight,
   FileSignature,
-  Upload
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  CheckSquare,
+  Square,
+  Eye
 } from 'lucide-react';
 
 const OpdQueueView = () => {
@@ -32,11 +31,19 @@ const OpdQueueView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
-  const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'live' | 'appointments'>('live');
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [isApptLoading, setIsApptLoading] = useState(false);
+  
+  // New Filters
+  const [dateFilter, setDateFilter] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [purposeFilter, setPurposeFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [ageRangeFilter, setAgeRangeFilter] = useState<string>('All');
+  
+  // Legend Selection
+  const [selectedLegends, setSelectedLegends] = useState<string[]>([]);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   const { entries: sseEntries, stats: sseStats, lastEvent } = useQueueSSE({
     doctorId: selectedDoctor === 'all' ? undefined : selectedDoctor
@@ -58,33 +65,11 @@ const OpdQueueView = () => {
     fetchQueue();
     fetchStats();
     fetchDoctors();
-    if (viewMode === 'appointments') {
-      fetchAppointments();
-    }
-  }, [selectedDoctor, viewMode]);
-
-  const fetchAppointments = async () => {
-    setIsApptLoading(true);
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const url = selectedDoctor === 'all' 
-        ? `/appointments?date=${today}` 
-        : `/appointments?date=${today}&doctorId=${selectedDoctor}`;
-      const response = await api.get(url);
-      // Backend returns { data: [...], meta: { total, page, ... } }
-      const list: any[] = response.data?.data ?? response.data ?? [];
-      // Only show scheduled ones (not yet arrived)
-      setAppointments(list.filter((a: any) => a.status === 'SCHEDULED'));
-    } catch (error) {
-      toast.error('Failed to load appointments');
-    } finally {
-      setIsApptLoading(false);
-    }
-  };
-
+  }, [selectedDoctor, dateFilter]); // Refresh if date changes
 
   const fetchQueue = async () => {
     try {
+      setIsLoading(true);
       const url = selectedDoctor === 'all' ? '/queue/live' : `/queue/live?doctorId=${selectedDoctor}`;
       const response = await api.get(url);
       setQueue(response.data);
@@ -113,433 +98,295 @@ const OpdQueueView = () => {
     }
   };
 
-  const handleUpdateStatus = async (id: string, status: string, actionLabel: string) => {
-    setIsActionLoading(id);
-    try {
-      await api.patch(`/queue/${id}/status`, { 
-        status, 
-        action: actionLabel 
-      });
-      toast.success(`Patient marked as ${status.replace('_', ' ')}`);
-      fetchQueue();
-      fetchStats();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update status');
-    } finally {
-      setIsActionLoading(null);
+  const toggleLegend = (legend: string) => {
+    if (selectedLegends.includes(legend)) {
+      setSelectedLegends(selectedLegends.filter(l => l !== legend));
+    } else {
+      setSelectedLegends([...selectedLegends, legend]);
     }
+    setCurrentPage(1);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'IN_SESSION': 
-        return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 animate-pulse">
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
-            <span className="text-[10px] font-black uppercase tracking-wider">In Doctor Room</span>
-          </div>
-        );
-      case 'CALLING': 
-        return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
-            <BellRing className="w-3 h-3 animate-bounce" />
-            <span className="text-[10px] font-black uppercase tracking-wider">Calling Now</span>
-          </div>
-        );
-      case 'NO_RESPONSE': 
-        return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-600 rounded-lg border border-amber-100">
-            <UserX className="w-3 h-3" />
-            <span className="text-[10px] font-black uppercase tracking-wider">No Response</span>
-          </div>
-        );
-      case 'COMPLETED': 
-        return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 text-slate-500 rounded-lg border border-slate-200 opacity-60">
-            <CheckCircle2 className="w-3 h-3" />
-            <span className="text-[10px] font-black uppercase tracking-wider">Consulted</span>
-          </div>
-        );
-      default: 
-        return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 text-slate-500 rounded-lg border border-slate-200">
-            <Clock className="w-3 h-3" />
-            <span className="text-[10px] font-black uppercase tracking-wider">Waiting</span>
-          </div>
-        );
-    }
+  const getVisitType = (entry: any) => {
+    return entry.case?.visitType || 'Consultation';
   };
 
-  const getBillStatusBadge = (status: string | undefined) => {
-    switch (status) {
-      case 'PAID':
-        return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[9px] font-black uppercase tracking-widest border border-emerald-200">PAID</span>;
-      case 'PARTIAL':
-        return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-black uppercase tracking-widest border border-amber-200">PARTIAL</span>;
-      case 'PENDING':
-        return <span className="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[9px] font-black uppercase tracking-widest border border-rose-200">PENDING</span>;
-      default:
-        return <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">UNBILLED</span>;
-    }
+  const getAgeSex = (entry: any) => {
+    const age = entry.patient?.profile?.age || '--';
+    const sex = entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U';
+    return `${age}/${sex}`;
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'EMERGENCY': return 'text-rose-600 bg-rose-50 border-rose-100';
-      case 'URGENT': return 'text-amber-600 bg-amber-50 border-amber-100';
-      default: return 'text-slate-600 bg-slate-50 border-slate-100';
-    }
+  const getBillingStatus = (entry: any) => {
+    if (entry.patient?.isFoc) return 'FOC';
+    return entry.case?.bill?.paymentStatus || 'PENDING';
   };
 
-  const filteredQueue = queue.filter(entry => 
-    entry.tokenDisplay.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${entry.patient.firstName} ${entry.patient.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.patient.mrdNumber.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const isNewPatient = (entry: any) => {
+    // Assuming if they have no ID or just created today, we can logic it.
+    // For now, simple mock based on FOC status or random logic if needed, but we'll default to OLD if not sure.
+    // Using isFoc to test highlighting if needed, or just let it be derived.
+    return false; // Replace with real logic if backend provides isNewPatient flag
+  };
+
+  // Filter Logic
+  let filteredQueue = queue.filter(entry => {
+    let match = true;
+    
+    // Status Filter dropdown
+    if (statusFilter !== 'All') {
+      if (statusFilter === 'Completed' && entry.status !== 'COMPLETED') match = false;
+      if (statusFilter === 'Waiting' && entry.status !== 'WAITING') match = false;
+      if (statusFilter === 'In Progress' && entry.status !== 'IN_SESSION') match = false;
+      if (statusFilter === 'Cancelled' && entry.status === 'CANCELLED') match = false;
+    }
+
+    // Purpose Filter
+    if (purposeFilter !== 'All') {
+      if (getVisitType(entry) !== purposeFilter) match = false;
+    }
+
+    // Legend Filters (Checkbox acting as OR filters if any selected)
+    if (selectedLegends.length > 0) {
+      let legendMatch = false;
+      if (selectedLegends.includes('Waiting') && entry.status === 'WAITING') legendMatch = true;
+      if (selectedLegends.includes('In Progress') && entry.status === 'IN_SESSION') legendMatch = true;
+      if (selectedLegends.includes('Completed') && entry.status === 'COMPLETED') legendMatch = true;
+      if (selectedLegends.includes('Cancelled') && entry.status === 'CANCELLED') legendMatch = true;
+      if (selectedLegends.includes('New Patient') && isNewPatient(entry)) legendMatch = true;
+      if (selectedLegends.includes('FOC') && getBillingStatus(entry) === 'FOC') legendMatch = true;
+      
+      if (!legendMatch) match = false;
+    }
+
+    return match;
+  });
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredQueue.length / itemsPerPage) || 1;
+  const currentQueueData = filteredQueue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const formatTime = (dateString: string) => {
+    if (!dateString) return '--:--';
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <ReceptionLayout>
-      <div className="max-w-[1600px] mx-auto space-y-8 pb-20 px-6">
+      <div className="max-w-[1600px] mx-auto space-y-6 pb-20 px-6">
         
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start justify-between bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
-           <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-3">
-                 <div className="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200">
-                    <Activity className="w-6 h-6 text-white animate-pulse" />
-                 </div>
-                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">OPD Control Board</h1>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Live Patient Flow Synchronizer</p>
-                 </div>
-              </div>
-
-              {/* Quick Actions Bar */}
-              <div className="flex flex-wrap gap-2 pt-2">
-                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-teal-50 text-slate-600 hover:text-teal-700 border border-slate-200 hover:border-teal-200 rounded-xl transition-all group">
-                    <Users className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">New Patient</span>
-                 </button>
-                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 hover:border-blue-200 rounded-xl transition-all group">
-                    <Clock className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">Book Appointment</span>
-                 </button>
-                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-700 border border-slate-200 hover:border-amber-200 rounded-xl transition-all group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <span className="text-[10px] font-black uppercase tracking-wider ml-6">Quick Search</span>
-                 </button>
-                 <button className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl transition-all group">
-                    <Activity className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">Billing View</span>
-                 </button>
-              </div>
-           </div>
-
-           <div className="flex flex-wrap gap-4 self-stretch">
-              <div className="bg-slate-50 rounded-3xl p-5 flex flex-col min-w-[140px] border border-slate-100 justify-between">
-                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Visit</span>
-                 <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-black text-slate-900 leading-none">{stats.total}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Today</span>
-                 </div>
-              </div>
-              <div className="bg-teal-50 border border-teal-100 rounded-3xl p-5 flex flex-col min-w-[140px] justify-between">
-                 <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest">In Session</span>
-                 <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-black text-teal-700 leading-none">{stats.checkedIn - stats.waiting}</span>
-                    <Activity className="w-4 h-4 text-teal-400 animate-pulse" />
-                 </div>
-              </div>
-              <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col min-w-[140px] justify-between">
-                 <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Waiting</span>
-                 <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-black text-amber-700 leading-none">{stats.waiting}</span>
-                    <Clock className="w-4 h-4 text-amber-400 animate-spin-slow" />
-                 </div>
-              </div>
-           </div>
-        </div>
-
-        {/* Filters & Control Strip */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-6">
-           <div className="flex items-center gap-6 flex-1">
-              <div className="flex items-center gap-3 pr-6 border-r border-slate-200 min-w-[250px]">
-                 <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100">
-                    <Stethoscope className="w-5 h-5 text-slate-400" />
-                 </div>
-                 <div className="flex flex-col flex-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Doctor Station</span>
-                    <select 
-                      value={selectedDoctor}
-                      onChange={(e) => setSelectedDoctor(e.target.value)}
-                      className="text-[11px] font-black text-slate-800 outline-none bg-transparent cursor-pointer hover:text-teal-600 transition-colors uppercase"
-                    >
-                       <option value="all">ALL ACTIVE DOCTORS</option>
-                       {doctors.map(doc => (
-                         <option key={doc.id} value={doc.id}>DR. {doc.name.toUpperCase()}</option>
-                       ))}
-                    </select>
-                 </div>
-              </div>
-              
-              <div className="flex-1 max-w-xl relative">
-                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                 <input 
-                   type="text" 
-                   value={searchQuery}
-                   onChange={(e) => setSearchQuery(e.target.value)}
-                   placeholder="SEARCH BY TOKEN, NAME OR MRD NUMBER..."
-                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-[11px] font-black outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 transition-all uppercase tracking-[0.1em]"
-                 />
-              </div>
-           </div>
-
-            <div className="flex gap-2">
-              <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 mr-4">
-                 <button 
-                   onClick={() => setViewMode('live')}
-                   className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'live' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                 >
-                    Live Queue
-                 </button>
-                 <button 
-                   onClick={() => setViewMode('appointments')}
-                   className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'appointments' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                 >
-                    Today's Schedule
-                 </button>
-              </div>
-              <button 
-                onClick={viewMode === 'live' ? fetchQueue : fetchAppointments}
-                className="bg-slate-900 hover:bg-teal-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 shadow-lg shadow-slate-200 active:scale-95"
-              >
-                <Activity className="w-4 h-4" />
-                Refresh Board
-              </button>
-           </div>
-        </div>
-
-        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden min-h-[600px] relative">
-           {(isLoading || (viewMode === 'appointments' && isApptLoading)) ? (
-             <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6">
-                <div className="relative">
-                   <div className="w-16 h-16 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
-                   <Activity className="w-6 h-6 text-teal-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                   <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Synchronizing Board</p>
-                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Updating data...</p>
-                </div>
+        {/* Modern Top Header - Replacing utilitarian wireframe with our app's sleek styling */}
+        <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm gap-6">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200">
+                <Activity className="w-6 h-6 text-white animate-pulse" />
              </div>
-           ) : viewMode === 'live' ? (
-             filteredQueue.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-60 space-y-6 opacity-40">
-                  <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center">
-                     <Users className="w-10 h-10 text-slate-300" />
-                  </div>
-                  <p className="text-[12px] font-black text-slate-500 uppercase tracking-[0.3em]">The queue is currently empty</p>
-               </div>
-             ) : (
-               <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                     <thead>
-                        <tr className="bg-slate-50/80 border-b border-slate-100">
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Token ID</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Patient Profile</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Medical Info</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Billing Status</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Current Status</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-slate-50">
-                        {filteredQueue.map((entry) => (
-                          <tr key={entry.id} className={`group transition-all duration-300 ${entry.status === 'IN_SESSION' ? 'bg-teal-50/20' : 'hover:bg-slate-50/50'}`}>
-                             <td className="px-8 py-7">
-                                <div className="inline-flex flex-col items-center min-w-[90px] h-[90px] justify-center bg-white border-2 border-slate-900 rounded-2xl shadow-sm group-hover:scale-105 group-hover:border-teal-600 transition-all overflow-hidden relative">
-                                   <div className="absolute top-0 inset-x-0 h-1 bg-slate-900 group-hover:bg-teal-600 transition-colors"></div>
-                                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">TOKEN</span>
-                                   <span className="text-2xl font-black text-slate-900 tracking-tighter leading-none">
-                                      {entry.tokenDisplay.split('-')[1]}
-                                   </span>
-                                   <div className="mt-1 px-2 py-0.5 bg-slate-900 text-white rounded-[4px]">
-                                      <span className="text-[7px] font-black uppercase tracking-widest">{entry.tokenDisplay.split('-')[0]}</span>
-                                   </div>
-                                </div>
-                             </td>
-                             <td className="px-8 py-7">
-                                <div className="flex flex-col gap-1">
-                                   <div className="flex items-center gap-2">
-                                      <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight group-hover:text-teal-600 transition-colors">{entry.patient.firstName} {entry.patient.lastName}</span>
-                                   </div>
-                                   <div className="flex items-center gap-2">
-                                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 rounded text-[9px] font-bold text-slate-500 uppercase">
-                                         <Activity className="w-2.5 h-2.5" />
-                                         {entry.patient.mrdNumber}
-                                      </div>
-                                   </div>
-                                </div>
-                             </td>
-                             <td className="px-8 py-7">
-                                <div className="flex flex-col gap-2">
-                                   <span className={`text-[9px] font-black px-2.5 py-1 rounded-full border uppercase tracking-widest flex items-center gap-1.5 ${getPriorityColor(entry.priority)}`}>
-                                      {entry.priority}
-                                   </span>
-                                   <div className="flex items-center gap-2 text-slate-400">
-                                      <Clock className="w-3.5 h-3.5" />
-                                      <span className="text-[10px] font-black uppercase tracking-tight">Wait: {Math.floor((new Date().getTime() - new Date(entry.checkInTime).getTime()) / 60000)} MINS</span>
-                                   </div>
-                                </div>
-                             </td>
-                             <td className="px-8 py-7">
-                                {getBillStatusBadge(entry.case.bill?.paymentStatus)}
-                             </td>
-                             <td className="px-8 py-7">
-                                {getStatusBadge(entry.status)}
-                             </td>
-                             <td className="px-8 py-7 text-right">
-                                                                 <div className="flex items-center justify-end gap-3">
-                                    <Link 
-                                      href={`/reception/consent?caseId=${entry.caseId}`}
-                                      className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all"
-                                      title="Consent Form"
-                                    >
-                                       <FileSignature className="w-4 h-4" />
-                                    </Link>
-                                    <Link 
-                                      href={`/reception/lab-upload?caseId=${entry.caseId}`}
-                                      className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-xl transition-all"
-                                      title="Lab Upload"
-                                    >
-                                       <Upload className="w-4 h-4" />
-                                    </Link>
+             <div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none uppercase">OPD Queue Control</h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Daily Visit Management</p>
+             </div>
+          </div>
 
-                                   {entry.status === 'WAITING' && (
-                                     <button 
-                                       onClick={() => handleUpdateStatus(entry.id, 'CALLING', 'CALL_PATIENT')}
-                                       disabled={isActionLoading === entry.id}
-                                       className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md shadow-blue-100 flex items-center gap-2 active:scale-95 disabled:opacity-50"
-                                     >
-                                        <PhoneCall className="w-3.5 h-3.5" />
-                                        Call Patient
-                                     </button>
-                                   )}
-                                   <button className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-300 hover:bg-slate-100 hover:text-slate-600 transition-all active:scale-90">
-                                      <MoreVertical className="w-5 h-5" />
-                                   </button>
-                                </div>
-                             </td>
-                          </tr>
-                        ))}
-                     </tbody>
-                  </table>
-               </div>
-             )
-           ) : (
-             appointments.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-60 space-y-6 opacity-40">
-                  <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center">
-                     <Clock className="w-10 h-10 text-slate-300" />
-                  </div>
-                  <p className="text-[12px] font-black text-slate-500 uppercase tracking-[0.3em]">No appointments scheduled for today</p>
-               </div>
-             ) : (
-               <div className="overflow-x-auto animate-in fade-in slide-in-from-right-4 duration-500">
-                  <table className="w-full text-left border-collapse">
-                     <thead>
-                        <tr className="bg-slate-50/80 border-b border-slate-100">
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Scheduled Time</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Patient Details</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Doctor / Clinic</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Purpose</th>
-                           <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Action</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y divide-slate-50">
-                        {appointments.map((appt) => (
-                          <tr key={appt.id} className="hover:bg-blue-50/30 transition-all duration-300 group">
-                             <td className="px-8 py-7">
-                                <div className="flex items-center gap-4">
-                                   <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-sm group-hover:border-blue-200 transition-all">
-                                      <Clock className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
-                                   </div>
-                                   <span className="text-sm font-black text-slate-900 uppercase tracking-tight">
-                                      {new Date(appt.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                   </span>
-                                </div>
-                             </td>
-                             <td className="px-8 py-7">
-                                <div className="flex flex-col gap-1">
-                                   <span className="text-[14px] font-black text-slate-900 uppercase tracking-tight">{appt.patient?.firstName} {appt.patient?.lastName}</span>
-                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">{appt.patient?.mrdNumber}</span>
-                                </div>
-                             </td>
-                             <td className="px-8 py-7">
-                                <div className="flex flex-col gap-1">
-                                   <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">DR. {appt.doctor?.user?.name.toUpperCase()}</span>
-                                   <span className="text-[9px] font-bold text-slate-400 uppercase">{appt.doctor?.department?.name || 'GENERAL OPD'}</span>
-                                </div>
-                             </td>
-                             <td className="px-8 py-7">
-                                <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-slate-200">
-                                   {appt.purpose || 'GENERAL VISIT'}
-                                </span>
-                             </td>
-                             <td className="px-8 py-7 text-right">
-                                <div className="flex justify-end gap-2">
-                                  <button 
-                                    onClick={() => toast.error('Please check-in the patient first to generate a Consent Form.')}
-                                    className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all"
-                                    title="Check-in required for Consent Form"
-                                  >
-                                     <FileSignature className="w-4 h-4" />
-                                  </button>
-                                  <Link 
-                                    href={`/reception/checkin?mrd=${appt.patient?.mrdNumber}&appt=${appt.id}`}
-                                    className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-md active:scale-95"
-                                  >
-                                     Arrived
-                                     <ChevronRight className="w-3.5 h-3.5" />
-                                  </Link>
-                                </div>
-                             </td>
-                          </tr>
-                        ))}
-                     </tbody>
-                  </table>
-               </div>
-             )
-           )}
+          {/* Top Row Filters */}
+          <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black text-slate-500 uppercase">Date:</span>
+                <input 
+                  type="date" 
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent"
+                />
+             </div>
+             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black text-slate-500 uppercase">Purpose:</span>
+                <select 
+                  value={purposeFilter}
+                  onChange={(e) => setPurposeFilter(e.target.value)}
+                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                >
+                  <option value="All">All</option>
+                  <option value="Consultation">Consultation</option>
+                  <option value="Follow-Up">Follow-Up</option>
+                  <option value="Procedure">Procedure</option>
+                </select>
+             </div>
+             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black text-slate-500 uppercase">Status:</span>
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                >
+                  <option value="All">All</option>
+                  <option value="Waiting">Waiting</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+             </div>
+             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black text-slate-500 uppercase">Age Range:</span>
+                <select 
+                  value={ageRangeFilter}
+                  onChange={(e) => setAgeRangeFilter(e.target.value)}
+                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                >
+                  <option value="All">All</option>
+                  <option value="0-18">0-18</option>
+                  <option value="19-40">19-40</option>
+                  <option value="41-60">41-60</option>
+                  <option value="60+">60+</option>
+                </select>
+             </div>
+          </div>
         </div>
 
-        {/* Operational Footer */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 py-8 border-t border-slate-200">
-           <div className="flex flex-wrap items-center gap-8">
-              <div className="flex items-center gap-3">
-                 <div className="w-3 h-3 bg-rose-500 rounded-full shadow-lg shadow-rose-200 animate-pulse"></div>
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Emergency Alert</span>
-              </div>
-              <div className="flex items-center gap-3">
-                 <div className="w-3 h-3 bg-amber-500 rounded-full shadow-lg shadow-amber-200"></div>
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Urgent Protocol</span>
-              </div>
-              <div className="flex items-center gap-3">
-                 <div className="w-3 h-3 bg-teal-500 rounded-full shadow-lg shadow-teal-200"></div>
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Active Session</span>
-              </div>
-           </div>
-           
-           <div className="flex items-center gap-4">
-              <div className="px-6 py-3 bg-white border border-slate-200 rounded-2xl flex items-center gap-3 shadow-sm">
-                 <Activity className="w-4 h-4 text-teal-600 animate-pulse" />
-                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">System Health: Optimal</span>
-              </div>
-              <div className="px-6 py-3 bg-slate-900 text-white rounded-2xl flex items-center gap-3 shadow-xl shadow-slate-200">
-                 <BellRing className="w-4 h-4 text-amber-400" />
-                 <span className="text-[10px] font-black uppercase tracking-widest">Real-time Sync Active</span>
-              </div>
-           </div>
+        {/* Legend / Filter Checkboxes */}
+        <div className="flex flex-wrap items-center gap-4 px-2">
+          {['Waiting', 'In Progress', 'Completed', 'Cancelled', 'New Patient', 'FOC'].map((legend) => {
+            const isSelected = selectedLegends.includes(legend);
+            return (
+              <button 
+                key={legend}
+                onClick={() => toggleLegend(legend)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                  isSelected 
+                    ? 'bg-teal-50 border-teal-200 text-teal-800 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {isSelected ? <CheckSquare className="w-4 h-4 text-teal-600" /> : <Square className="w-4 h-4 text-slate-400" />}
+                <span className="text-[11px] font-black uppercase tracking-wider">
+                  {legend} {legend === 'In Progress' && '(Blinking)'}
+                </span>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Main Table Area */}
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden relative min-h-[500px] flex flex-col">
+          {isLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6 min-h-[400px]">
+                <div className="w-16 h-16 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
+                <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[1000px]">
+                <thead>
+                  <tr className="bg-slate-100/80 border-b border-slate-200">
+                    <th className="px-6 py-4 text-center w-12"><Square className="w-4 h-4 text-slate-400 mx-auto" /></th>
+                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Case ID</th>
+                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Appt</th>
+                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Chk-In</th>
+                    <th className="px-6 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Patient Name</th>
+                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Visit</th>
+                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Age/Sex</th>
+                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Billing</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentQueueData.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center justify-center opacity-50 space-y-4">
+                          <Users className="w-12 h-12 text-slate-300" />
+                          <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">No patients found matching filters</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : currentQueueData.map((entry) => {
+                    const isNew = isNewPatient(entry);
+                    const isInSession = entry.status === 'IN_SESSION';
+                    const billing = getBillingStatus(entry);
+                    const rowBg = isNew ? 'bg-amber-50/30' : isInSession ? 'bg-teal-50/20' : 'hover:bg-slate-50';
+
+                    return (
+                      <tr key={entry.id} className={`transition-colors ${rowBg}`}>
+                        <td className="px-6 py-4 text-center border-b border-slate-100">
+                          <Square className="w-4 h-4 text-slate-300 mx-auto" />
+                        </td>
+                        <td className="px-4 py-4 border-l border-b border-slate-100">
+                          <span className="text-[12px] font-black text-slate-800 tracking-wider">
+                            {entry.case?.caseNumber || entry.tokenDisplay}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 border-l border-b border-slate-100">
+                          <span className="text-[12px] font-bold text-slate-600 tracking-wider">
+                            {formatTime(entry.case?.createdAt)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 border-l border-b border-slate-100">
+                          <span className="text-[12px] font-bold text-slate-600 tracking-wider">
+                            {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 border-l border-b border-slate-100">
+                          <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center gap-2`}>
+                            <Link href={`/reception/patients/${entry.patient.id}`} className="hover:text-teal-600 transition-colors flex items-center gap-2">
+                              {entry.patient.firstName} {entry.patient.lastName} 
+                              <span className="text-[10px] text-slate-400 font-bold">[{isNew ? 'NEW' : 'OLD'}]</span>
+                              <Eye className="w-4 h-4 text-slate-400 hover:text-teal-600" />
+                            </Link>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 border-l border-b border-slate-100">
+                          <span className="text-[11px] font-bold text-slate-600">{getVisitType(entry)}</span>
+                        </td>
+                        <td className="px-4 py-4 border-l border-b border-slate-100">
+                          <span className="text-[12px] font-black text-slate-700 tracking-widest">{getAgeSex(entry)}</span>
+                        </td>
+                        <td className="px-4 py-4 border-l border-b border-slate-100">
+                          {billing === 'FOC' ? (
+                            <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200 inline-block">
+                              FOC
+                            </div>
+                          ) : billing === 'PAID' ? (
+                            <div className="text-[11px] font-black text-slate-600 uppercase">PAID</div>
+                          ) : (
+                            <div className="text-[11px] font-black text-rose-600 uppercase">PENDING</div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Footer Pagination Strip */}
+          <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between mt-auto">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Prev Page
+              </button>
+              <span className="text-[11px] font-bold text-slate-600">
+                Page <span className="font-black text-slate-900">{currentPage}</span> of {totalPages}
+              </span>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+              >
+                Next Page
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+              Total: {filteredQueue.length} appointments
+            </div>
+          </div>
+        </div>
+
       </div>
     </ReceptionLayout>
   );

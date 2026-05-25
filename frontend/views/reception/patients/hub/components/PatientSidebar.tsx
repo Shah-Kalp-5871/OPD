@@ -6,7 +6,8 @@ import {
   Stethoscope, 
   CreditCard, 
   UserCircle,
-  FolderOpen
+  FolderOpen,
+  FileSignature
 } from 'lucide-react';
 
 import { Patient } from '../types';
@@ -28,6 +29,7 @@ const PatientSidebar: React.FC<PatientSidebarProps> = ({
     { id: 'vitals', label: 'Medical Vitals', icon: Activity },
     { id: 'documents', label: 'Reports & Files', icon: FileText },
     { id: 'billing', label: 'Billing Records', icon: CreditCard },
+    { id: 'consent', label: 'Consent Forms', icon: FileSignature },
     { id: 'profile', label: 'Patient Profile', icon: UserCircle },
   ];
 

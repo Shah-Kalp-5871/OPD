@@ -42,8 +42,6 @@ const ReceptionSidebar = () => {
     { title: 'OPD Queue', href: ROUTES.reception.queue, icon: Users },
     { title: 'Check-In', href: ROUTES.reception.checkin, icon: CheckSquare },
     { title: 'Billing', href: ROUTES.reception.billing, icon: Wallet },
-    { title: 'Consent Form', href: ROUTES.reception.consent, icon: FileSignature },
-    { title: 'Lab Upload', href: ROUTES.reception.labUpload, icon: Upload },
     { title: 'My Profile', href: ROUTES.reception.myProfile, icon: UserCircle },
   ];
 

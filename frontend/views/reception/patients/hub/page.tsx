@@ -15,6 +15,7 @@ import TimelineTab from './components/tabs/TimelineTab';
 import VitalsTab from './components/tabs/VitalsTab';
 import ProfileTab from './components/tabs/ProfileTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
+import ConsentTab from './components/tabs/ConsentTab';
 import AddVitalsModal from './components/AddVitalsModal';
 import StartVisitModal from './components/StartVisitModal';
 import EditPatientModal from './components/EditPatientModal';
@@ -26,7 +27,7 @@ const PatientHubView = () => {
   
   const [patient, setPatient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'vitals' | 'cases' | 'profile' | 'documents'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vitals' | 'cases' | 'profile' | 'documents' | 'consent'>('overview');
   
   // Modals
   const [showVitalsModal, setShowVitalsModal] = useState(false);
@@ -224,6 +225,13 @@ const PatientHubView = () => {
                      <DocumentsTab 
                        patient={patient}
                        onRefresh={fetchPatientData}
+                     />
+                   )}
+
+                   {activeTab === 'consent' && (
+                     <ConsentTab 
+                       patient={patient}
+                       activeCase={activeCase}
                      />
                    )}
                 </div>
