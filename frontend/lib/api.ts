@@ -15,10 +15,18 @@ export const secureFileUrl = (url: string) => {
   if (typeof window !== 'undefined') {
     const baseUrl = APP_CONFIG.API_BASE_URL || window.location.origin;
 
-    if (url.startsWith('/')) {
-      resolvedUrl = `${baseUrl.replace(/\/$/, '')}${url}`;
-    } else if (!/^https?:\/\//i.test(url)) {
-      resolvedUrl = `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\/+/, '')}`;
+    // Ensure we account for the global NestJS '/api' prefix for file storage routes
+    let targetUrl = url;
+    if (url.startsWith('/files/')) {
+      targetUrl = `/api${url}`;
+    } else if (url.startsWith('files/')) {
+      targetUrl = `api/${url}`;
+    }
+
+    if (targetUrl.startsWith('/')) {
+      resolvedUrl = `${baseUrl.replace(/\/$/, '')}${targetUrl}`;
+    } else if (!/^https?:\/\//i.test(targetUrl)) {
+      resolvedUrl = `${baseUrl.replace(/\/$/, '')}/${targetUrl.replace(/^\/+/, '')}`;
     }
 
     const token = localStorage.getItem('token');

@@ -26,6 +26,7 @@ const LaboratoryLayout: React.FC<LaboratoryLayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/laboratory/dashboard', icon: LayoutDashboard },
     { name: 'Pending Tests', href: '/laboratory/pending', icon: TestTube2 },
+    { name: 'Process Tests', href: '/laboratory/process', icon: TestTube2 },
     { name: 'Test Catalog', href: '/laboratory/catalog', icon: FlaskConical },
     { name: 'Results History', href: '/laboratory/history', icon: History },
   ];

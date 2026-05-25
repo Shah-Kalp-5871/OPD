@@ -37,7 +37,7 @@ const DoctorSidebar = () => {
   const menuItems = [
     { title: 'Dashboard', href: ROUTES.doctor.dashboard, icon: LayoutDashboard },
     { title: 'OPD Queue', href: ROUTES.doctor.queue, icon: Users },
-    { title: 'Consultation', href: ROUTES.doctor.consultationComplaints, icon: Stethoscope },
+    { title: 'Consultation', href: ROUTES.doctor.consultation, icon: Stethoscope },
     { title: 'Appointment Mgmt', href: ROUTES.doctor.appointments, icon: CalendarDays },
     { title: 'F/U Call List', href: ROUTES.doctor.followupCallList, icon: PhoneCall },
     { title: 'Billing View', href: ROUTES.doctor.billingView, icon: Wallet },

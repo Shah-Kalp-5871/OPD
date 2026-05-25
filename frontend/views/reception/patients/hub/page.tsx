@@ -139,7 +139,7 @@ const PatientHubView = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !patient) {
     return (
       <ReceptionLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -180,6 +180,7 @@ const PatientHubView = () => {
                <PatientSidebar 
                  activeTab={activeTab}
                  setActiveTab={setActiveTab}
+                 patient={patient}
                />
              </div>
 
@@ -222,6 +223,7 @@ const PatientHubView = () => {
                    {activeTab === 'documents' && (
                      <DocumentsTab 
                        patient={patient}
+                       onRefresh={fetchPatientData}
                      />
                    )}
                 </div>

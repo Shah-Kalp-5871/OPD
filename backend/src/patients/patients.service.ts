@@ -11,6 +11,7 @@ import { UpdatePatientProfileDto } from './dto/update-patient-profile.dto';
 import { AddVitalsDto } from './dto/add-vitals.dto';
 import { CreateCaseDto } from './dto/create-case.dto';
 import { PatientQueryDto } from './dto/patient-query.dto';
+import { AddPatientDocumentDto } from './dto/add-document.dto';
 
 @Injectable()
 export class PatientsService {
@@ -201,6 +202,9 @@ export class PatientsService {
           orderBy: { takenAt: 'desc' },
           take: 10,
         },
+        documents: {
+          orderBy: { createdAt: 'desc' },
+        },
         cases: {
           orderBy: { createdAt: 'desc' },
           include: {
@@ -236,6 +240,9 @@ export class PatientsService {
         vitals: {
           orderBy: { takenAt: 'desc' },
           take: 10,
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' },
         },
         cases: {
           orderBy: { createdAt: 'desc' },
@@ -492,5 +499,28 @@ export class PatientsService {
     });
 
     return `C${dateStr}${(count + 1).toString().padStart(4, '0')}`;
+  }
+
+  async addDocument(patientId: string, dto: AddPatientDocumentDto) {
+    const patient = await this.prisma.patient.findUnique({ where: { id: patientId } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    return this.prisma.patientDocument.create({
+      data: {
+        patientId,
+        documentType: dto.documentType,
+        documentNumber: dto.documentNumber,
+        fileUrl: dto.fileUrl,
+      },
+    });
+  }
+
+  async deleteDocument(patientId: string, docId: string) {
+    const document = await this.prisma.patientDocument.findUnique({ where: { id: docId } });
+    if (!document || document.patientId !== patientId) {
+      throw new NotFoundException('Document not found');
+    }
+
+    return this.prisma.patientDocument.delete({ where: { id: docId } });
   }
 }

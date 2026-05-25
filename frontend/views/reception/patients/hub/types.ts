@@ -20,6 +20,8 @@ export interface Patient {
   };
   vitals?: Vital[];
   cases?: Case[];
+  documents?: PatientDocument[];
+  createdAt?: string;
 }
 
 export interface Vital {
@@ -49,4 +51,14 @@ export interface Case {
 export interface Alert {
   type: string;
   message: string;
+}
+
+export interface PatientDocument {
+  id: string;
+  patientId: string;
+  documentType: string;
+  documentNumber?: string;
+  fileUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }

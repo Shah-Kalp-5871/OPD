@@ -487,13 +487,13 @@ const OpdQueueView = () => {
                              </td>
                              <td className="px-8 py-7 text-right">
                                 <div className="flex justify-end gap-2">
-                                  <Link 
-                                    href={`/reception/consent?caseId=${appt.id}`}
+                                  <button 
+                                    onClick={() => toast.error('Please check-in the patient first to generate a Consent Form.')}
                                     className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all"
-                                    title="Consent Form"
+                                    title="Check-in required for Consent Form"
                                   >
                                      <FileSignature className="w-4 h-4" />
-                                  </Link>
+                                  </button>
                                   <Link 
                                     href={`/reception/checkin?mrd=${appt.patient?.mrdNumber}&appt=${appt.id}`}
                                     className="inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-md active:scale-95"

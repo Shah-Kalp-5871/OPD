@@ -23,6 +23,57 @@ import {
   Loader2
 } from 'lucide-react';
 
+const TRANSLATIONS: Record<string, Record<string, string>> = {
+  English: {
+    officialDoc: 'Official Medico-Legal Document',
+    patientConsentForm: 'PATIENT CONSENT FORM',
+    patientName: 'Patient Name',
+    mrdNumber: 'MRD Number',
+    caseNumber: 'Case Number',
+    date: 'Date',
+    patientSignaturePlaceholder: 'Patient Signature Placeholder',
+    patientSignature: 'Patient Signature',
+    doctorSignaturePlaceholder: 'Official Clinic Seal / Doctor Signature',
+    doctorSignature: 'Doctor Signature',
+    uploadSignature: 'Upload Patient Signature (optional)',
+    printConsent: 'Print Consent Form',
+    recordConsent: 'Record Signed Consent',
+    selectTemplate: 'Select a template to view content'
+  },
+  Hindi: {
+    officialDoc: 'आधिकारिक चिकित्सा-कानूनी दस्तावेज',
+    patientConsentForm: 'रोगी सहमति पत्र',
+    patientName: 'रोगी का नाम',
+    mrdNumber: 'एमआरडी नंबर',
+    caseNumber: 'केस नंबर',
+    date: 'दिनांक',
+    patientSignaturePlaceholder: 'रोगी के हस्ताक्षर का स्थान',
+    patientSignature: 'रोगी के हस्ताक्षर',
+    doctorSignaturePlaceholder: 'आधिकारिक क्लिनिक सील / डॉक्टर के हस्ताक्षर',
+    doctorSignature: 'डॉक्टर के हस्ताक्षर',
+    uploadSignature: 'रोगी के हस्ताक्षर अपलोड करें (वैकल्पिक)',
+    printConsent: 'सहमति पत्र प्रिंट करें',
+    recordConsent: 'हस्ताक्षरित सहमति दर्ज करें',
+    selectTemplate: 'सामग्री देखने के लिए टेम्पलेट चुनें'
+  },
+  Gujarati: {
+    officialDoc: 'અધિકૃત મેડિકો-લીગલ દસ્તાવેજ',
+    patientConsentForm: 'દર્દી સંમતિ પત્રક',
+    patientName: 'દર્દીનું નામ',
+    mrdNumber: 'એમઆરડી નંબર',
+    caseNumber: 'કેસ નંબર',
+    date: 'તારીખ',
+    patientSignaturePlaceholder: 'દર્દીની સહી માટેની જગ્યા',
+    patientSignature: 'દર્દીની સહી',
+    doctorSignaturePlaceholder: 'અધિકૃત ક્લિનિક સીલ / ડૉક્ટરની સહી',
+    doctorSignature: 'ડૉક્ટરની સહી',
+    uploadSignature: 'દર્દીની સહી અપલોડ કરો (વૈકલ્પિક)',
+    printConsent: 'સંમતિ પત્રક પ્રિન્ટ કરો',
+    recordConsent: 'સહી કરેલ સંમતિ રેકોર્ડ કરો',
+    selectTemplate: 'સામગ્રી જોવા માટે ટેમ્પલેટ પસંદ કરો'
+  }
+};
+
 const ConsentFormView = () => {
   const searchParams = useSearchParams();
   const caseId = searchParams.get('caseId');
@@ -148,14 +199,36 @@ const ConsentFormView = () => {
   const procedure = patientData?.case?.procedureSessions?.[0]?.procedure?.name || 'N/A';
   const doctorName = patientData?.case?.doctor?.name || 'Assigned Consultant';
 
+  const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.English;
+
   return (
     <ReceptionLayout>
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-area, .print-area * {
+            visibility: visible;
+          }
+          .print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto space-y-8 pb-20">
         
         {/* PAGE HEADER */}
         <div>
            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
-              Consent Form — <span className="text-teal-600 uppercase">{patientProfile?.firstName} {patientProfile?.lastName}</span>
+              Consent Form — <span className="text-teal-600 uppercase">{patientInfo?.firstName} {patientInfo?.lastName}</span>
            </h1>
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 flex items-center gap-2">
               <Stethoscope className="w-3.5 h-3.5 text-teal-500" />
@@ -177,11 +250,11 @@ const ConsentFormView = () => {
            <div className="p-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-x-12 gap-y-8">
                  {[
-                   { label: 'Patient Name', value: `${patientProfile?.firstName} ${patientProfile?.lastName}`, icon: User },
-                   { label: 'Gender', value: patientProfile?.gender || 'N/A', icon: User },
+                   { label: 'Patient Name', value: `${patientInfo?.firstName || ''} ${patientInfo?.lastName || ''}`.trim() || 'N/A', icon: User },
+                   { label: 'Gender', value: patientInfo?.gender || 'N/A', icon: User },
                    { label: 'Age', value: patientProfile?.age?.toString() || 'N/A', icon: Calendar },
                    { label: 'City / Location', value: patientProfile?.city || 'N/A', icon: MapPin },
-                   { label: 'MRD No.', value: patientInfo?.mrdNo || 'N/A', icon: FileText },
+                   { label: 'MRD No.', value: patientInfo?.mrdNumber || 'N/A', icon: FileText },
                    { label: 'OPD Case No.', value: patientData?.case?.caseNumber || 'N/A', icon: FileText },
                    { label: 'Procedure Name', value: procedure, icon: Stethoscope },
                    { label: 'Date', value: new Date().toLocaleDateString(), icon: Calendar },
@@ -259,33 +332,33 @@ const ConsentFormView = () => {
                  
                  <div className="p-12 flex-1 space-y-10">
                     {/* Document Styling */}
-                    <div className="border-2 border-slate-200 p-10 rounded-xl relative">
-                       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-2 border-2 border-slate-200 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-900">
-                          Official Medico-Legal Document
+                    <div className="border-2 border-slate-200 p-10 rounded-xl relative print-area">
+                       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-2 border-2 border-slate-200 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-900 no-print">
+                          {t.officialDoc}
                        </div>
 
                        <div className="text-center mb-10 pb-8 border-b border-slate-100">
                           <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.3em] mb-2">
-                             {selectedTemplate?.name || 'PATIENT CONSENT FORM'} ({selectedLanguage.toUpperCase()})
+                             {selectedTemplate?.name || t.patientConsentForm} ({selectedLanguage.toUpperCase()})
                           </h2>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">MedFlow Clinic • Enterprise Grade Management</p>
                        </div>
 
                        <div className="grid grid-cols-2 gap-y-6 mb-12 bg-slate-50 p-6 rounded-xl border border-slate-100">
                           <div className="space-y-1">
-                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Patient Name</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase">{patientProfile?.firstName} {patientProfile?.lastName}</p>
+                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.patientName}</p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase">{patientInfo?.firstName} {patientInfo?.lastName}</p>
                           </div>
                           <div className="space-y-1">
-                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">MRD Number</p>
-                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientInfo?.mrdNo || 'N/A'}</p>
+                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.mrdNumber}</p>
+                             <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientInfo?.mrdNumber || 'N/A'}</p>
                           </div>
                           <div className="space-y-1">
-                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Case Number</p>
+                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.caseNumber}</p>
                              <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{patientData?.case?.caseNumber || 'N/A'}</p>
                           </div>
                           <div className="space-y-1">
-                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Date</p>
+                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.date}</p>
                              <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{new Date().toLocaleDateString()}</p>
                           </div>
                        </div>
@@ -293,22 +366,22 @@ const ConsentFormView = () => {
                        <div className="space-y-6 text-xs text-slate-600 leading-relaxed text-justify mb-16 px-4">
                           <div 
                             className="consent-content"
-                            dangerouslySetInnerHTML={{ __html: selectedTemplate?.contentHtml || '<p>Select a template to view content</p>' }}
+                            dangerouslySetInnerHTML={{ __html: selectedTemplate?.contentHtml || `<p>${t.selectTemplate}</p>` }}
                           />
                        </div>
 
                        <div className="grid grid-cols-2 gap-12 mt-20 pt-10 border-t border-slate-100">
                           <div className="space-y-4">
                              <div className="h-16 border-b border-slate-300 w-full relative">
-                                <span className="absolute bottom-2 left-0 text-[8px] font-black text-slate-300 uppercase tracking-widest">Patient Signature Placeholder</span>
+                                <span className="absolute bottom-2 left-0 text-[8px] font-black text-slate-300 uppercase tracking-widest">{t.patientSignaturePlaceholder}</span>
                              </div>
-                             <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Patient Signature</p>
+                             <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{t.patientSignature}</p>
                           </div>
                           <div className="space-y-4">
                              <div className="h-16 border-b border-slate-300 w-full relative">
-                                <span className="absolute bottom-2 left-0 text-[8px] font-black text-slate-300 uppercase tracking-widest">Official Clinic Seal / Doctor Signature</span>
+                                <span className="absolute bottom-2 left-0 text-[8px] font-black text-slate-300 uppercase tracking-widest">{t.doctorSignaturePlaceholder}</span>
                              </div>
-                             <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Doctor Signature</p>
+                             <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{t.doctorSignature}</p>
                           </div>
                        </div>
                     </div>
@@ -318,7 +391,7 @@ const ConsentFormView = () => {
                  <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                        <label className="flex-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          Upload Patient Signature (optional)
+                          {t.uploadSignature}
                           <input
                             type="file"
                             accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
@@ -352,7 +425,7 @@ const ConsentFormView = () => {
                          className="flex-1 py-5 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3"
                        >
                           <Printer className="w-5 h-5" />
-                          Print Consent Form
+                          {t.printConsent}
                        </button>
                        <button 
                          onClick={handleSaveConsent}
@@ -360,7 +433,7 @@ const ConsentFormView = () => {
                          className="flex-1 py-5 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 disabled:opacity-50 flex items-center justify-center gap-3"
                        >
                           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileSignature className="w-5 h-5" />}
-                          {saving && signatureFile ? `Uploading ${uploadProgress}%` : 'Record Signed Consent'}
+                          {saving && signatureFile ? `Uploading ${uploadProgress}%` : t.recordConsent}
                        </button>
                     </div>
                  </div>

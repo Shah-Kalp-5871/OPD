@@ -11,6 +11,8 @@ export class PrismaService
   private readonly modelsWithTenantId = new Set<string>();
   private readonly modelsWithBranchId = new Set<string>();
   private readonly modelsWithDeletedAt = new Set<string>();
+  private readonly modelsWithTenantRelation = new Set<string>();
+  private readonly modelsWithBranchRelation = new Set<string>();
 
   private extendedClient: any;
 
@@ -45,6 +47,12 @@ export class PrismaService
         }
         if (field.name === 'deletedAt') {
           this.modelsWithDeletedAt.add(model.name);
+        }
+        if (field.name === 'tenant' && field.kind === 'object') {
+          this.modelsWithTenantRelation.add(model.name);
+        }
+        if (field.name === 'branch' && field.kind === 'object') {
+          this.modelsWithBranchRelation.add(model.name);
         }
       });
     });
@@ -106,11 +114,31 @@ export class PrismaService
             if (['create', 'createMany'].includes(operation)) {
               if (operation === 'create') {
                 anyArgs.data = anyArgs.data || {};
-                if (store.tenantId && self.modelsWithTenantId.has(model) && anyArgs.data.tenantId === undefined) {
-                  anyArgs.data.tenantId = store.tenantId;
+                
+                // 1. Tenant Injection
+                if (store.tenantId) {
+                  if (self.modelsWithTenantRelation.has(model)) {
+                    if (anyArgs.data.tenant === undefined && anyArgs.data.tenantId === undefined) {
+                      anyArgs.data.tenant = { connect: { id: store.tenantId } };
+                    }
+                  } else if (self.modelsWithTenantId.has(model)) {
+                    if (anyArgs.data.tenantId === undefined) {
+                      anyArgs.data.tenantId = store.tenantId;
+                    }
+                  }
                 }
-                if (store.branchId && self.modelsWithBranchId.has(model) && anyArgs.data.branchId === undefined) {
-                  anyArgs.data.branchId = store.branchId;
+
+                // 2. Branch Injection
+                if (store.branchId) {
+                  if (self.modelsWithBranchRelation.has(model)) {
+                    if (anyArgs.data.branch === undefined && anyArgs.data.branchId === undefined) {
+                      anyArgs.data.branch = { connect: { id: store.branchId } };
+                    }
+                  } else if (self.modelsWithBranchId.has(model)) {
+                    if (anyArgs.data.branchId === undefined) {
+                      anyArgs.data.branchId = store.branchId;
+                    }
+                  }
                 }
               } else if (operation === 'createMany') {
                 anyArgs.data = anyArgs.data || [];

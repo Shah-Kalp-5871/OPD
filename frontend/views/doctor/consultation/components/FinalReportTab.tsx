@@ -48,7 +48,7 @@ const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinaliz
 
     try {
       setFinalizing(true);
-      await api.post(`/consultation/${caseId}/finalize`, { nextStage: 'COMPLETED' });
+      await api.post(`/consultation/${caseId}/finalize`, { nextStage: 'BILLING' });
       toast.success('Consultation finalized and signed successfully');
       if (onFinalized) onFinalized();
       router.push('/doctor/dashboard');

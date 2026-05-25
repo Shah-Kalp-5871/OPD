@@ -18,11 +18,16 @@ interface BrandingState {
   fetchBranding: () => Promise<BrandingConfig>;
 }
 
-export const useBrandingStore = create<BrandingState>((set) => ({
+export const useBrandingStore = create<BrandingState>((set, get) => ({
   branding: null,
   isLoading: false,
   error: null,
   fetchBranding: async () => {
+    // Prevent double-fetching if already loading or if branding is already populated
+    const { isLoading, branding } = get();
+    if (isLoading) return branding as BrandingConfig;
+    if (branding) return branding;
+
     set({ isLoading: true, error: null });
     try {
       const response = await api.get('/v2/tenants/branding/resolve');

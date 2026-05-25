@@ -27,7 +27,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
     })),
     {
       id: 'reg',
-      date: new Date(), // Placeholder for registration date
+      date: patient.createdAt ? new Date(patient.createdAt) : new Date(),
       type: 'registration',
       title: 'Initial Patient Registration',
       subtitle: 'Patient file created in system',

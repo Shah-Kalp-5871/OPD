@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Patch,
   Param,
@@ -16,6 +17,7 @@ import { UpdatePatientProfileDto } from './dto/update-patient-profile.dto';
 import { AddVitalsDto } from './dto/add-vitals.dto';
 import { CreateCaseDto } from './dto/create-case.dto';
 import { PatientQueryDto } from './dto/patient-query.dto';
+import { AddPatientDocumentDto } from './dto/add-document.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -138,5 +140,23 @@ export class PatientsController {
     @BranchId() branchId: string,
   ) {
     return this.patientsService.createCase(id, createCaseDto, branchId);
+  }
+
+  @Post(':id/documents')
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR)
+  addDocument(
+    @Param('id') id: string,
+    @Body() dto: AddPatientDocumentDto,
+  ) {
+    return this.patientsService.addDocument(id, dto);
+  }
+
+  @Delete(':id/documents/:docId')
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR)
+  deleteDocument(
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+  ) {
+    return this.patientsService.deleteDocument(id, docId);
   }
 }

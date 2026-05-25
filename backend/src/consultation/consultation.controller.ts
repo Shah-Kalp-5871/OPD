@@ -51,7 +51,7 @@ export class ConsultationController {
   }
 
   @Get(':caseId')
-  @Roles('DOCTOR', 'ADMIN', 'NURSING')
+  @Roles('DOCTOR', 'ADMIN', 'NURSING', 'RECEPTION')
   @HipaaAudit({ actionType: 'VIEWED_PATIENT', module: 'PATIENTS' })
   async getConsultation(
     @Param('caseId') caseId: string,

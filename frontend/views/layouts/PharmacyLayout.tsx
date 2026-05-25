@@ -26,6 +26,7 @@ const PharmacyLayout: React.FC<PharmacyLayoutProps> = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/pharmacy/dashboard', icon: LayoutDashboard },
     { name: 'Pharmacy Queue', href: '/pharmacy/queue', icon: ClipboardList },
+    { name: 'Dispense', href: '/pharmacy/dispense', icon: Package },
     { name: 'Inventory', href: '/pharmacy/inventory', icon: Package },
     { name: 'Dispensing History', href: '/pharmacy/history', icon: History },
   ];

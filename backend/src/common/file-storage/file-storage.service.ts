@@ -164,7 +164,7 @@ export class FileStorageService {
       uploadedBy,
       uploadedAt,
       path: storedPath,
-      url: `/files/${folder}/${filename}`,
+      url: `/api/files/${folder}/${filename}`,
       sha256Hash: createHash('sha256').update(uploadFile.buffer).digest('hex'),
     };
   }

@@ -96,6 +96,8 @@ export const ROUTES = {
     drugs: '/admin/drugs',
     lab: '/admin/lab',
     procedures: '/admin/procedures',
+    reports: '/admin/reports',
+    securityCommandCenter: '/admin/security-command-center',
     settings: '/admin/settings',
     profile: '/admin/profile',
   },
@@ -125,6 +127,7 @@ export const ROUTES = {
     register: '/reception/register',
     search: '/reception/search',
     queue: '/reception/queue',
+    patients: '/reception/patients',
   },
 
   nursing: {

@@ -17,6 +17,18 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
   onEditBasic, 
   onStartVisit 
 }) => {
+  const regDate = patient.createdAt
+    ? new Date(patient.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '--';
+
+  const lastVisitDate = patient.cases && patient.cases.length > 0
+    ? (() => {
+        const dates = patient.cases.map((c: any) => new Date(c.createdAt).getTime());
+        const maxDate = Math.max(...dates);
+        return new Date(maxDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      })()
+    : '--';
+
   return (
     <div className="bg-white border-b border-slate-200 shadow-sm">
       {/* Top Identity Block */}
@@ -88,11 +100,11 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
         </div>
         <div className="px-6 py-3 border-r border-slate-100 space-y-0.5">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reg. Date</p>
-          <p className="text-sm font-bold text-slate-700">12 Oct 2023</p>
+          <p className="text-sm font-bold text-slate-700">{regDate}</p>
         </div>
         <div className="px-6 py-3 border-r border-slate-100 space-y-0.5">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Last Visit</p>
-          <p className="text-sm font-bold text-slate-700">--</p>
+          <p className="text-sm font-bold text-slate-700">{lastVisitDate}</p>
         </div>
         <div className="px-6 py-3 border-r border-slate-100 space-y-0.5">
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Visits</p>
