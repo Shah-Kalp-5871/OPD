@@ -113,25 +113,14 @@ export const roleNavigation: Record<string, NavigationConfig> = {
   reception: {
     directItems: [
       { title: 'Dashboard', href: ROUTES.reception.dashboard, icon: LayoutDashboard },
+      { title: 'Register Patient', href: ROUTES.reception.register, icon: UserPlus },
+      { title: 'Search Patient', href: ROUTES.reception.search, icon: Search },
+      { title: 'Check-In', href: ROUTES.reception.checkin, icon: CheckSquare },
+      { title: 'OPD Queue', href: ROUTES.reception.queue, icon: Users },
+      { title: 'Book Appointment', href: ROUTES.reception.appointments, icon: CalendarPlus },
+      { title: 'Billing', href: ROUTES.reception.billing, icon: Wallet },
     ],
-    groups: [
-      {
-        title: 'Patient Desk',
-        items: [
-          { title: 'Register Patient', href: ROUTES.reception.register, icon: UserPlus },
-          { title: 'Search Patient', href: ROUTES.reception.search, icon: Search },
-          { title: 'Check-In', href: ROUTES.reception.checkin, icon: CheckSquare },
-          { title: 'OPD Queue', href: ROUTES.reception.queue, icon: Users },
-        ]
-      },
-      {
-        title: 'Services',
-        items: [
-          { title: 'Book Appointment', href: ROUTES.reception.appointments, icon: CalendarPlus },
-          { title: 'Billing', href: ROUTES.reception.billing, icon: Wallet },
-        ]
-      }
-    ]
+    groups: []
   },
   nursing: {
     directItems: [
