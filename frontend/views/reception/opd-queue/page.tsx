@@ -5,6 +5,8 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useQueueSSE } from '@/hooks/useQueueSSE';
+import { ReactTabulator, ColumnDefinition } from 'react-tabulator';
+import 'react-tabulator/css/tabulator.min.css';
 
 import Link from 'next/link';
 import { 
@@ -171,6 +173,62 @@ const OpdQueueView = () => {
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getStatusBadgeString = (status: string) => {
+    switch (status) {
+      case 'WAITING':
+        return `<div class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 inline-block">WAITING</div>`;
+      case 'IN_SESSION':
+        return `<div class="px-2 py-1 bg-teal-100 text-teal-700 rounded text-[10px] font-black uppercase tracking-widest border border-teal-200 inline-block animate-pulse">IN PROGRESS</div>`;
+      case 'COMPLETED':
+        return `<div class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-black uppercase tracking-widest border border-emerald-200 inline-block">COMPLETED</div>`;
+      case 'CANCELLED':
+        return `<div class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-[10px] font-black uppercase tracking-widest border border-rose-200 inline-block">CANCELLED</div>`;
+      default:
+        return `<div class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-[10px] font-black uppercase tracking-widest border border-slate-200 inline-block">${status}</div>`;
+    }
+  };
+
+  const columns: ColumnDefinition[] = [
+    { title: "Case No", field: "case.caseNumber", formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-800 tracking-wider">${cell.getData().case?.caseNumber || cell.getData().tokenDisplay}</span>`, width: 120 },
+    { title: "Appointment Time", field: "case.createdAt", formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${formatTime(cell.getValue())}</span>`, width: 180 },
+    { title: "Check In Time", field: "checkInTime", formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${cell.getValue() ? formatTime(cell.getValue()) : '--'}</span>`, width: 140 },
+    { title: "Patient Name", field: "patient.firstName", formatter: (cell: any) => {
+        const data = cell.getData();
+        const isNew = isNewPatient(data);
+        const isInSession = data.status === 'IN_SESSION';
+        return `<div class="text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center gap-2">
+                   ${data.patient.firstName} ${data.patient.lastName} 
+                   <span class="text-[10px] text-slate-400 font-bold">[${isNew ? 'NEW' : 'OLD'}]</span>
+                </div>`;
+    }},
+    { title: "Visit For", field: "case.visitType", formatter: (cell: any) => `<span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">${getVisitType(cell.getData())}</span>`, width: 120 },
+    { title: "Age", field: "patient.profile.age", formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() || '--'}</span>`, width: 70 },
+    { title: "Gender", field: "patient.gender", formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() ? cell.getValue().charAt(0).toUpperCase() : 'U'}</span>`, width: 90 },
+    { title: "Address", field: "patient.address.city", formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 uppercase tracking-widest">${cell.getValue() || '--'}</span>`, width: 120 },
+    { title: "Billing", field: "billing", formatter: (cell: any) => {
+        const billing = getBillingStatus(cell.getData());
+        if (billing === 'FOC') return `<div class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200 inline-block">FOC</div>`;
+        if (billing === 'PAID') return `<div class="text-[11px] font-black text-slate-600 uppercase">PAID</div>`;
+        return `<div class="text-[11px] font-black text-rose-600 uppercase">PENDING</div>`;
+    }, width: 100 },
+    { title: "Status", field: "status", formatter: (cell: any) => getStatusBadgeString(cell.getValue()), width: 140 },
+    { title: "Action", field: "action", headerSort: false, formatter: (cell: any) => {
+        return `<a href="/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-teal-600 transition-colors"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>`;
+    }, hozAlign: "center" as const, width: 90 }
+  ];
+
+  // Dynamic row class handler for Tabulator to match our custom design
+  const rowFormatter = (row: any) => {
+    const data = row.getData();
+    const isNew = isNewPatient(data);
+    const isInSession = data.status === 'IN_SESSION';
+    
+    if (isNew) row.getElement().classList.add('row-new');
+    if (isInSession) row.getElement().classList.add('row-insession');
+  };
+
   return (
     <ReceptionLayout>
       <div className="max-w-[1600px] mx-auto space-y-6 pb-20 px-6">
@@ -273,87 +331,23 @@ const OpdQueueView = () => {
                 <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[1000px]">
-                <thead>
-                  <tr className="bg-slate-100/80 border-b border-slate-200">
-                    <th className="px-6 py-4 text-center w-12"><Square className="w-4 h-4 text-slate-400 mx-auto" /></th>
-                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Case ID</th>
-                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Appt</th>
-                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Chk-In</th>
-                    <th className="px-6 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Patient Name</th>
-                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Visit</th>
-                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Age/Sex</th>
-                    <th className="px-4 py-4 text-[11px] font-black text-slate-600 uppercase tracking-widest border-l border-slate-200">Billing</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {currentQueueData.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-20 text-center">
-                        <div className="flex flex-col items-center justify-center opacity-50 space-y-4">
-                          <Users className="w-12 h-12 text-slate-300" />
-                          <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">No patients found matching filters</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : currentQueueData.map((entry) => {
-                    const isNew = isNewPatient(entry);
-                    const isInSession = entry.status === 'IN_SESSION';
-                    const billing = getBillingStatus(entry);
-                    const rowBg = isNew ? 'bg-amber-50/30' : isInSession ? 'bg-teal-50/20' : 'hover:bg-slate-50';
-
-                    return (
-                      <tr key={entry.id} className={`transition-colors ${rowBg}`}>
-                        <td className="px-6 py-4 text-center border-b border-slate-100">
-                          <Square className="w-4 h-4 text-slate-300 mx-auto" />
-                        </td>
-                        <td className="px-4 py-4 border-l border-b border-slate-100">
-                          <span className="text-[12px] font-black text-slate-800 tracking-wider">
-                            {entry.case?.caseNumber || entry.tokenDisplay}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 border-l border-b border-slate-100">
-                          <span className="text-[12px] font-bold text-slate-600 tracking-wider">
-                            {formatTime(entry.case?.createdAt)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 border-l border-b border-slate-100">
-                          <span className="text-[12px] font-bold text-slate-600 tracking-wider">
-                            {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 border-l border-b border-slate-100">
-                          <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center gap-2`}>
-                            <Link href={`/reception/patients/${entry.patient.id}`} className="hover:text-teal-600 transition-colors flex items-center gap-2">
-                              {entry.patient.firstName} {entry.patient.lastName} 
-                              <span className="text-[10px] text-slate-400 font-bold">[{isNew ? 'NEW' : 'OLD'}]</span>
-                              <Eye className="w-4 h-4 text-slate-400 hover:text-teal-600" />
-                            </Link>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 border-l border-b border-slate-100">
-                          <span className="text-[11px] font-bold text-slate-600">{getVisitType(entry)}</span>
-                        </td>
-                        <td className="px-4 py-4 border-l border-b border-slate-100">
-                          <span className="text-[12px] font-black text-slate-700 tracking-widest">{getAgeSex(entry)}</span>
-                        </td>
-                        <td className="px-4 py-4 border-l border-b border-slate-100">
-                          {billing === 'FOC' ? (
-                            <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200 inline-block">
-                              FOC
-                            </div>
-                          ) : billing === 'PAID' ? (
-                            <div className="text-[11px] font-black text-slate-600 uppercase">PAID</div>
-                          ) : (
-                            <div className="text-[11px] font-black text-rose-600 uppercase">PENDING</div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex-1">
+              <ReactTabulator
+                data={currentQueueData}
+                columns={columns}
+                layout="fitColumns"
+                responsiveLayout="hide"
+                rowFormatter={rowFormatter}
+                options={{
+                  headerSort: true, // Specifically keep sorting
+                  selectable: false,
+                  placeholder: currentQueueData.length === 0 ? "No patients found matching filters" : undefined,
+                  initialSort: [
+                    { column: "case.createdAt", dir: "asc" }
+                  ]
+                }}
+                className="w-full h-full border-none"
+              />
             </div>
           )}
 

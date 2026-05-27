@@ -3,234 +3,287 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, LogOut, UserCircle, Menu, X, Activity } from 'lucide-react';
+import { ChevronDown, LogOut, UserCircle, Menu, X, Activity, Maximize, Minimize } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import { ROUTES } from '@/constants/routes';
-import { roleNavigation, NavGroup, NavItem } from '@/config/navigation';
+import { roleNavigation, NavGroup } from '@/config/navigation';
 
 interface TopNavbarProps {
   role: 'doctor' | 'admin' | 'reception' | 'nursing' | 'medical';
 }
 
-const DropdownMenu = ({ group, isActive }: { group: NavGroup, isActive: boolean }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const pathname = usePathname();
-  const dropdownRef = useRef<HTMLDivElement>(null);
+// Brutalist / Industrial Role Themes
+const roleThemes = {
+  doctor: {
+    accent: 'blue',
+    activeText: 'text-blue-600',
+    activeBorder: 'border-blue-600',
+    iconBg: 'bg-blue-600',
+    iconText: 'text-white',
+    lightIconBg: 'bg-blue-50',
+    lightIconText: 'text-blue-600'
+  },
+  admin: {
+    accent: 'indigo',
+    activeText: 'text-indigo-600',
+    activeBorder: 'border-indigo-600',
+    iconBg: 'bg-indigo-600',
+    iconText: 'text-white',
+    lightIconBg: 'bg-indigo-50',
+    lightIconText: 'text-indigo-600'
+  },
+  reception: {
+    accent: 'teal',
+    activeText: 'text-teal-600',
+    activeBorder: 'border-teal-600',
+    iconBg: 'bg-teal-600',
+    iconText: 'text-white',
+    lightIconBg: 'bg-teal-50',
+    lightIconText: 'text-teal-600'
+  },
+  nursing: {
+    accent: 'rose',
+    activeText: 'text-rose-600',
+    activeBorder: 'border-rose-600',
+    iconBg: 'bg-rose-600',
+    iconText: 'text-white',
+    lightIconBg: 'bg-rose-50',
+    lightIconText: 'text-rose-600'
+  },
+  medical: {
+    accent: 'emerald',
+    activeText: 'text-emerald-600',
+    activeBorder: 'border-emerald-600',
+    iconBg: 'bg-emerald-600',
+    iconText: 'text-white',
+    lightIconBg: 'bg-emerald-50',
+    lightIconText: 'text-emerald-600'
+  }
+};
 
-  // Close dropdown on outside click
+const TopNavbar = ({ role }: TopNavbarProps) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const theme = roleThemes[role] || roleThemes.reception;
+  const navConfig = roleNavigation[role] || { directItems: [], groups: [] };
+
+  // Flatten navigation for desktop (ignoring groups if present)
+  const flattenedNav: { label: string; href: string; icon: any }[] = [];
+  
+  if (navConfig.directItems) {
+    navConfig.directItems.forEach((item: any) => {
+      flattenedNav.push({ label: item.title, href: item.href, icon: item.icon });
+    });
+  }
+
+  if (navConfig.groups) {
+    navConfig.groups.forEach((group: any) => {
+      group.items.forEach((item: any) => {
+        flattenedNav.push({ label: item.title, href: item.href, icon: item.icon });
+      });
+    });
+  }
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close dropdown on path change
   useEffect(() => {
-    setIsOpen(false);
+    setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  const hasActiveItem = group.items.some(item => pathname === item.href || pathname === `${item.href}/`);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-          hasActiveItem || isOpen ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-        }`}
-      >
-        {group.title}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-slate-100 rounded-xl shadow-xl z-50 overflow-hidden py-1">
-          {group.items.map((item) => {
-            const isItemActive = pathname === item.href || pathname === `${item.href}/`;
-            return (
-              <Link 
-                key={item.href} 
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                  isItemActive 
-                    ? 'bg-blue-50 text-blue-600 font-semibold' 
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <item.icon className={`w-4 h-4 ${isItemActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                {item.title}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const TopNavbar: React.FC<TopNavbarProps> = ({ role }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
-  const { logout, user } = useAuthStore();
-  const navConfig = roleNavigation[role];
-
-  // Close mobile menu on path change
+  // Fullscreen toggle logic
   useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
-    router.push(ROUTES.LOGIN);
-  };
-
-  const getProfileLink = () => {
-    switch(role) {
-      case 'admin': return ROUTES.admin.profile;
-      case 'doctor': return ROUTES.doctor.profile;
-      case 'reception': return ROUTES.reception.myProfile;
-      case 'nursing': return ROUTES.nursing.profile;
-      case 'medical': return ROUTES.medical.profile;
-      default: return '#';
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling fullscreen:', err);
     }
   };
 
-  if (!navConfig) return null;
+  const handleLogout = () => {
+    logout();
+    router.push(ROUTES.LOGIN);
+    toast.success('Logged out successfully');
+  };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm">
-      <div className="flex h-16 items-center justify-between px-4 lg:px-8">
-        {/* Brand */}
-        <div className="flex items-center gap-3 min-w-max">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-500/20">
-            <Activity className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-slate-800 tracking-tighter leading-none uppercase">MedFlow</h1>
-            <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mt-1 block">
-              {role} Panel
-            </span>
-          </div>
+    <header className="sticky top-0 z-50 bg-white border-b border-slate-200">
+      <div className="flex h-16 items-center justify-between px-6">
+        
+        {/* BRANDING */}
+        <div className="flex items-center gap-6">
+          <Link href={`/${role}/dashboard`} className="flex items-center gap-3 group">
+            <div className={`w-8 h-8 ${theme.iconBg} ${theme.iconText} rounded-lg flex items-center justify-center shadow-[2px_2px_0px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-105`}>
+              <Activity className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[14px] font-black tracking-[0.15em] text-slate-900 leading-none">
+                MEDFLOW
+              </span>
+              <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${theme.activeText} leading-none mt-0.5`}>
+                {role}
+              </span>
+            </div>
+          </Link>
+
+          {/* DESKTOP NAVIGATION */}
+          <nav className="hidden lg:flex items-center ml-8 gap-1">
+            {flattenedNav.map((item) => {
+              const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+              const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
+              const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
+              const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
+              
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    group flex items-center gap-2.5 px-4 h-16 border-b-2 transition-colors
+                    ${isActive 
+                      ? `${theme.activeBorder} ${theme.activeText} bg-slate-50/50` 
+                      : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300'
+                    }
+                  `}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400 group-hover:text-slate-700'}`} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex flex-1 items-center justify-center gap-2 px-8">
-          {navConfig.directItems.map(item => {
-            const isActive = pathname === item.href || pathname === `${item.href}/`;
+        {/* RIGHT ACTIONS */}
+        <div className="flex items-center gap-4">
+          
+          {/* FULLSCREEN TOGGLE */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-900 rounded-lg border border-transparent hover:border-slate-200 transition-all"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+          </button>
+
+          <div className="h-6 w-px bg-slate-200 mx-2"></div>
+
+          {/* PROFILE DROPDOWN */}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-3 p-1.5 pr-3 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-xl transition-all"
+            >
+              <div className={`w-8 h-8 rounded-lg ${theme.lightIconBg} ${theme.lightIconText} flex items-center justify-center font-black uppercase tracking-wider text-xs border border-${theme.accent}-100`}>
+                {user?.name ? user.name.split(' ').map(n => n.charAt(0)).slice(0, 2).join('').toUpperCase() : 'KA'}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-[11px] font-black text-slate-900 leading-none">{user?.name || 'Kalp'}</p>
+                <p className="text-[9px] font-bold text-slate-400 mt-1">{user?.email || 'reception@clinic.com'}</p>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 shadow-xl origin-top-right z-50 rounded-xl overflow-hidden">
+                <div className={`px-4 py-3 border-b border-slate-100 ${theme.lightIconBg}`}>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Signed in as</p>
+                  <p className={`text-xs font-bold ${theme.activeText} mt-0.5 truncate`}>{user?.email || 'reception@clinic.com'}</p>
+                </div>
+                <div className="p-1">
+                  <Link
+                    href={`/${role}/settings`}
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+                  >
+                    <UserCircle className="w-4 h-4" />
+                    Account Settings
+                  </Link>
+                  <div className="h-px bg-slate-100 my-1"></div>
+                  <button
+                    onClick={() => {
+                      setProfileOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* MOBILE MENU TOGGLE */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-900 rounded-lg"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* MOBILE NAVIGATION */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden border-t border-slate-200 bg-slate-50 px-4 py-4 space-y-2">
+          {flattenedNav.map((item) => {
+            const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+            const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
+            const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
+            const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
+
+            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                className={`
+                  flex items-center gap-3 px-4 py-3 rounded-xl transition-colors
+                  ${isActive 
+                    ? `${theme.iconBg} text-white` 
+                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                  }
+                `}
               >
-                <item.icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                {item.title}
+                <Icon className="w-4 h-4" />
+                <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
               </Link>
             );
           })}
-          
-          {navConfig.groups.map(group => (
-            <DropdownMenu key={group.title} group={group} isActive={false} />
-          ))}
-        </nav>
-
-        {/* Right Section: Profile & Actions */}
-        <div className="hidden lg:flex items-center gap-4 min-w-max">
-          <div className="flex items-center gap-2 pl-4 border-l border-slate-200">
-            <Link href={getProfileLink()} className="flex items-center gap-2 hover:bg-slate-50 p-1.5 rounded-lg transition-colors">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xs uppercase">
-                {user?.name?.substring(0, 2) || role.substring(0, 2)}
-              </div>
-              <div className="hidden xl:block text-left mr-2">
-                <p className="text-[11px] font-bold text-slate-800 leading-none">{user?.name || `${role.charAt(0).toUpperCase() + role.slice(1)}`}</p>
-                <p className="text-[9px] font-semibold text-slate-500 truncate mt-0.5 max-w-[120px]">{user?.email || 'user@medflow.com'}</p>
-              </div>
-            </Link>
-            <button 
-              onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile menu button */}
-        <button 
-          className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
-
-      {/* Mobile Navigation Dropdown */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-slate-200 max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <nav className="p-4 space-y-4">
-            <div className="space-y-1">
-              {navConfig.directItems.map(item => {
-                const isActive = pathname === item.href || pathname === `${item.href}/`;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-                      isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                    {item.title}
-                  </Link>
-                );
-              })}
-            </div>
-
-            {navConfig.groups.map(group => (
-              <div key={group.title} className="space-y-1">
-                <h3 className="px-4 text-xs font-black text-slate-400 uppercase tracking-widest mb-2 mt-4">{group.title}</h3>
-                {group.items.map(item => {
-                  const isItemActive = pathname === item.href || pathname === `${item.href}/`;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-                        isItemActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <item.icon className={`w-5 h-5 ${isItemActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                      {item.title}
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-
-            <div className="pt-4 mt-4 border-t border-slate-100">
-              <Link href={getProfileLink()} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                <UserCircle className="w-5 h-5 text-slate-400" />
-                My Profile
-              </Link>
-              <button 
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 mt-2 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50"
-              >
-                <LogOut className="w-5 h-5" />
-                Logout
-              </button>
-            </div>
-          </nav>
         </div>
       )}
     </header>

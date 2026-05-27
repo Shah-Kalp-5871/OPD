@@ -64,9 +64,9 @@ const AddVitalsModal: React.FC<AddVitalsModalProps> = ({
               { id: 'pulse', label: 'Pulse Rate (BPM)', placeholder: '72' },
               { id: 'bpSys', label: 'BP Systolic (mmHg)', placeholder: '120' },
               { id: 'bpDia', label: 'BP Diastolic (mmHg)', placeholder: '80' },
-              { id: 'spo2', label: 'SPO2 Oxygen (%)', placeholder: '98' },
+              { id: 'height', label: 'Height (cm)', placeholder: '170' },
               { id: 'weight', label: 'Body Weight (Kg)', placeholder: '70' },
-              { id: 'height', label: 'Height (cm)', placeholder: '170' }
+              { id: 'spo2', label: 'SPO2 Oxygen (%)', placeholder: '98' }
             ].map((field) => (
               <div key={field.id} className="space-y-3">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{field.label}</label>

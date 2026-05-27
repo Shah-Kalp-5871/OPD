@@ -448,3 +448,67 @@ select::-webkit-scrollbar-thumb {
 .duration-200 { animation-duration: 200ms; }
 .duration-300 { animation-duration: 300ms; }
 .duration-700 { animation-duration: 700ms; }
+
+/* ============================================================
+   TABULATOR OVERRIDES (BRUTALIST/INDUSTRIAL STYLE)
+   ============================================================ */
+.tabulator {
+  background-color: white !important;
+  border: none !important;
+  font-family: inherit !important;
+}
+
+.tabulator-header {
+  background-color: rgba(241, 245, 249, 0.8) !important; /* bg-slate-100/80 */
+  border-bottom: 1px solid #e2e8f0 !important; /* border-slate-200 */
+  border-top: none !important;
+}
+
+.tabulator-col {
+  background-color: transparent !important;
+  border-right: none !important;
+  border-left: 1px solid #e2e8f0 !important;
+  padding: 0 !important;
+}
+
+.tabulator-col-content {
+  padding: 1rem 1rem !important;
+}
+
+.tabulator-col-title {
+  font-size: 11px !important;
+  font-weight: 900 !important; /* font-black */
+  color: #475569 !important; /* text-slate-600 */
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important; /* tracking-widest */
+}
+
+.tabulator-row {
+  border-bottom: 1px solid #f1f5f9 !important; /* border-slate-100 */
+  background-color: white !important;
+  min-height: 56px !important;
+}
+
+.tabulator-row:hover {
+  background-color: #f8fafc !important; /* hover:bg-slate-50 */
+}
+
+.tabulator-cell {
+  border-right: none !important;
+  border-left: 1px solid #f1f5f9 !important; /* border-slate-100 */
+  padding: 1rem 1rem !important;
+}
+
+/* Custom Row Backgrounds based on classes we'll apply */
+.tabulator-row.row-new {
+  background-color: rgba(254, 252, 232, 0.3) !important; /* bg-amber-50/30 */
+}
+
+.tabulator-row.row-insession {
+  background-color: rgba(240, 253, 250, 0.2) !important; /* bg-teal-50/20 */
+}
+
+/* Hide tabulator footer if it shows up */
+.tabulator-footer {
+  display: none !important;
+}
