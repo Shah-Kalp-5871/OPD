@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import NursingSidebar from '@/views/partials/nursing/NursingSidebar';
-import NursingHeader from '@/views/partials/nursing/NursingHeader';
+import TopNavbar from '@/components/ui/TopNavbar';
 
 interface NursingLayoutProps {
   children: React.ReactNode;
@@ -11,14 +10,11 @@ interface NursingLayoutProps {
 const NursingLayout: React.FC<NursingLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Fixed Sidebar */}
-      <NursingSidebar />
+      <TopNavbar role="nursing" />
 
       {/* Main Content Wrapper */}
-      <div className="pl-64 flex flex-col min-h-screen">
-        {/* Sticky Header */}
-        <NursingHeader />
-
+      <div className="flex flex-col min-h-screen">
+        
         {/* Scrollable Content Area */}
         <main className="mt-20 flex-1 p-8 overflow-y-auto custom-scrollbar scrollbar-stable">
           {children}

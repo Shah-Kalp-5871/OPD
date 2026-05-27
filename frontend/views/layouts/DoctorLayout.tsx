@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import DoctorSidebar from '@/views/partials/doctor/DoctorSidebar';
-import DoctorHeader from '@/views/partials/doctor/DoctorHeader';
+import TopNavbar from '@/components/ui/TopNavbar';
 
 interface DoctorLayoutProps {
   children: React.ReactNode;
@@ -11,14 +10,10 @@ interface DoctorLayoutProps {
 const DoctorLayout: React.FC<DoctorLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Sidebar - Fixed on Desktop */}
-      <div className="hidden lg:block">
-        <DoctorSidebar />
-      </div>
+      <TopNavbar role="doctor" />
 
       {/* Main Content Area */}
-      <div className="lg:pl-64 flex flex-col min-h-screen">
-        <DoctorHeader />
+      <div className="flex flex-col min-h-screen">
         
         <main className="flex-1 p-6 lg:p-10">
           {children}
