@@ -400,7 +400,7 @@ const BillingView = () => {
                              </td>
                              <td className="px-8 py-5 text-center">
                                 <button 
-                                  onClick={() => router.push(`/opd/reception/billing?caseId=${pb.caseId}`)}
+                                  onClick={() => router.push(`/reception/billing?caseId=${pb.caseId}`)}
                                   className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all"
                                 >
                                    View Details

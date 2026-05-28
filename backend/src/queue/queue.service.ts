@@ -352,6 +352,11 @@ export class QueueService {
             mrdNumber: true,
             gender: true,
             isFoc: true,
+            _count: {
+              select: {
+                cases: true,
+              },
+            },
             profile: {
               select: {
                 age: true,

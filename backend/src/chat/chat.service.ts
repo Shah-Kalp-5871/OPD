@@ -10,11 +10,21 @@ export class ChatService {
     private readonly appGateway: AppGateway,
   ) {}
 
-  async createMessage(dto: CreateMessageDto, senderId: string, tenantId: string) {
-    if (!tenantId) {
-      throw new BadRequestException('Tenant ID is missing');
+  async createMessage(dto: CreateMessageDto, senderId: string, branchId: string) {
+    if (!branchId) {
+      throw new BadRequestException('Branch ID is missing');
     }
     
+    // Resolve tenantId from branchId via Clinic relation
+    const branch = await this.prisma.branch.findUnique({ 
+      where: { id: branchId },
+      include: { clinic: true }
+    });
+    if (!branch || !branch.clinic?.tenantId) {
+      throw new BadRequestException('Invalid branch or missing tenant');
+    }
+    const tenantId = branch.clinic.tenantId;
+
     const message = await this.prisma.message.create({
       data: {
         content: dto.content,
@@ -50,9 +60,17 @@ export class ChatService {
     return message;
   }
 
-  async getRecentMessages(tenantId: string) {
+  async getRecentMessages(branchId: string) {
+    if (!branchId) return [];
+    
+    const branch = await this.prisma.branch.findUnique({ 
+      where: { id: branchId },
+      include: { clinic: true }
+    });
+    if (!branch || !branch.clinic?.tenantId) return [];
+    
     return this.prisma.message.findMany({
-      where: { tenantId, roomId: null, recipientId: null },
+      where: { tenantId: branch.clinic.tenantId, roomId: null, recipientId: null },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

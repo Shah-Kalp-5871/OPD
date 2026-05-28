@@ -125,10 +125,11 @@ const OpdQueueView = () => {
   };
 
   const isNewPatient = (entry: any) => {
-    // Assuming if they have no ID or just created today, we can logic it.
-    // For now, simple mock based on FOC status or random logic if needed, but we'll default to OLD if not sure.
-    // Using isFoc to test highlighting if needed, or just let it be derived.
-    return false; // Replace with real logic if backend provides isNewPatient flag
+    // If the patient has 1 or fewer cases, they are considered NEW (since the current visit creates a case)
+    if (entry.patient?._count?.cases !== undefined) {
+      return entry.patient._count.cases <= 1;
+    }
+    return false;
   };
 
   // Filter Logic
@@ -196,9 +197,12 @@ const OpdQueueView = () => {
         const data = cell.getData();
         const isNew = isNewPatient(data);
         const isInSession = data.status === 'IN_SESSION';
+        const badge = isNew 
+          ? `<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[9px] font-black tracking-widest">NEW PT</span>`
+          : `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-[9px] font-black tracking-widest">OLD PT</span>`;
         return `<div class="text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center gap-2">
                    ${data.patient.firstName} ${data.patient.lastName} 
-                   <span class="text-[10px] text-slate-400 font-bold">[${isNew ? 'NEW' : 'OLD'}]</span>
+                   ${badge}
                 </div>`;
     }},
     { title: "Visit For", field: "case.visitType", resizable: true, formatter: (cell: any) => `<span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">${getVisitType(cell.getData())}</span>`, width: 120 },
@@ -213,7 +217,7 @@ const OpdQueueView = () => {
     }, width: 90 },
     { title: "Status", field: "status", resizable: true, formatter: (cell: any) => getStatusBadgeString(cell.getValue()), width: 120 },
     { title: "Action", field: "action", headerSort: false, resizable: false, formatter: (cell: any) => {
-        return `<a href="/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
+        return `<a href="/opd/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-teal-600 transition-colors"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>`;
     }, hozAlign: "center" as const, width: 90 }

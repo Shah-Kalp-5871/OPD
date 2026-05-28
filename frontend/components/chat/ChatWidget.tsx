@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2 } from 'lucide-react';
 import api from '@/lib/api';
-import { getApiUrl } from '@/lib/path-utils';
+import { APP_CONFIG } from '@/lib/config';
+import { io, Socket } from 'socket.io-client';
 
 interface Message {
   id: string;
@@ -37,25 +38,30 @@ export default function ChatWidget() {
 
     fetchMessages();
 
-    // SSE connection for chat
+    // Socket.io connection for chat
+    let socket: Socket;
     if (token) {
-      const eventSource = new EventSource(getApiUrl(`/events/queue?token=${encodeURIComponent(token)}`));
+      socket = io(`${APP_CONFIG.API_BASE_URL}/medflow`, {
+        transports: ['websocket'],
+      });
       
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'new_message') {
-            setMessages((prev) => [...prev, data as Message]);
-            if (!isOpen) {
-              setUnreadCount((prev) => prev + 1);
-            }
-          }
-        } catch (error) {}
-      };
+      socket.on('connect', () => {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        socket.emit('authenticate', { userId: payload.sub });
+      });
 
-      return () => eventSource.close();
+      socket.on('new_message', (data: Message) => {
+        setMessages((prev) => [...prev, data]);
+        if (!isOpen) {
+          setUnreadCount((prev) => prev + 1);
+        }
+      });
     }
-  }, []);
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
@@ -71,7 +77,8 @@ export default function ChatWidget() {
   const fetchMessages = async () => {
     try {
       const res = await api.get('/chat');
-      setMessages((res.data.data || []).reverse()); // Assume backend sends latest first
+      const messagesArray = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      setMessages([...messagesArray].reverse()); // Assume backend sends latest first
     } catch (error) {
       console.error('Failed to load messages');
     }
@@ -84,8 +91,8 @@ export default function ChatWidget() {
     try {
       await api.post('/chat', { content: newMessage });
       setNewMessage('');
-    } catch (error) {
-      console.error('Failed to send message');
+    } catch (error: any) {
+      console.error('Failed to send message', error.response?.data || error.message);
     }
   };
 

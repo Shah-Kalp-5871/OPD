@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common'
 import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { BranchId } from '../common/decorators/branch-id.decorator';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -12,12 +13,13 @@ export class ChatController {
   async createMessage(
     @Body() dto: CreateMessageDto,
     @Request() req,
+    @BranchId() branchId: string,
   ) {
-    return this.chatService.createMessage(dto, req.user.id, req.user.tenantId);
+    return this.chatService.createMessage(dto, req.user.id, branchId);
   }
 
   @Get()
-  async getRecentMessages(@Request() req) {
-    return this.chatService.getRecentMessages(req.user.tenantId);
+  async getRecentMessages(@BranchId() branchId: string) {
+    return this.chatService.getRecentMessages(branchId);
   }
 }
