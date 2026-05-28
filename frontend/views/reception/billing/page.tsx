@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { QRCodeCanvas } from 'qrcode.react';
+import Script from 'next/script';
 import api from '@/lib/api';
 import { billingApi } from '@/lib/api/billing';
 import { toast } from 'sonner';
@@ -50,6 +52,8 @@ const BillingView = () => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrUrl, setQrUrl] = useState('');
   const paymentSubmittingRef = useRef(false);
 
   const { lastEvent } = useQueueSSE();
@@ -151,6 +155,25 @@ const BillingView = () => {
     paymentSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
+      if (!isFoc && paymentMode === 'BANK_TRANSFER') {
+        // Initialize Razorpay Payment Link
+        const amount = parseFloat(amountCollected);
+        const linkRes = await api.post('/payments/link', {
+          amount: amount,
+          currency: 'INR',
+          provider: 'RAZORPAY',
+          billId: bill.id,
+          appointmentId: bill.caseId
+        });
+
+        setQrUrl(linkRes.data.shortUrl);
+        setIsQrModalOpen(true);
+        toast.success(`Payment link generated and sent to ${bill.patient?.firstName}'s WhatsApp`);
+        setIsSubmitting(false);
+        paymentSubmittingRef.current = false;
+        return; // wait for callback or manual verification
+      }
+
       const result = await api.post(`/billing/${bill.id}/pay`, {
         isFoc,
         focReason,
@@ -235,12 +258,13 @@ const BillingView = () => {
     { id: 'CASH', label: 'Cash', icon: Banknote, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
     { id: 'CREDIT_CARD', label: 'Card', icon: CreditCard, color: 'bg-blue-50 text-blue-600 border-blue-100' },
     { id: 'UPI', label: 'UPI', icon: QrCode, color: 'bg-purple-50 text-purple-600 border-purple-100' },
-    { id: 'BANK_TRANSFER', label: 'Online', icon: Globe, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' }
+    { id: 'BANK_TRANSFER', label: 'Razorpay', icon: Globe, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' }
   ];
 
   if (isLoading) {
     return (
       <ReceptionLayout>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <div className="flex flex-col items-center justify-center py-40 space-y-4">
            <div className="w-10 h-10 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Loading Financial Records...</p>
@@ -253,11 +277,21 @@ const BillingView = () => {
   if (!caseId) {
     return (
       <ReceptionLayout>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <div className="max-w-7xl mx-auto space-y-8 pb-20">
           <div className="flex justify-between items-end">
             <div>
               <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Billing Dashboard</h1>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-4">Manage patient payments and pending dues</p>
+            </div>
+            <div>
+              <button
+                onClick={() => router.push('/reception/billing/history')}
+                className="px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center gap-2 shadow-xl shadow-slate-200"
+              >
+                <History className="w-4 h-4" />
+                View History
+              </button>
             </div>
           </div>
 
@@ -378,6 +412,7 @@ const BillingView = () => {
 
   return (
     <ReceptionLayout>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="max-w-7xl mx-auto space-y-8 pb-20">
         
         {/* PAGE HEADER */}
@@ -739,6 +774,63 @@ const BillingView = () => {
            </div>
         </div>
       </div>
+
+      {/* RAZORPAY QR MODAL */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="p-6 text-center space-y-6">
+              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Globe className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Scan to Pay</h2>
+              <p className="text-xs font-medium text-slate-500">
+                A payment link has also been sent to {bill?.patient?.firstName}'s WhatsApp.
+              </p>
+              
+              <div className="flex justify-center p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                <QRCodeCanvas value={qrUrl} size={200} level="H" />
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Amount</p>
+                <p className="text-2xl font-black text-slate-900">₹{amountCollected}</p>
+              </div>
+            </div>
+            
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const checkRes = await api.get(`/billing/${caseId}`);
+                    if (checkRes.data.paymentStatus === 'PAID') {
+                      setBill(checkRes.data);
+                      setIsQrModalOpen(false);
+                      toast.success('Payment received successfully!');
+                      setTimeout(() => {
+                        window.open(`/opd/print/invoice/${checkRes.data.id}`, '_blank');
+                      }, 800);
+                    } else {
+                      toast.error('Payment not received yet. Please try again or ask patient to complete payment.');
+                    }
+                  } catch (e) {
+                    toast.error('Failed to verify status');
+                  }
+                }}
+                className="w-full py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" /> VERIFY STATUS
+              </button>
+              <button
+                onClick={() => setIsQrModalOpen(false)}
+                className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </ReceptionLayout>
   );
 };

@@ -12,6 +12,7 @@ import { QueueService } from '../queue/queue.service';
 import { PatientsService } from '../patients/patients.service';
 import { CheckInAppointmentDto } from './dto/check-in-appointment.dto';
 import { AppointmentQueryDto } from './dto/appointment-query.dto';
+import { SmsWhatsappService } from '../communications/sms-whatsapp.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -19,6 +20,7 @@ export class AppointmentsService {
     private prisma: PrismaService,
     private queueService: QueueService,
     private patientsService: PatientsService,
+    private smsWhatsappService: SmsWhatsappService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto, branchId: string) {
@@ -32,7 +34,7 @@ export class AppointmentsService {
     } = createAppointmentDto;
     const dateObj = this.parseDateOnly(appointmentDate);
 
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         const appointmentDateOnly = this.toDateOnlyUtc(dateObj);
         const fullAppointmentDateTime = this.combineDateAndTime(
@@ -87,7 +89,26 @@ export class AppointmentsService {
         if (existing)
           throw new ConflictException('This slot is already booked');
 
-        return tx.appointment.create({
+        // Check if there is already a case for this patient on this date to avoid duplicates if required.
+        // The business logic dictates we create a PatientCase right at booking time.
+        const caseNumber = await this.generateCaseNumber(tx, branchId, appointmentDateOnly, patientId);
+
+        const patientCase = await tx.patientCase.create({
+          data: {
+            caseNumber,
+            patientId,
+            doctorId: doctorProfile.userId,
+            branchId,
+            visitType: purpose || 'CONSULTATION',
+            priority: 'NORMAL',
+            complaint: remarks,
+            status: 'OPEN',
+            stage: 'RECEPTION',
+            visitDate: appointmentDateOnly,
+          }
+        });
+
+        const appointment = await tx.appointment.create({
           data: {
             patientId,
             doctorId,
@@ -97,6 +118,7 @@ export class AppointmentsService {
             purpose,
             remarks,
             status: AppointmentStatus.SCHEDULED,
+            caseId: patientCase.id
           },
           include: {
             patient: true,
@@ -105,11 +127,53 @@ export class AppointmentsService {
                 user: true,
               },
             },
+            patientCase: true
           },
         });
+        
+        await tx.patientCase.update({
+          where: { id: patientCase.id },
+          data: { appointment: { connect: { id: appointment.id } } }
+        });
+
+        const queueEntry = await this.queueService.createEntryInTransaction(
+          tx,
+          {
+            caseId: patientCase.id,
+            patientId,
+            doctorId: doctorProfile.userId,
+            priority: 'NORMAL',
+            queueType: QueueType.OPD,
+          },
+          doctorProfile.userId,
+          branchId,
+        );
+
+        return { ...appointment, patientCase: { ...patientCase, queueEntry } };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    // Trigger WhatsApp notification asynchronously
+    const patientName = `${result.patient.firstName || ''} ${result.patient.lastName || ''}`.trim();
+    const formattedDate = format(result.appointmentDate, 'PP') + ' at ' + format(result.appointmentTime, 'p');
+    
+    this.smsWhatsappService.sendWhatsApp({
+      recipient: result.patient.mobile,
+      content: `Hello ${patientName}, your appointment is confirmed for ${formattedDate}. Case ID: ${result.patientCase.caseNumber}.`,
+      templateName: 'appointment_confirmation',
+      templateParams: {
+        patient_name: patientName,
+        appointment_date: formattedDate,
+        case_id: result.patientCase.caseNumber
+      },
+      patientId: result.patient.id,
+      userId: 'SYSTEM',
+    }).catch(err => {
+      console.error('Failed to send WhatsApp confirmation', err);
+    });
+
+    return result;
   }
 
   async getAvailableSlots(doctorId: string, dateStr: string, branchId: string) {
@@ -455,22 +519,31 @@ export class AppointmentsService {
           'Cannot check in appointment',
         );
 
-        // 2. Create PatientCase
-        const caseNumber = await this.generateCaseNumber(tx, branchId);
-        const patientCase = await tx.patientCase.create({
-          data: {
-            caseNumber,
-            patientId: appointment.patientId,
-            doctorId: appointment.doctor.userId,
-            branchId,
-            visitType: visitType || appointment.purpose || 'CONSULTATION',
-            priority: priority || 'NORMAL',
-            complaint: complaint || appointment.remarks,
-            status: 'OPEN',
-            stage: 'NURSING',
-            appointment: { connect: { id: appointmentId } },
-          },
-        });
+        // 2. Create PatientCase if not exists (for legacy appointments without cases)
+        let patientCase = appointment.patientCase;
+        if (!patientCase) {
+          const caseNumber = await this.generateCaseNumber(tx, branchId, appointment.appointmentDate, appointment.patientId);
+          patientCase = await tx.patientCase.create({
+            data: {
+              caseNumber,
+              patientId: appointment.patientId,
+              doctorId: appointment.doctor.userId,
+              branchId,
+              visitType: visitType || appointment.purpose || 'CONSULTATION',
+              priority: priority || 'NORMAL',
+              complaint: complaint || appointment.remarks,
+              status: 'OPEN',
+              stage: 'NURSING',
+              visitDate: appointment.appointmentDate,
+              appointment: { connect: { id: appointmentId } },
+            },
+          }) as any;
+        } else {
+          await tx.patientCase.update({
+            where: { id: patientCase.id },
+            data: { stage: 'NURSING' }
+          });
+        }
 
         // 3. Save Vitals if provided
         if (vitals) {
@@ -485,26 +558,29 @@ export class AppointmentsService {
               ...vitals,
               bmi,
               patientId: appointment.patientId,
-              caseId: patientCase.id,
+              caseId: patientCase!.id,
               takenById: userId,
               branchId,
             },
           });
         }
 
-        // 4. Create Queue Entry
-        const queueEntry = await this.queueService.createEntryInTransaction(
-          tx,
-          {
-            caseId: patientCase.id,
-            patientId: appointment.patientId,
-            doctorId: appointment.doctor.userId,
-            priority: priority || 'NORMAL',
-            queueType: QueueType.OPD,
-          },
-          userId,
-          branchId,
-        );
+        // 4. Create Queue Entry if not exists
+        let queueEntry = appointment.patientCase?.queueEntry;
+        if (!queueEntry) {
+          queueEntry = await this.queueService.createEntryInTransaction(
+            tx,
+            {
+              caseId: patientCase!.id,
+              patientId: appointment.patientId,
+              doctorId: appointment.doctor.userId,
+              priority: priority || 'NORMAL',
+              queueType: QueueType.OPD,
+            },
+            userId,
+            branchId,
+          );
+        }
 
         // 5. Update Appointment Status
         await tx.appointment.update({
@@ -523,7 +599,7 @@ export class AppointmentsService {
         });
 
         return {
-          caseId: patientCase.id,
+          caseId: patientCase!.id,
           queueEntry,
           appointmentId,
         };
@@ -820,25 +896,40 @@ export class AppointmentsService {
   private async generateCaseNumber(
     tx: Prisma.TransactionClient,
     branchId: string,
+    appointmentDate: Date,
+    patientId: string
   ): Promise<string> {
-    const today = new Date();
-    const dateStr =
-      today.getFullYear().toString().slice(-2) +
-      (today.getMonth() + 1).toString().padStart(2, '0') +
-      today.getDate().toString().padStart(2, '0');
+    const dateStr = format(appointmentDate, 'ddMMyy');
 
     await this.lockTransactionKey(tx, `case-number-${branchId}-${dateStr}`);
+    await this.lockTransactionKey(tx, `case-patient-${patientId}`);
 
-    const count = await tx.patientCase.count({
+    const todayStart = new Date(appointmentDate);
+    todayStart.setUTCHours(0,0,0,0);
+    const todayEnd = new Date(appointmentDate);
+    todayEnd.setUTCHours(23,59,59,999);
+
+    const tokenCount = await tx.patientCase.count({
       where: {
         branchId,
-        caseNumber: {
-          startsWith: `C${dateStr}`,
+        visitDate: {
+          gte: todayStart,
+          lte: todayEnd,
         },
       },
     });
 
-    return `C${dateStr}${(count + 1).toString().padStart(4, '0')}`;
+    const tokenStr = (tokenCount + 1).toString().padStart(3, '0');
+
+    const patientVisitsCount = await tx.patientCase.count({
+      where: {
+        patientId
+      }
+    });
+    
+    const visitStr = (patientVisitsCount + 1).toString().padStart(3, '0');
+
+    return `C${tokenStr}-${visitStr}-${dateStr}`;
   }
 
   private async lockTransactionKey(tx: Prisma.TransactionClient, key: string) {

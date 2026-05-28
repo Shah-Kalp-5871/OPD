@@ -189,10 +189,10 @@ const OpdQueueView = () => {
   };
 
   const columns: ColumnDefinition[] = [
-    { title: "Case No", field: "case.caseNumber", formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-800 tracking-wider">${cell.getData().case?.caseNumber || cell.getData().tokenDisplay}</span>`, width: 120 },
-    { title: "Appointment Time", field: "case.createdAt", formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${formatTime(cell.getValue())}</span>`, width: 180 },
-    { title: "Check In Time", field: "checkInTime", formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${cell.getValue() ? formatTime(cell.getValue()) : '--'}</span>`, width: 140 },
-    { title: "Patient Name", field: "patient.firstName", formatter: (cell: any) => {
+    { title: "Case No", field: "case.caseNumber", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-800 tracking-wider">${cell.getData().case?.caseNumber || cell.getData().tokenDisplay}</span>`, width: 170 },
+    { title: "Appointment Time", field: "case.createdAt", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${formatTime(cell.getValue())}</span>`, width: 180 },
+    { title: "Check In Time", field: "checkInTime", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${cell.getValue() ? formatTime(cell.getValue()) : '--'}</span>`, width: 140 },
+    { title: "Patient Name", field: "patient.firstName", resizable: true, formatter: (cell: any) => {
         const data = cell.getData();
         const isNew = isNewPatient(data);
         const isInSession = data.status === 'IN_SESSION';
@@ -201,18 +201,18 @@ const OpdQueueView = () => {
                    <span class="text-[10px] text-slate-400 font-bold">[${isNew ? 'NEW' : 'OLD'}]</span>
                 </div>`;
     }},
-    { title: "Visit For", field: "case.visitType", formatter: (cell: any) => `<span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">${getVisitType(cell.getData())}</span>`, width: 120 },
-    { title: "Age", field: "patient.profile.age", formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() || '--'}</span>`, width: 70 },
-    { title: "Gender", field: "patient.gender", formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() ? cell.getValue().charAt(0).toUpperCase() : 'U'}</span>`, width: 90 },
-    { title: "Address", field: "patient.address.city", formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 uppercase tracking-widest">${cell.getValue() || '--'}</span>`, width: 120 },
-    { title: "Billing", field: "billing", formatter: (cell: any) => {
+    { title: "Visit For", field: "case.visitType", resizable: true, formatter: (cell: any) => `<span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">${getVisitType(cell.getData())}</span>`, width: 120 },
+    { title: "Age", field: "patient.profile.age", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() || '--'}</span>`, width: 70 },
+    { title: "Gender", field: "patient.gender", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() ? cell.getValue().charAt(0).toUpperCase() : 'U'}</span>`, width: 90 },
+    { title: "Address", field: "patient.address.city", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 uppercase tracking-widest">${cell.getValue() || '--'}</span>`, width: 100 },
+    { title: "Billing", field: "billing", resizable: true, formatter: (cell: any) => {
         const billing = getBillingStatus(cell.getData());
         if (billing === 'FOC') return `<div class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200 inline-block">FOC</div>`;
         if (billing === 'PAID') return `<div class="text-[11px] font-black text-slate-600 uppercase">PAID</div>`;
         return `<div class="text-[11px] font-black text-rose-600 uppercase">PENDING</div>`;
-    }, width: 100 },
-    { title: "Status", field: "status", formatter: (cell: any) => getStatusBadgeString(cell.getValue()), width: 140 },
-    { title: "Action", field: "action", headerSort: false, formatter: (cell: any) => {
+    }, width: 90 },
+    { title: "Status", field: "status", resizable: true, formatter: (cell: any) => getStatusBadgeString(cell.getValue()), width: 120 },
+    { title: "Action", field: "action", headerSort: false, resizable: false, formatter: (cell: any) => {
         return `<a href="/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-teal-600 transition-colors"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>`;
@@ -325,13 +325,14 @@ const OpdQueueView = () => {
 
         {/* Main Table Area */}
         <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden relative min-h-[500px] flex flex-col">
-          {isLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6 min-h-[400px]">
+          {isLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6 min-h-[400px]">
                 <div className="w-16 h-16 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
                 <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
             </div>
-          ) : (
-            <div className="flex-1">
+          )}
+          <div className="flex-1 relative overflow-hidden bg-white">
+            <div className="absolute inset-0">
               <ReactTabulator
                 data={currentQueueData}
                 columns={columns}
@@ -339,9 +340,21 @@ const OpdQueueView = () => {
                 responsiveLayout="hide"
                 rowFormatter={rowFormatter}
                 options={{
-                  headerSort: true, // Specifically keep sorting
-                  selectable: false,
-                  placeholder: currentQueueData.length === 0 ? "No patients found matching filters" : undefined,
+                  headerSort: true,
+                  selectableRows: false,
+                  placeholder: currentQueueData.length === 0 ? `
+                    <div class="flex flex-col items-center justify-center p-12 text-slate-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-slate-300">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
+                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                      </svg>
+                      <span class="text-sm font-bold uppercase tracking-widest text-slate-500">No patients found matching filters</span>
+                    </div>
+                  ` : undefined,
+                  columnDefaults: { resizable: "header" },
+                  resizableColumnFit: true,
                   initialSort: [
                     { column: "case.createdAt", dir: "asc" }
                   ]
@@ -349,7 +362,7 @@ const OpdQueueView = () => {
                 className="w-full h-full border-none"
               />
             </div>
-          )}
+          </div>
 
           {/* Footer Pagination Strip */}
           <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between mt-auto">

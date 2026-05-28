@@ -35,6 +35,33 @@ export class RazorpayService implements PaymentProvider {
     };
   }
 
+  async createPaymentLink(amount: number, currency: string, metadata: any, customer: { name: string, contact: string, email: string }) {
+    this.logger.log(`Creating Razorpay Payment Link for amount ${amount} ${currency}`);
+    const paymentLink = await this.razorpay.paymentLink.create({
+      amount: Math.round(amount * 100), // paise
+      currency: currency.toUpperCase(),
+      accept_partial: false,
+      description: metadata.description || 'Payment',
+      customer: {
+        name: customer.name || 'Patient',
+        contact: customer.contact || '',
+        email: customer.email || ''
+      },
+      notify: {
+        sms: false,
+        email: false
+      },
+      reminder_enable: false,
+      notes: metadata
+    });
+
+    return {
+      id: paymentLink.id,
+      short_url: paymentLink.short_url,
+      status: paymentLink.status
+    };
+  }
+
   verifyWebhookSignature(payload: string, signature: string): boolean {
     try {
       const expectedSignature = crypto

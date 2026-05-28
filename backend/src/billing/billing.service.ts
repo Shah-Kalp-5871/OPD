@@ -16,8 +16,10 @@ import {
   Prisma,
   QueueStatus,
 } from '@prisma/client';
+import { RazorpayService } from '../payment/providers/razorpay.service';
 import { EventsService } from '../common/events.service';
 import { Decimal } from 'decimal.js';
+import { BillingHistoryQueryDto, HistoryPaymentStatus } from './dto/history-query.dto';
 
 @Injectable()
 export class BillingService {
@@ -26,6 +28,7 @@ export class BillingService {
   constructor(
     private prisma: PrismaService,
     private events: EventsService,
+    private razorpayService: RazorpayService,
   ) {}
 
   async createBill(
@@ -468,6 +471,53 @@ export class BillingService {
     };
   }
 
+  async getBillingHistory(branchId: string, query: BillingHistoryQueryDto) {
+    const { page = 1, limit = 10, date, status } = query;
+    const skip = (page - 1) * limit;
+    
+    let where: any = { branchId };
+    
+    if (date) {
+      const startOfDay = new Date(`${date}T00:00:00.000Z`);
+      const endOfDay = new Date(`${date}T23:59:59.999Z`);
+      where.billingDate = {
+        gte: startOfDay,
+        lte: endOfDay,
+      };
+    }
+
+    if (status && status !== HistoryPaymentStatus.ALL) {
+      if (status === HistoryPaymentStatus.PAID) {
+        where.paymentStatusEnum = BillStatus.PAID;
+      } else if (status === HistoryPaymentStatus.UNPAID) {
+        where.paymentStatusEnum = {
+          in: [BillStatus.PENDING, BillStatus.PARTIAL]
+        };
+      }
+    }
+
+    const [total, data] = await Promise.all([
+      this.prisma.bill.count({ where }),
+      this.prisma.bill.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          patient: {
+            select: { firstName: true, lastName: true, mrdNumber: true },
+          },
+          case: { select: { caseNumber: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    ]);
+
+    return {
+      data,
+      meta: { total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / limit) }
+    };
+  }
+
   async payBill(
     id: string,
     payBillDto: PayBillDto,
@@ -505,6 +555,34 @@ export class BillingService {
       );
       return request;
     }
+
+    return this.processPayment(id, payBillDto, userId, branchId, requestIp);
+  }
+
+  async verifyAndPayRazorpay(
+    id: string,
+    payload: { paymentId: string; orderId: string; signature: string; amount: number },
+    userId: string,
+    branchId: string,
+    requestIp?: string,
+  ) {
+    const rawPayload = payload.orderId + '|' + payload.paymentId;
+    const isValid = this.razorpayService.verifyWebhookSignature(rawPayload, payload.signature);
+
+    if (!isValid) {
+      throw new BadRequestException('Invalid Razorpay signature');
+    }
+
+    const payBillDto: PayBillDto = {
+      isFoc: false,
+      splits: [
+        {
+          amount: payload.amount,
+          paymentMode: PaymentMode.BANK_TRANSFER, // Using BANK_TRANSFER to represent Online/Razorpay
+          transactionId: payload.paymentId,
+        },
+      ],
+    };
 
     return this.processPayment(id, payBillDto, userId, branchId, requestIp);
   }

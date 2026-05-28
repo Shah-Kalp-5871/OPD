@@ -22,4 +22,8 @@ export class CreatePaymentIntentDto {
   @IsString()
   @IsOptional()
   appointmentId?: string;
+
+  @IsString()
+  @IsOptional()
+  patientId?: string;
 }

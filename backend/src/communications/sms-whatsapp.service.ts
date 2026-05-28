@@ -39,10 +39,70 @@ export class SmsWhatsappService {
       sendSms: async () => ({ success: false, error: 'SMS not supported by Meta WhatsApp Cloud Provider' }),
       sendWhatsApp: async (msg) => {
         this.logger.log(`[Meta WhatsApp] Sending to ${msg.recipient}: "${msg.content.substring(0, 30)}..."`);
-        if (process.env.META_ACCESS_TOKEN === 'FAIL') {
-          return { success: false, error: 'Invalid API authorization header (Simulated)' };
+        
+        const token = process.env.META_ACCESS_TOKEN;
+        const phoneId = process.env.META_PHONE_NUMBER_ID;
+        const apiUrl = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
+
+        if (!token || token === 'FAIL' || !phoneId) {
+          this.logger.warn('Meta WhatsApp credentials missing or invalid, skipping real API call (Simulated Success)');
+          return { success: true, messageId: `meta-wa-${Math.random().toString(36).substring(7)}` };
         }
-        return { success: true, messageId: `meta-wa-${Math.random().toString(36).substring(7)}` };
+
+        try {
+          // Standard structure for WhatsApp Cloud API
+          let payload: any = {
+            messaging_product: 'whatsapp',
+            to: msg.recipient,
+          };
+
+          if (msg.templateName) {
+            // Transform template params into WhatsApp component array
+            const parameters = msg.templateParams 
+              ? Object.values(msg.templateParams).map(val => ({ type: 'text', text: String(val) }))
+              : [];
+
+            payload = {
+              ...payload,
+              type: 'template',
+              template: {
+                name: msg.templateName,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters
+                  }
+                ]
+              }
+            };
+          } else {
+            payload = {
+              ...payload,
+              type: 'text',
+              text: { body: msg.content }
+            };
+          }
+
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            return { success: false, error: data.error?.message || 'Meta API Error' };
+          }
+
+          return { success: true, messageId: data.messages?.[0]?.id || `meta-wa-${Math.random().toString(36).substring(7)}` };
+        } catch (error: any) {
+          return { success: false, error: error.message };
+        }
       },
     };
 

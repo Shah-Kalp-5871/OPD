@@ -21,6 +21,7 @@ import { Query } from '@nestjs/common';
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { BillingHistoryQueryDto } from './dto/history-query.dto';
 import { HipaaAudit } from '../audit/hipaa-audit.decorator';
 
 @Controller('billing')
@@ -77,6 +78,15 @@ export class BillingController {
     return this.billingService.getAllBills(branchId, page, limit);
   }
 
+  @Get('list/history')
+  @Roles(Role.RECEPTION, Role.ADMIN)
+  async getBillingHistory(
+    @BranchId() branchId: string,
+    @Query() query: BillingHistoryQueryDto,
+  ) {
+    return this.billingService.getBillingHistory(branchId, query);
+  }
+
   @Post(':id/pay')
   @Roles(Role.RECEPTION, Role.ADMIN)
   @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
@@ -120,6 +130,24 @@ export class BillingController {
     return this.billingService.processRefund(
       id,
       refundDto,
+      req.user.id,
+      branchId,
+      req.ip,
+    );
+  }
+
+  @Post(':id/pay-razorpay')
+  @Roles(Role.RECEPTION, Role.ADMIN)
+  @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
+  async payRazorpay(
+    @Param('id') id: string,
+    @Body() payload: { paymentId: string; orderId: string; signature: string; amount: number },
+    @Req() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.billingService.verifyAndPayRazorpay(
+      id,
+      payload,
       req.user.id,
       branchId,
       req.ip,
