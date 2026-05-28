@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -226,12 +227,12 @@ const BillingHistoryView = () => {
                            )}
                          </td>
                          <td className="py-3 px-6 whitespace-nowrap text-center">
-                           <a 
+                           <Link 
                              href={`/reception/billing?caseId=${bill.caseId}`}
                              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600"
                            >
                              View
-                           </a>
+                           </Link>
                          </td>
                        </tr>
                      );
