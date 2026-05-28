@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TopNavbar from '@/components/ui/TopNavbar';
+import ChatWidget from '@/components/chat/ChatWidget';
 
 interface ReceptionLayoutProps {
   children: React.ReactNode;
@@ -31,6 +32,7 @@ const ReceptionLayout: React.FC<ReceptionLayoutProps> = ({ children }) => {
            </div>
         </footer>
       </div>
+      <ChatWidget />
     </div>
   );
 };

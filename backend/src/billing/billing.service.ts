@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBillDto } from './dto/create-bill.dto';
@@ -68,6 +69,24 @@ export class BillingService {
               procedureSessions: {
                 include: {
                   procedure: true,
+                },
+              },
+              prescriptions: {
+                include: {
+                  items: {
+                    include: {
+                      drug: true,
+                    },
+                  },
+                },
+              },
+              investigationOrders: {
+                include: {
+                  results: {
+                    include: {
+                      parameter: true,
+                    },
+                  },
                 },
               },
             },
@@ -625,6 +644,19 @@ export class BillingService {
             throw new BadRequestException('FOC reason is required');
           }
 
+          if (!payBillDto.focPin?.trim()) {
+            throw new UnauthorizedException('FOC Authorization PIN is required');
+          }
+
+          const adminPinSetting = await tx.masterSetting.findUnique({
+            where: { key: 'FOC_ADMIN_PIN' },
+          });
+
+          const expectedPin = adminPinSetting?.value || '1234'; 
+          if (payBillDto.focPin.trim() !== expectedPin) {
+            throw new UnauthorizedException('Invalid FOC Authorization PIN');
+          }
+
           currentDiscount = new Decimal(bill.grossAmount.toString());
           currentNet = new Decimal(0);
         } else {
@@ -890,6 +922,46 @@ export class BillingService {
             referenceId: session.procedure.id,
             procedureSessionId: session.id,
           });
+        }
+      }
+
+      if (patientCase.prescriptions && patientCase.prescriptions.length > 0) {
+        for (const rx of patientCase.prescriptions) {
+          for (const rxItem of rx.items) {
+            if (rxItem.drug && rxItem.drug.unitPrice) {
+              const unitPrice = rxItem.drug.unitPrice.toNumber ? rxItem.drug.unitPrice.toNumber() : Number(rxItem.drug.unitPrice);
+              finalItems.push({
+                serviceName: `Medicine: ${rxItem.drugName}`,
+                description: `${rxItem.dosage} - ${rxItem.frequency} for ${rxItem.duration} days`,
+                quantity: 1,
+                unitPrice,
+                discount: 0,
+                totalPrice: unitPrice,
+                itemType: 'MEDICINE',
+                referenceId: rxItem.id,
+              });
+            }
+          }
+        }
+      }
+
+      if (patientCase.investigationOrders && patientCase.investigationOrders.length > 0) {
+        for (const order of patientCase.investigationOrders) {
+           for (const result of order.results) {
+             if (result.parameter && result.parameter.basePrice) {
+                const unitPrice = result.parameter.basePrice.toNumber ? result.parameter.basePrice.toNumber() : Number(result.parameter.basePrice);
+                finalItems.push({
+                  serviceName: `Lab: ${result.parameter.name}`,
+                  description: 'Lab Test',
+                  quantity: 1,
+                  unitPrice,
+                  discount: 0,
+                  totalPrice: unitPrice,
+                  itemType: 'LAB',
+                  referenceId: result.parameter.id,
+                });
+             }
+           }
         }
       }
     }

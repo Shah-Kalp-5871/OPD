@@ -45,9 +45,10 @@ const BillingView = () => {
   const [pendingBills, setPendingBills] = useState<any[]>([]);
   const [isFoc, setIsFoc] = useState(false);
   const [focReason, setFocReason] = useState('');
-  const [paymentMode, setPaymentMode] = useState('CASH');
-  const [amountCollected, setAmountCollected] = useState('');
-  const [transactionId, setTransactionId] = useState('');
+  const [splits, setSplits] = useState<{ amount: string; paymentMode: string; transactionId: string }[]>([
+    { amount: '', paymentMode: 'CASH', transactionId: '' }
+  ]);
+  const [focPin, setFocPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [refundAmount, setRefundAmount] = useState('');
@@ -55,6 +56,11 @@ const BillingView = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
   const [qrMode, setQrMode] = useState<'UPI' | 'RAZORPAY'>('UPI');
+
+  const calculateTotalAmount = () => {
+    if (isFoc) return 0;
+    return splits.reduce((sum, split) => sum + (parseFloat(split.amount) || 0), 0);
+  };
   const [upiConfig, setUpiConfig] = useState<{ upiId: string; upiPayeeName: string } | null>(null);
   const paymentSubmittingRef = useRef(false);
 
@@ -83,9 +89,8 @@ const BillingView = () => {
     try {
       const response = await api.get(`/billing/${caseId}`);
       setBill(response.data);
-      setAmountCollected(response.data.balanceAmount.toString());
-      setPaymentMode('CASH');
-      setTransactionId('');
+      setSplits([{ amount: response.data.balanceAmount.toString(), paymentMode: 'CASH', transactionId: '' }]);
+      setFocPin('');
     } catch (error: any) {
       if (error.response?.status === 404) {
         setBill(null); // No bill exists yet
@@ -144,26 +149,38 @@ const BillingView = () => {
     
     // Validate payment if not FOC
     if (!isFoc) {
-      const parsedAmount = parseFloat(amountCollected) || 0;
-      if (parsedAmount <= 0) {
-        toast.error('Amount collected must be greater than zero');
+      const totalParsed = splits.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+      if (totalParsed <= 0) {
+        toast.error('Total amount collected must be greater than zero');
         return;
       }
-      if (parsedAmount > Number(bill.balanceAmount)) {
+      if (totalParsed > Number(bill.balanceAmount)) {
         toast.error('Payment amount cannot exceed remaining balance');
         return;
       }
-    } else if (!focReason) {
-      toast.error('FOC reason is required');
-      return;
+      for (const split of splits) {
+        if (!split.amount || parseFloat(split.amount) <= 0) {
+          toast.error('Each split amount must be greater than zero');
+          return;
+        }
+      }
+    } else {
+      if (!focReason) {
+        toast.error('FOC reason is required');
+        return;
+      }
+      if (!focPin) {
+        toast.error('FOC Authorization PIN is required');
+        return;
+      }
     }
 
     paymentSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      if (!isFoc && paymentMode === 'UPI_QR') {
+      if (!isFoc && splits.length === 1 && splits[0].paymentMode === 'UPI_QR') {
         // Generate direct UPI QR code (no third-party gateway)
-        const amount = parseFloat(amountCollected);
+        const amount = parseFloat(splits[0].amount);
         if (!upiConfig?.upiId) {
           toast.error('UPI ID not configured. Please ask admin to set it up in Payment Management.');
           setIsSubmitting(false);
@@ -179,9 +196,9 @@ const BillingView = () => {
         return;
       }
 
-      if (!isFoc && paymentMode === 'BANK_TRANSFER') {
+      if (!isFoc && splits.length === 1 && splits[0].paymentMode === 'BANK_TRANSFER') {
         // Initialize Razorpay Payment Link
-        const amount = parseFloat(amountCollected);
+        const amount = parseFloat(splits[0].amount);
         const linkRes = await api.post('/payments/link', {
           amount: amount,
           currency: 'INR',
@@ -201,11 +218,12 @@ const BillingView = () => {
       const result = await api.post(`/billing/${bill.id}/pay`, {
         isFoc,
         focReason,
-        splits: isFoc ? [] : [{
-          amount: parseFloat(amountCollected),
-          paymentMode: paymentMode,
-          transactionId: transactionId
-        }]
+        focPin,
+        splits: isFoc ? [] : splits.map(s => ({
+          amount: parseFloat(s.amount),
+          paymentMode: s.paymentMode,
+          transactionId: s.transactionId
+        }))
       }, {
         headers: {
           'Idempotency-Key': crypto.randomUUID(),
@@ -215,9 +233,8 @@ const BillingView = () => {
       const updatedBillRes = await api.get(`/billing/${caseId}`);
       const updatedBill = updatedBillRes.data;
       setBill(updatedBill);
-      setAmountCollected('0');
-      setPaymentMode('CASH');
-      setTransactionId('');
+      setSplits([{ amount: '0', paymentMode: 'CASH', transactionId: '' }]);
+      setFocPin('');
       // Auto-open print receipt if fully paid
       if (updatedBill.paymentStatus === 'PAID') {
         setTimeout(() => {
@@ -383,7 +400,7 @@ const BillingView = () => {
                              </td>
                              <td className="px-8 py-5 text-center">
                                 <button 
-                                  onClick={() => router.push(`/reception/billing?caseId=${pb.caseId}`)}
+                                  onClick={() => router.push(`/opd/reception/billing?caseId=${pb.caseId}`)}
                                   className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all"
                                 >
                                    View Details
@@ -612,7 +629,7 @@ const BillingView = () => {
                     </div>
                     <div className="flex justify-between font-bold text-slate-900 pb-4 border-b border-dashed border-slate-300">
                        <span>Net Paid:</span>
-                       <span>{bill.netAmount.toLocaleString()} — {bill.paidAmount > 0 ? bill.paymentMode : paymentMode}</span>
+                       <span>{bill.netAmount.toLocaleString()} — {bill.paidAmount > 0 ? bill.paymentMode : (splits[0]?.paymentMode || 'CASH')}</span>
                     </div>
                     
                     <div className="mt-4 text-slate-500 text-[10px] flex justify-between">
@@ -737,40 +754,78 @@ const BillingView = () => {
                                    placeholder="ENTER JUSTIFICATION HERE..."
                                    value={focReason} onChange={(e) => setFocReason(e.target.value)} disabled={isSubmitting}
                                  />
+                                 <input 
+                                   type="password"
+                                   placeholder="AUTHORIZATION PIN"
+                                   className="w-full p-4 bg-white border border-amber-200 rounded-xl outline-none font-bold text-slate-800 focus:border-amber-400 transition-all text-center tracking-[0.5em]"
+                                   value={focPin} onChange={(e) => setFocPin(e.target.value)} disabled={isSubmitting}
+                                 />
                               </div>
                            ) : (
                               <div className="space-y-8">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Collected (₹) *</label>
-                                        <input type="number" value={amountCollected} onChange={(e) => setAmountCollected(e.target.value)} disabled={isSubmitting} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-lg font-black text-slate-800 outline-none focus:border-teal-500 focus:bg-white transition-all placeholder:text-slate-300" placeholder="0.00" />
-                                     </div>
-                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction / Receipt ID</label>
-                                        <input type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} disabled={isSubmitting} placeholder="AUTO-GENERATED IF EMPTY" className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-slate-800 outline-none focus:border-teal-500 focus:bg-white transition-all uppercase placeholder:normal-case placeholder:text-slate-300 placeholder:font-medium" />
-                                     </div>
-                                  </div>
-
-                                  <div className="space-y-3">
-                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Mode *</label>
-                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                        {paymentModes.map((mode) => {
-                                           const Icon = mode.icon;
-                                           const isSelected = paymentMode === mode.id;
-                                           return (
+                                 {splits.map((split, index) => (
+                                    <div key={index} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-4">
+                                       <div className="flex justify-between items-center">
+                                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Payment Split {index + 1}</span>
+                                          {splits.length > 1 && (
                                              <button 
-                                               key={mode.id} 
-                                               onClick={() => setPaymentMode(mode.id)}
-                                               disabled={isSubmitting}
-                                               className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${isSelected ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm shadow-teal-100' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200 hover:bg-slate-50'}`}
+                                                onClick={() => setSplits(s => s.filter((_, i) => i !== index))}
+                                                className="text-red-500 text-[10px] font-black uppercase tracking-widest hover:text-red-700 transition-colors"
                                              >
-                                                <Icon className={`w-5 h-5 mb-2 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`} />
-                                                <span className="text-[10px] font-black uppercase tracking-widest">{mode.label}</span>
+                                                Remove
                                              </button>
-                                           );
-                                        })}
-                                     </div>
-                                  </div>
+                                          )}
+                                       </div>
+                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="space-y-2">
+                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount (₹) *</label>
+                                             <input type="number" value={split.amount} onChange={(e) => {
+                                                const newSplits = [...splits];
+                                                newSplits[index].amount = e.target.value;
+                                                setSplits(newSplits);
+                                             }} disabled={isSubmitting} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-teal-500 transition-all placeholder:text-slate-300" placeholder="0.00" />
+                                          </div>
+                                          <div className="space-y-2">
+                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction ID</label>
+                                             <input type="text" value={split.transactionId} onChange={(e) => {
+                                                const newSplits = [...splits];
+                                                newSplits[index].transactionId = e.target.value;
+                                                setSplits(newSplits);
+                                             }} disabled={isSubmitting} placeholder="AUTO-GENERATED IF EMPTY" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-teal-500 transition-all uppercase placeholder:normal-case placeholder:text-slate-300" />
+                                          </div>
+                                       </div>
+                                       <div className="space-y-2">
+                                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Mode *</label>
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                             {paymentModes.map((mode) => {
+                                                const Icon = mode.icon;
+                                                const isSelected = split.paymentMode === mode.id;
+                                                return (
+                                                  <button 
+                                                    key={mode.id} 
+                                                    onClick={() => {
+                                                       const newSplits = [...splits];
+                                                       newSplits[index].paymentMode = mode.id;
+                                                       setSplits(newSplits);
+                                                    }}
+                                                    disabled={isSubmitting}
+                                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+                                                  >
+                                                     <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`} />
+                                                     <span className="text-[9px] font-black uppercase tracking-widest">{mode.label}</span>
+                                                  </button>
+                                                );
+                                             })}
+                                          </div>
+                                       </div>
+                                    </div>
+                                 ))}
+                                 <button 
+                                    onClick={() => setSplits(s => [...s, { amount: '', paymentMode: 'CASH', transactionId: '' }])}
+                                    className="w-full py-4 border-2 border-dashed border-slate-200 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-slate-300 hover:bg-slate-50 transition-all"
+                                 >
+                                    + ADD ANOTHER PAYMENT SPLIT
+                                 </button>
                               </div>
                            )}
                         </div>
@@ -827,7 +882,7 @@ const BillingView = () => {
               {/* Amount */}
               <div className={`p-4 rounded-2xl ${qrMode === 'UPI' ? 'bg-violet-50 border border-violet-100' : 'bg-indigo-50 border border-indigo-100'}`}>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Amount Due</p>
-                <p className="text-3xl font-black text-slate-900">₹{amountCollected}</p>
+                <p className="text-3xl font-black text-slate-900">₹{calculateTotalAmount()}</p>
               </div>
 
               {/* UPI apps hint */}
@@ -850,7 +905,7 @@ const BillingView = () => {
                         isFoc: false,
                         focReason: '',
                         splits: [{
-                          amount: parseFloat(amountCollected),
+                          amount: calculateTotalAmount(),
                           paymentMode: 'CASH', // maps to UPI in ledger note
                           transactionId: `UPI-${Date.now()}`
                         }]

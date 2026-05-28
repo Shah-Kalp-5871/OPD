@@ -20,6 +20,7 @@ import { BillingModule } from './billing/billing.module';
 import { CommonModule } from './common/common.module';
 import { ConsultationModule } from './consultation/consultation.module';
 import { AppointmentsModule } from './appointments/appointments.module';
+import { FollowupsModule } from './followups/followups.module';
 import { ConsentModule } from './consent/consent.module';
 import { PharmacyModule } from './pharmacy/pharmacy.module';
 import { LaboratoryModule } from './laboratory/laboratory.module';
@@ -108,6 +109,7 @@ import { DigitalTwinModule } from './modules/digital-twin/digital-twin.module';
 import { ClinicalNavigationModule } from './modules/clinical-navigation/clinical-navigation.module';
 import { KnowledgeMeshModule } from './modules/knowledge-mesh/knowledge-mesh.module';
 import { GlobalCommandCenterModule } from './modules/global-command-center/global-command-center.module';
+import { ChatModule } from './chat/chat.module';
 
 
 @Module({
@@ -135,6 +137,7 @@ import { GlobalCommandCenterModule } from './modules/global-command-center/globa
     CommonModule,
     ConsultationModule,
     AppointmentsModule,
+    FollowupsModule,
     ConsentModule,
     PharmacyModule,
     LaboratoryModule,
@@ -222,6 +225,7 @@ import { GlobalCommandCenterModule } from './modules/global-command-center/globa
     ClinicalNavigationModule,
     KnowledgeMeshModule,
     GlobalCommandCenterModule,
+    ChatModule,
   ],
 
   controllers: [AppController],

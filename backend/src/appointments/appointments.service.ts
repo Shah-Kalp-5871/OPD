@@ -13,14 +13,18 @@ import { PatientsService } from '../patients/patients.service';
 import { CheckInAppointmentDto } from './dto/check-in-appointment.dto';
 import { AppointmentQueryDto } from './dto/appointment-query.dto';
 import { SmsWhatsappService } from '../communications/sms-whatsapp.service';
+import { ReminderScheduleService } from '../notifications/reminder-schedule.service';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AppointmentsService {
+  private readonly logger = new Logger(AppointmentsService.name);
   constructor(
     private prisma: PrismaService,
     private queueService: QueueService,
     private patientsService: PatientsService,
     private smsWhatsappService: SmsWhatsappService,
+    private reminderScheduleService: ReminderScheduleService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto, branchId: string) {
@@ -153,6 +157,23 @@ export class AppointmentsService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    // Schedule a reminder 2 hours prior to the appointment
+    const appointmentDateTime = this.combineDateAndTime(result.appointmentDate, appointmentTime);
+    const reminderTime = new Date(appointmentDateTime.getTime() - 2 * 60 * 60 * 1000);
+    
+    // Only schedule if the reminder time is in the future
+    if (reminderTime > new Date()) {
+      this.reminderScheduleService.scheduleReminder({
+        targetId: result.id,
+        targetType: 'APPOINTMENT',
+        reminderTime,
+        timeOffset: '2H',
+        metadata: {
+          patientId: result.patientId
+        }
+      }).catch(err => this.logger.error('Failed to schedule reminder', err));
+    }
 
     // Trigger WhatsApp notification asynchronously
     const patientName = `${result.patient.firstName || ''} ${result.patient.lastName || ''}`.trim();
@@ -738,6 +759,7 @@ export class AppointmentsService {
 
         const appointment = await tx.appointment.findFirst({
           where: { id, branchId },
+          include: { patient: true }
         });
 
         if (!appointment) throw new NotFoundException('Appointment not found');
@@ -765,11 +787,123 @@ export class AppointmentsService {
             remarks: `Cancelled: ${reason}`,
           },
         });
+        
+        // Cancel any pending reminders
+        await this.reminderScheduleService.cancelReminders(id, 'APPOINTMENT');
+
+        // Trigger WhatsApp cancellation
+        const patientName = `${appointment.patient.firstName || ''} ${appointment.patient.lastName || ''}`.trim();
+        const formattedDate = format(appointment.appointmentDate, 'PP') + ' at ' + format(appointment.appointmentTime, 'p');
+        
+        this.smsWhatsappService.sendWhatsApp({
+          recipient: appointment.patient.mobile,
+          content: `Hello ${patientName}, your appointment on ${formattedDate} has been cancelled. Reason: ${reason}.`,
+          templateName: 'appointment_cancelled',
+          templateParams: {
+            patient_name: patientName,
+            appointment_date: formattedDate,
+            reason: reason
+          },
+          patientId: appointment.patient.id,
+          userId: 'SYSTEM',
+        }).catch(err => {
+          this.logger.error('Failed to send WhatsApp cancellation', err);
+        });
 
         return updated;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+  }
+
+  async bulkCancel(dateStr: string, reason: string, userId: string, branchId: string, doctorId?: string) {
+    const targetDate = this.parseDateOnly(dateStr);
+    
+    const whereClause: Prisma.AppointmentWhereInput = {
+      branchId,
+      appointmentDate: targetDate,
+      status: AppointmentStatus.SCHEDULED,
+    };
+    
+    if (doctorId) {
+      whereClause.doctorId = doctorId;
+    }
+    
+    const appointments = await this.prisma.appointment.findMany({
+      where: whereClause,
+      include: { patient: true }
+    });
+    
+    if (appointments.length === 0) {
+      return { cancelledCount: 0 };
+    }
+    
+    // Process cancellations in a transaction
+    await this.prisma.$transaction(
+      async (tx) => {
+        // Create holidays if the entire clinic is closed (i.e. no specific doctor)
+        if (!doctorId) {
+          const existingHoliday = await tx.holiday.findFirst({
+            where: { date: targetDate, branchId }
+          });
+          if (!existingHoliday) {
+            await tx.holiday.create({
+              data: {
+                name: `Clinic Closed - ${reason}`,
+                date: targetDate,
+                branchId
+              }
+            });
+          }
+        }
+        
+        for (const appt of appointments) {
+          await tx.appointment.update({
+            where: { id: appt.id },
+            data: {
+              status: AppointmentStatus.CANCELLED,
+              cancelReason: reason,
+              cancelledById: userId
+            }
+          });
+          
+          await tx.appointmentStatusHistory.create({
+            data: {
+              appointmentId: appt.id,
+              previousStatus: appt.status,
+              status: AppointmentStatus.CANCELLED,
+              changedById: userId,
+              remarks: `Bulk Cancelled: ${reason}`,
+            },
+          });
+        }
+      }
+    );
+    
+    // Async notifications and reminder cancellations
+    for (const appt of appointments) {
+      this.reminderScheduleService.cancelReminders(appt.id, 'APPOINTMENT').catch(err => this.logger.error('Failed to cancel reminders', err));
+      
+      const patientName = `${appt.patient.firstName || ''} ${appt.patient.lastName || ''}`.trim();
+      const formattedDate = format(appt.appointmentDate, 'PP') + ' at ' + format(appt.appointmentTime, 'p');
+      
+      this.smsWhatsappService.sendWhatsApp({
+        recipient: appt.patient.mobile,
+        content: `Hello ${patientName}, your appointment on ${formattedDate} has been cancelled because the clinic is closed. Reason: ${reason}.`,
+        templateName: 'appointment_cancelled',
+        templateParams: {
+          patient_name: patientName,
+          appointment_date: formattedDate,
+          reason: reason
+        },
+        patientId: appt.patient.id,
+        userId: 'SYSTEM',
+      }).catch(err => {
+        this.logger.error('Failed to send WhatsApp bulk cancellation', err);
+      });
+    }
+    
+    return { cancelledCount: appointments.length };
   }
 
   private combineDateAndTime(date: Date, time: string) {

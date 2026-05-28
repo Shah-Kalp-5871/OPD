@@ -128,6 +128,7 @@ export const ROUTES = {
     search: '/reception/search',
     queue: '/reception/queue',
     patients: '/reception/patients',
+    followup: '/reception/followup',
   },
 
   nursing: {

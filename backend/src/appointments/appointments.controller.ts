@@ -20,6 +20,7 @@ import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto'
 import { AppointmentQueryDto } from './dto/appointment-query.dto';
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
+import { BulkCancelDto } from './dto/bulk-cancel.dto';
 
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
@@ -117,6 +118,22 @@ export class AppointmentsController {
       dto.reason,
       req.user.id,
       branchId,
+    );
+  }
+
+  @Post('bulk-cancel')
+  @Roles(Role.ADMIN, Role.RECEPTION)
+  bulkCancel(
+    @Body() dto: BulkCancelDto,
+    @Req() req: any,
+    @BranchId() branchId: string,
+  ) {
+    return this.appointmentsService.bulkCancel(
+      dto.date,
+      dto.reason,
+      req.user.id,
+      branchId,
+      dto.doctorId
     );
   }
 

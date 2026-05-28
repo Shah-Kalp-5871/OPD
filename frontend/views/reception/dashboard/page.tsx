@@ -55,7 +55,7 @@ const ReceptionDashboardView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  const { entries: sseEntries, stats: sseStats } = useQueueSSE({
+  const { entries: sseEntries, stats: sseStats, lastEvent } = useQueueSSE({
     doctorId: selectedDoctor === 'all' ? undefined : selectedDoctor
   });
 
@@ -277,7 +277,11 @@ const ReceptionDashboardView = () => {
         </div>
 
         {/* 🔷 NOTIFICATION PANEL (LEFT ALERT BOX) */}
-        <div className="bg-teal-600 rounded-2xl p-6 shadow-xl shadow-teal-100 flex items-center justify-between border-2 border-teal-500 overflow-hidden relative group">
+        <div className={`rounded-2xl p-6 shadow-xl flex items-center justify-between border-2 overflow-hidden relative group transition-colors duration-500 ${
+          lastEvent?.type === 'SESSION_STARTED' 
+            ? 'bg-rose-600 border-rose-500 shadow-rose-200 animate-pulse' 
+            : 'bg-teal-600 border-teal-500 shadow-teal-100'
+        }`}>
            <div className="absolute right-0 top-0 h-full w-32 bg-white/5 skew-x-[30deg] translate-x-16"></div>
            <div className="flex items-center gap-6 relative z-10">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-bounce">
@@ -285,20 +289,24 @@ const ReceptionDashboardView = () => {
               </div>
               <div>
                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-teal-100 uppercase tracking-widest leading-none">Notification: Dr. Valaki</span>
-                    <span className="w-1 h-1 rounded-full bg-teal-300"></span>
-                    <span className="text-[10px] font-black text-teal-200 uppercase tracking-widest leading-none">Clinical Signal</span>
+                    <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-100' : 'text-teal-100'}`}>Notification</span>
+                    <span className={`w-1 h-1 rounded-full ${lastEvent?.type === 'SESSION_STARTED' ? 'bg-rose-300' : 'bg-teal-300'}`}></span>
+                    <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-200' : 'text-teal-200'}`}>Clinical Signal</span>
                  </div>
                  <h3 className="text-lg font-black text-white mt-1 uppercase tracking-tight">
-                   System Ready: <span className="text-teal-200 underline decoration-teal-300 underline-offset-4">Waiting for next patient...</span>
+                   {lastEvent?.type === 'SESSION_STARTED' ? (
+                     <span>NOW CALLING: <span className="underline decoration-white underline-offset-4 font-extrabold">{lastEvent.patientName} ({lastEvent.token})</span></span>
+                   ) : (
+                     <span>System Ready: <span className={`${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-200 decoration-rose-300' : 'text-teal-200 decoration-teal-300'} underline underline-offset-4`}>Waiting for next patient...</span></span>
+                   )}
                  </h3>
               </div>
            </div>
            <div className="flex items-center gap-4 relative z-10">
-              <div className="px-6 py-2 bg-white text-teal-700 rounded-full text-[11px] font-black uppercase tracking-widest shadow-sm">
-                 Queue Active: <span className="text-emerald-600">{statsData.waiting} Patients</span>
+              <div className={`px-6 py-2 bg-white rounded-full text-[11px] font-black uppercase tracking-widest shadow-sm ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-700' : 'text-teal-700'}`}>
+                 Queue Active: <span className={lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-600' : 'text-emerald-600'}>{statsData.waiting} Patients</span>
               </div>
-              <button className="p-3 bg-teal-800 text-white rounded-xl hover:bg-teal-900 transition-colors">
+              <button className={`p-3 text-white rounded-xl transition-colors ${lastEvent?.type === 'SESSION_STARTED' ? 'bg-rose-800 hover:bg-rose-900' : 'bg-teal-800 hover:bg-teal-900'}`}>
                  <ArrowRight className="w-5 h-5" />
               </button>
            </div>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import TopNavbar from '@/components/ui/TopNavbar';
+import ChatWidget from '@/components/chat/ChatWidget';
 
 interface NursingLayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,7 @@ const NursingLayout: React.FC<NursingLayoutProps> = ({ children }) => {
         {/* Mobile Sidebar Overlay (Placeholder for future functionality) */}
         <div className="lg:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[45] hidden" />
       </div>
+      <ChatWidget />
     </div>
   );
 };

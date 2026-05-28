@@ -56,4 +56,8 @@ export class PayBillDto {
   @IsString()
   @IsOptional()
   focReason?: string;
+
+  @IsString()
+  @IsOptional()
+  focPin?: string;
 }

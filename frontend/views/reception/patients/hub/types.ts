@@ -59,6 +59,8 @@ export interface PatientDocument {
   documentType: string;
   documentNumber?: string;
   fileUrl?: string;
+  reportDate?: string;
+  labName?: string;
   createdAt: string;
   updatedAt: string;
 }

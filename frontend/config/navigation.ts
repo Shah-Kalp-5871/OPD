@@ -119,6 +119,7 @@ export const roleNavigation: Record<string, NavigationConfig> = {
       { title: 'Check-In', href: ROUTES.reception.checkin, icon: CheckSquare },
       { title: 'OPD Queue', href: ROUTES.reception.queue, icon: Users },
       { title: 'Book Appointment', href: ROUTES.reception.appointments, icon: CalendarPlus },
+      { title: 'F/U Booking', href: ROUTES.reception.followup, icon: PhoneCall },
       { title: 'Billing', href: ROUTES.reception.billing, icon: Wallet },
     ],
     groups: []

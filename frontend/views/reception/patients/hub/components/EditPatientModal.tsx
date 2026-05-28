@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -153,11 +153,12 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Blood Group</label>
-                <select {...profileForm.register('bloodGroup')} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-teal-600">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">Blood Group <Lock className="w-3 h-3 text-slate-300" /></label>
+                <select disabled {...profileForm.register('bloodGroup')} className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold outline-none text-slate-500 cursor-not-allowed">
                   <option value="">Select</option>
                   {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
                 </select>
+                <p className="text-[9px] text-slate-400">Clinical data can only be edited by doctors</p>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Marital Status</label>
@@ -190,8 +191,9 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 <input {...profileForm.register('emergencyContact')} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none focus:border-teal-600" placeholder="Name / Phone" />
               </div>
               <div className="col-span-2 space-y-2">
-                <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Known Allergies</label>
-                <input {...profileForm.register('allergies')} className="w-full px-5 py-4 bg-rose-50 border border-rose-100 rounded-2xl font-bold outline-none focus:border-rose-400" placeholder="e.g. Penicillin, Peanuts" />
+                <label className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-1">Known Allergies <Lock className="w-3 h-3 text-slate-300" /></label>
+                <input disabled {...profileForm.register('allergies')} className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold outline-none text-slate-500 cursor-not-allowed" placeholder="e.g. Penicillin, Peanuts" />
+                <p className="text-[9px] text-slate-400">Clinical data can only be edited by doctors</p>
               </div>
             </div>
             <div className="p-10 bg-slate-50 flex gap-4 sticky bottom-0 border-t border-slate-100">
