@@ -54,6 +54,8 @@ const BillingView = () => {
   const [refundReason, setRefundReason] = useState('');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
+  const [qrMode, setQrMode] = useState<'UPI' | 'RAZORPAY'>('UPI');
+  const [upiConfig, setUpiConfig] = useState<{ upiId: string; upiPayeeName: string } | null>(null);
   const paymentSubmittingRef = useRef(false);
 
   const { lastEvent } = useQueueSSE();
@@ -70,6 +72,10 @@ const BillingView = () => {
     } else {
       fetchPendingBills();
     }
+    // Fetch UPI config for QR generation
+    api.get('/admin/payment-settings')
+      .then(res => setUpiConfig(res.data))
+      .catch(() => {}); // silently ignore
   }, [caseId]);
 
   const fetchBillDetails = async () => {
@@ -155,6 +161,24 @@ const BillingView = () => {
     paymentSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
+      if (!isFoc && paymentMode === 'UPI_QR') {
+        // Generate direct UPI QR code (no third-party gateway)
+        const amount = parseFloat(amountCollected);
+        if (!upiConfig?.upiId) {
+          toast.error('UPI ID not configured. Please ask admin to set it up in Payment Management.');
+          setIsSubmitting(false);
+          paymentSubmittingRef.current = false;
+          return;
+        }
+        const upiDeepLink = `upi://pay?pa=${encodeURIComponent(upiConfig.upiId)}&pn=${encodeURIComponent(upiConfig.upiPayeeName || 'Clinic')}&am=${amount}&cu=INR&tn=${encodeURIComponent(`Bill #${bill.billNumber} - OPD`)}` ;
+        setQrUrl(upiDeepLink);
+        setQrMode('UPI');
+        setIsQrModalOpen(true);
+        setIsSubmitting(false);
+        paymentSubmittingRef.current = false;
+        return;
+      }
+
       if (!isFoc && paymentMode === 'BANK_TRANSFER') {
         // Initialize Razorpay Payment Link
         const amount = parseFloat(amountCollected);
@@ -257,7 +281,7 @@ const BillingView = () => {
   const paymentModes = [
     { id: 'CASH', label: 'Cash', icon: Banknote, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
     { id: 'CREDIT_CARD', label: 'Card', icon: CreditCard, color: 'bg-blue-50 text-blue-600 border-blue-100' },
-    { id: 'UPI', label: 'UPI', icon: QrCode, color: 'bg-purple-50 text-purple-600 border-purple-100' },
+    { id: 'UPI_QR', label: 'UPI QR', icon: QrCode, color: 'bg-violet-50 text-violet-600 border-violet-100' },
     { id: 'BANK_TRANSFER', label: 'Razorpay', icon: Globe, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' }
   ];
 
@@ -775,57 +799,111 @@ const BillingView = () => {
         </div>
       </div>
 
-      {/* RAZORPAY QR MODAL */}
+      {/* QR PAYMENT MODAL (UPI & Razorpay) */}
       {isQrModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="p-6 text-center space-y-6">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Globe className="w-8 h-8" />
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className={`p-6 text-center ${qrMode === 'UPI' ? 'bg-gradient-to-br from-violet-50 to-purple-50' : 'bg-gradient-to-br from-indigo-50 to-blue-50'}`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 ${qrMode === 'UPI' ? 'bg-violet-100 text-violet-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                <QrCode className="w-7 h-7" />
               </div>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">Scan to Pay</h2>
-              <p className="text-xs font-medium text-slate-500">
-                A payment link has also been sent to {bill?.patient?.firstName}'s WhatsApp.
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                {qrMode === 'UPI' ? 'Scan & Pay via UPI' : 'Scan to Pay — Razorpay'}
+              </h2>
+              <p className="text-[11px] font-medium text-slate-500 mt-1">
+                {qrMode === 'UPI'
+                  ? `Pay directly to ${upiConfig?.upiPayeeName || 'Clinic'} · ${upiConfig?.upiId}`
+                  : `Payment link also sent to ${bill?.patient?.firstName}'s WhatsApp`}
               </p>
-              
-              <div className="flex justify-center p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                <QRCodeCanvas value={qrUrl} size={200} level="H" />
+            </div>
+
+            <div className="p-6 space-y-4 text-center">
+              {/* QR Code */}
+              <div className="flex justify-center p-4 bg-white border-2 border-slate-100 rounded-2xl shadow-sm mx-auto w-fit">
+                <QRCodeCanvas value={qrUrl} size={190} level="H" includeMargin />
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Amount</p>
-                <p className="text-2xl font-black text-slate-900">₹{amountCollected}</p>
+              {/* Amount */}
+              <div className={`p-4 rounded-2xl ${qrMode === 'UPI' ? 'bg-violet-50 border border-violet-100' : 'bg-indigo-50 border border-indigo-100'}`}>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Amount Due</p>
+                <p className="text-3xl font-black text-slate-900">₹{amountCollected}</p>
               </div>
+
+              {/* UPI apps hint */}
+              {qrMode === 'UPI' && (
+                <p className="text-[10px] font-bold text-slate-400">
+                  Works with GPay · PhonePe · Paytm · BHIM · Any UPI app
+                </p>
+              )}
             </div>
-            
+
+            {/* Actions */}
             <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-3">
-              <button
-                onClick={async () => {
-                  try {
-                    const checkRes = await api.get(`/billing/${caseId}`);
-                    if (checkRes.data.paymentStatus === 'PAID') {
-                      setBill(checkRes.data);
+              {qrMode === 'UPI' ? (
+                // UPI: Manual "Mark as Paid" since no webhook
+                <button
+                  onClick={async () => {
+                    try {
+                      setIsSubmitting(true);
+                      await api.post(`/billing/${bill.id}/pay`, {
+                        isFoc: false,
+                        focReason: '',
+                        splits: [{
+                          amount: parseFloat(amountCollected),
+                          paymentMode: 'CASH', // maps to UPI in ledger note
+                          transactionId: `UPI-${Date.now()}`
+                        }]
+                      }, { headers: { 'Idempotency-Key': crypto.randomUUID() } });
+                      const updatedRes = await api.get(`/billing/${caseId}`);
+                      setBill(updatedRes.data);
                       setIsQrModalOpen(false);
-                      toast.success('Payment received successfully!');
+                      toast.success('UPI Payment confirmed!');
                       setTimeout(() => {
-                        window.open(`/opd/print/invoice/${checkRes.data.id}`, '_blank');
+                        window.open(`/opd/print/invoice/${updatedRes.data.id}`, '_blank');
                       }, 800);
-                    } else {
-                      toast.error('Payment not received yet. Please try again or ask patient to complete payment.');
+                    } catch (err: any) {
+                      toast.error(err.response?.data?.message || 'Failed to record payment');
+                    } finally {
+                      setIsSubmitting(false);
+                      paymentSubmittingRef.current = false;
                     }
-                  } catch (e) {
-                    toast.error('Failed to verify status');
-                  }
-                }}
-                className="w-full py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" /> VERIFY STATUS
-              </button>
+                  }}
+                  disabled={isSubmitting}
+                  className="w-full py-4 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Patient Has Paid — Confirm
+                </button>
+              ) : (
+                // Razorpay: Webhook-driven, just verify
+                <button
+                  onClick={async () => {
+                    try {
+                      const checkRes = await api.get(`/billing/${caseId}`);
+                      if (checkRes.data.paymentStatus === 'PAID') {
+                        setBill(checkRes.data);
+                        setIsQrModalOpen(false);
+                        toast.success('Payment received!');
+                        setTimeout(() => {
+                          window.open(`/opd/print/invoice/${checkRes.data.id}`, '_blank');
+                        }, 800);
+                      } else {
+                        toast.error('Payment not received yet. Please wait for patient to complete.');
+                      }
+                    } catch (e) {
+                      toast.error('Failed to verify status');
+                    }
+                  }}
+                  className="w-full py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Verify Payment Status
+                </button>
+              )}
               <button
-                onClick={() => setIsQrModalOpen(false)}
+                onClick={() => { setIsQrModalOpen(false); setIsSubmitting(false); paymentSubmittingRef.current = false; }}
                 className="w-full py-4 bg-white border border-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all"
               >
-                CLOSE
+                Close / Pay Later
               </button>
             </div>
           </div>
@@ -836,3 +914,4 @@ const BillingView = () => {
 };
 
 export default BillingView;
+

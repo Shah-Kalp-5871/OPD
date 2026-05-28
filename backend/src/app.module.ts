@@ -26,6 +26,7 @@ import { LaboratoryModule } from './laboratory/laboratory.module';
 import { DrugsModule } from './admin/drugs/drugs.module';
 import { LabMasterModule } from './admin/lab/lab.module';
 import { ProcedureMasterModule } from './admin/procedures/procedures.module';
+import { PaymentSettingsModule } from './admin/payment-settings/payment-settings.module';
 import { TelemedicineModule } from './telemedicine/telemedicine.module';
 import { PaymentModule } from './payment/payment.module';
 import { PublicApiModule } from './public-api/public-api.module';
@@ -140,6 +141,7 @@ import { GlobalCommandCenterModule } from './modules/global-command-center/globa
     DrugsModule,
     LabMasterModule,
     ProcedureMasterModule,
+    PaymentSettingsModule,
     HealthModule,
     AnalyticsModule,
     JobsModule,

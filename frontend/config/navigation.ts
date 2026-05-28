@@ -73,6 +73,7 @@ export const roleNavigation: Record<string, NavigationConfig> = {
           { title: 'Lab Master', href: ROUTES.admin.lab, icon: FlaskConical },
           { title: 'Procedure Master', href: ROUTES.admin.procedures, icon: Stethoscope },
           { title: 'Discounts', href: ROUTES.ADMIN_DISCOUNTS, icon: Percent },
+          { title: 'Payment Config', href: '/admin/payment-management', icon: Wallet },
         ]
       },
       {
