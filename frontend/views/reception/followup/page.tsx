@@ -13,7 +13,7 @@ import {
   ClipboardList,
   Info
 } from 'lucide-react';
-import axios from 'axios';
+import api from '@/lib/api';
 
 const ReceptionFollowupView = () => {
   const [selectedOutcome, setSelectedOutcome] = useState('Rescheduled');
@@ -27,9 +27,7 @@ const ReceptionFollowupView = () => {
 
   const fetchFollowups = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/followups/pending', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/followups/pending');
       const followups = res.data.data || [];
       setFollowUpQueue(followups);
       if (followups.length > 0) {
@@ -58,11 +56,9 @@ const ReceptionFollowupView = () => {
     };
 
     try {
-      await axios.patch(`http://localhost:3001/api/followups/${selectedFollowup.id}/status`, {
+      await api.patch(`/followups/${selectedFollowup.id}/status`, {
         status,
         callOutcome: outcomeLabels[selectedOutcome]
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
       alert('Call log saved successfully');

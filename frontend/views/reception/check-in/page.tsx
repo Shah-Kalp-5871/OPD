@@ -35,10 +35,50 @@ const CheckInView = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingMissed, setIsSubmittingMissed] = useState(false);
   const [checkInResult, setCheckInResult] = useState<any>(null);
   const [patientAppointments, setPatientAppointments] = useState<any[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const checkInSubmittingRef = useRef(false);
+
+  const handleMissedActionSubmit = async () => {
+    if (!selectedPatient) {
+      toast.error('No patient selected.');
+      return;
+    }
+    if (missedAction === 'reschedule' && !newFuDate) {
+      toast.error('Please select a new follow-up date for rescheduling.');
+      return;
+    }
+    
+    setIsSubmittingMissed(true);
+    try {
+      await api.post('/appointments/missed-action', {
+        patientId: selectedPatient.id,
+        appointmentId: selectedAppointment?.id,
+        action: missedAction,
+        newFuDate: newFuDate || undefined,
+        note: missedNote || undefined
+      });
+
+      toast.success('Patient status updated successfully');
+      setMissedAction('');
+      setNewFuDate('');
+      setMissedNote('');
+      
+      // Auto clear to check in the next patient
+      setTimeout(() => {
+        setSelectedPatient(null);
+        setSearchQuery('');
+        setSearchResults([]);
+      }, 2000);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Failed to update appointment status';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setIsSubmittingMissed(false);
+    }
+  };
 
   // Auto-calculate BMI
   useEffect(() => {
@@ -437,17 +477,31 @@ const CheckInView = () => {
                  </div>
                  
                  {(missedAction === 'reschedule' || missedAction === 'no-answer' || missedAction === 'not-called') && (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 bg-slate-50 rounded-xl border border-slate-100">
-                        {missedAction === 'reschedule' && (
-                          <div className="space-y-1.5">
-                             <label className="text-xs font-medium text-slate-600">New F/U Date</label>
-                             <input type="date" value={newFuDate} onChange={(e) => setNewFuDate(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
+                     <div className="mt-5 space-y-4">
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-5 bg-slate-50 rounded-xl border border-slate-100">
+                          {missedAction === 'reschedule' && (
+                            <div className="space-y-1.5">
+                               <label className="text-xs font-medium text-slate-600">New F/U Date</label>
+                               <input type="date" value={newFuDate} onChange={(e) => setNewFuDate(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
+                            </div>
+                          )}
+                          <div className={`space-y-1.5 ${missedAction !== 'reschedule' ? 'md:col-span-2' : ''}`}>
+                             <label className="text-xs font-medium text-slate-600">Internal Note</label>
+                             <input type="text" placeholder="Add optional details..." value={missedNote} onChange={(e) => setMissedNote(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
                           </div>
-                        )}
-                        <div className={`space-y-1.5 ${missedAction !== 'reschedule' ? 'md:col-span-2' : ''}`}>
-                           <label className="text-xs font-medium text-slate-600">Internal Note</label>
-                           <input type="text" placeholder="Add optional details..." value={missedNote} onChange={(e) => setMissedNote(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
-                        </div>
+                       </div>
+                       
+                       <div className="flex justify-end pt-2">
+                         <button 
+                           onClick={handleMissedActionSubmit}
+                           disabled={isSubmittingMissed}
+                           className="bg-slate-900 text-white font-bold py-3 px-8 text-sm rounded-xl hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                         >
+                           {isSubmittingMissed ? (
+                             <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Saving...</>
+                           ) : 'Save Update'}
+                         </button>
+                       </div>
                      </div>
                  )}
               </div>

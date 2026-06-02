@@ -12,6 +12,7 @@ import { QueueService } from '../queue/queue.service';
 import { PatientsService } from '../patients/patients.service';
 import { CheckInAppointmentDto } from './dto/check-in-appointment.dto';
 import { AppointmentQueryDto } from './dto/appointment-query.dto';
+import { MissedActionDto } from './dto/missed-action.dto';
 import { SmsWhatsappService } from '../communications/sms-whatsapp.service';
 import { ReminderScheduleService } from '../notifications/reminder-schedule.service';
 import { Logger } from '@nestjs/common';
@@ -195,6 +196,78 @@ export class AppointmentsService {
     });
 
     return result;
+  }
+
+  async handleMissedAction(dto: MissedActionDto, userId: string, branchId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      let appointment: any = null;
+      if (dto.appointmentId) {
+        appointment = await tx.appointment.findUnique({ where: { id: dto.appointmentId } });
+        if (appointment) {
+          const newStatus = dto.action === 'reschedule' ? AppointmentStatus.RESCHEDULED : AppointmentStatus.NO_SHOW;
+          await tx.appointment.update({
+            where: { id: dto.appointmentId },
+            data: { 
+              status: newStatus,
+              remarks: dto.note ? `${appointment.remarks || ''}\n[Missed Action]: ${dto.note}` : appointment.remarks 
+            }
+          });
+        }
+      }
+
+      let latestCase = await tx.patientCase.findFirst({
+        where: { patientId: dto.patientId, branchId },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (!latestCase) {
+         const caseNumber = await this.generateCaseNumber(tx, branchId, new Date(), dto.patientId);
+         latestCase = await tx.patientCase.create({
+           data: {
+             patientId: dto.patientId,
+             branchId: branchId,
+             caseNumber: caseNumber,
+             visitDate: new Date(),
+             visitType: 'CONSULTATION',
+             priority: 'NORMAL'
+           }
+         });
+      }
+
+      if (dto.action === 'reschedule' && dto.newFuDate) {
+        await tx.followup.create({
+          data: {
+            caseId: latestCase.id,
+            patientId: dto.patientId,
+            dueDate: new Date(dto.newFuDate),
+            reason: 'Rescheduled from Missed Appointment',
+            status: 'SCHEDULED',
+            callOutcome: 'Rescheduled'
+          }
+        });
+      } else if (dto.action === 'no-answer') {
+        await tx.caseNote.create({
+          data: {
+            caseId: latestCase.id,
+            authorId: userId,
+            branchId: branchId,
+            noteText: `Called patient (No Answer). ${dto.note || ''}`
+          }
+        });
+      } else if (dto.action === 'not-called') {
+        await tx.followup.create({
+           data: {
+             caseId: latestCase.id,
+             patientId: dto.patientId,
+             dueDate: new Date(),
+             reason: 'Missed Appointment - Needs Call',
+             status: 'SCHEDULED'
+           }
+        });
+      }
+
+      return { success: true, message: 'Missed action processed successfully' };
+    });
   }
 
   async getAvailableSlots(doctorId: string, dateStr: string, branchId: string) {

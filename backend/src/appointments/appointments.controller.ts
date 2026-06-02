@@ -21,6 +21,7 @@ import { AppointmentQueryDto } from './dto/appointment-query.dto';
 import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import { BulkCancelDto } from './dto/bulk-cancel.dto';
+import { MissedActionDto } from './dto/missed-action.dto';
 
 import { BranchId } from '../common/decorators/branch-id.decorator';
 import { BranchGuard } from '../common/guards/branch.guard';
@@ -145,5 +146,15 @@ export class AppointmentsController {
     @BranchId() branchId: string,
   ) {
     return this.appointmentsService.checkIn(dto, req.user.id, branchId);
+  }
+
+  @Post('missed-action')
+  @Roles(Role.RECEPTION, Role.ADMIN)
+  handleMissedAction(
+    @Body() dto: MissedActionDto,
+    @Req() req: any,
+    @BranchId() branchId: string,
+  ) {
+    return this.appointmentsService.handleMissedAction(dto, req.user.id, branchId);
   }
 }
