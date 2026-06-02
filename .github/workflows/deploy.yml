@@ -1,0 +1,43 @@
+name: Deploy OPD System
+
+on:
+  push:
+    branches:
+      - main # Or whichever branch is your production branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "Starting deployment..."
+            
+            # Go to the project directory
+            cd /home/opd_deploy/opd-system
+            
+            # Pull the latest changes from GitHub
+            git pull origin main
+            
+            # Deploy Backend
+            echo "Deploying Backend..."
+            cd backend
+            npm install
+            npx prisma db push
+            npm run build
+            pm2 restart opd-backend
+            
+            # Deploy Frontend
+            echo "Deploying Frontend..."
+            cd ../frontend
+            npm install
+            npm run build
+            PORT=3005 pm2 restart opd-frontend --update-env
+            
+            echo "Deployment successful!"
