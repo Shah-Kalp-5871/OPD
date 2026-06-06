@@ -19,7 +19,7 @@ export class PatientPortalService {
    * Request OTP for login
    */
   async requestOtp(mobile: string) {
-    const patient = await this.prisma.patient.findUnique({
+    const patient = await this.prisma.patient.findFirst({
       where: { mobile },
     });
 
@@ -55,7 +55,7 @@ export class PatientPortalService {
    * Verify OTP and return JWT
    */
   async verifyOtp(mobile: string, otp: string) {
-    const patient = await this.prisma.patient.findUnique({
+    const patient = await this.prisma.patient.findFirst({
       where: { mobile },
       include: { auth: true },
     });

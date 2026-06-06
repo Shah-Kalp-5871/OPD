@@ -142,12 +142,6 @@ export class PublicPatientsController {
       }
     }
 
-    const existingMobile = await this.prisma.patient.findUnique({
-      where: { mobile: body.phoneNumber },
-    });
-    if (existingMobile) {
-      throw new BadRequestException('Patient with this phone number already exists');
-    }
 
     const mrdNumber = `MRD-${Math.floor(100000 + Math.random() * 900000)}`;
 
