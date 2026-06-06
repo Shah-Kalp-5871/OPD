@@ -217,7 +217,7 @@ const OpdQueueView = () => {
     }, width: 90 },
     { title: "Status", field: "status", resizable: true, formatter: (cell: any) => getStatusBadgeString(cell.getValue()), width: 120 },
     { title: "Action", field: "action", headerSort: false, resizable: false, formatter: (cell: any) => {
-        return `<a href="/opd/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
+        return `<a href="/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-teal-600 transition-colors"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>`;
     }, hozAlign: "center" as const, width: 90 }

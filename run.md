@@ -1,25 +1,42 @@
 # How to Run the Project
 
-To start the servers manually without issues, please open two separate terminal windows.
+## 📋 Full Service Checklist
+Before starting the application, ensure all required background services and servers are running. Missing services or stale tokens will lead to database or connection errors (like Chat failing).
 
-### 1. Start the Backend
+### Required Background Services
+- [ ] **PostgreSQL Database** (Port `5432`): Must be running for the main application data (via Prisma).
+- [ ] **Redis Server** (Port `6379`): Crucial for real-time features like the **Chat System** (Pub/Sub) and background task queues (BullMQ). Make sure your Redis Docker container or local instance is running first!
+
+### Application Servers
+To start the servers manually without issues, please open separate terminal windows for each:
+
+### 1. Start the Backend (NestJS)
 Open a terminal in the root folder and run:
 ```bash
 cd backend
 npm run start:dev
 ```
-*(Make sure your Redis docker container is running first!)*
 
-### 2. Start the Frontend
+### 2. Start the Frontend (Next.js)
 Open a second terminal in the root folder and run:
 ```bash
 cd frontend
 npm run dev
 ```
 
-### 3. Start Database UI (Prisma Studio)
+### 3. (Optional) Start Database UI (Prisma Studio)
 Open a third terminal in the root folder and run:
 ```bash
 cd backend
 npx prisma studio
 ```
+
+---
+
+## 🛠 Troubleshooting Common Issues
+
+### ❌ "Invalid branch or missing tenant" Error in Chat/API
+**Why it happens:** You recently reset and re-seeded your database, which created brand new `branchId`s. However, your browser's `localStorage` still holds the old UUIDs and authentication token from before the reset. When the frontend tries to send a chat message, it passes the old `branchId` to the backend, which can no longer find it in the fresh database.
+**How to fix:**
+1. Log out of the frontend application and log back in.
+2. OR, completely clear your browser's Local Storage and refresh the page to get the newly generated data.
