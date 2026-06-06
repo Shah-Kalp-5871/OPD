@@ -32,6 +32,8 @@ const patientSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   mobile: z.string().min(10, 'Mobile number must be 10 digits').max(10, 'Mobile number must be 10 digits'),
   gender: z.string().min(1, 'Gender is required'),
+  dob: z.string().optional(),
+  age: z.any().optional(),
 });
 
 type PatientFormValues = z.infer<typeof patientSchema>;
@@ -58,6 +60,23 @@ const PatientRegistrationView = () => {
   const firstName = watch('firstName') || '';
   const middleName = watch('middleName') || '';
   const lastName = watch('lastName') || '';
+  const dob = watch('dob');
+  const ageVal = watch('age');
+
+  useEffect(() => {
+    if (dob) {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--;
+      }
+      if (calculatedAge >= 0) {
+        setValue('age', calculatedAge, { shouldValidate: true, shouldDirty: true });
+      }
+    }
+  }, [dob, setValue]);
 
   useEffect(() => {
     fetchNextMrd();
@@ -162,7 +181,7 @@ const PatientRegistrationView = () => {
               </div>
               <div>
                 <div class="title">Gender | Age</div>
-                <div class="value">${selectedGender} | -- Yrs</div>
+                <div class="value">${selectedGender} | ${ageVal ? ageVal + ' Yrs' : '-- Yrs'}</div>
               </div>
             </div>
           </div>
@@ -189,7 +208,11 @@ const PatientRegistrationView = () => {
   const onSubmit = async (data: PatientFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await api.post('/patients', data);
+      const payload = {
+        ...data,
+        age: data.age ? Number(data.age) : undefined,
+      };
+      const response = await api.post('/patients', payload);
       toast.success('Patient registered successfully');
       router.push(`/reception/patients/${response.data.id}`);
     } catch (error: any) {
@@ -263,9 +286,28 @@ const PatientRegistrationView = () => {
                    </div>
                 </div>
 
-                {/* Contact & Gender Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <div className="space-y-2 md:col-span-1">
+                 {/* Contact & Gender Grid */}
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Date of Birth</label>
+                       <input 
+                         {...register('dob')}
+                         type="date" 
+                         max="9999-12-31"
+                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all" 
+                       />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Age (Years)</label>
+                       <input 
+                         {...register('age')}
+                         type="number" 
+                         min="0"
+                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all" 
+                         placeholder="e.g. 30"
+                       />
+                    </div>
+                    <div className="space-y-2 md:col-span-1">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Contact Number *</label>
                       <div className="relative">
                          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
@@ -301,45 +343,6 @@ const PatientRegistrationView = () => {
                          <option>Gujarati</option>
                          <option>Hindi</option>
                       </select>
-                   </div>
-                </div>
-             </div>
-          </div>
-
-          {/* 🔷 SECTION 3: PROFILE UPGRADE (LOCKED DURING REGISTRATION) */}
-          <div className="bg-slate-50/50 rounded-3xl border border-slate-100 border-dashed overflow-hidden relative">
-             <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
-                <div className="bg-white p-5 rounded-2xl shadow-xl border border-slate-100 flex flex-col items-center text-center max-w-[280px]">
-                   <Lock className="w-8 h-8 text-slate-300 mb-3" />
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-                     Extended Profile Locked<br/>
-                     <span className="text-teal-600 text-[11px]">Can be completed after registration</span>
-                   </p>
-                </div>
-             </div>
-             
-             <div className="p-6 opacity-40 grayscale">
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.1em] mb-6 flex items-center gap-3">
-                   <Fingerprint className="w-5 h-5 text-slate-400" />
-                   Extended Patient Profile
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Date of Birth</label>
-                      <input type="date" disabled className="w-full px-5 py-3.5 bg-slate-100 border border-slate-200 rounded-xl" />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Blood Group</label>
-                      <input type="text" disabled className="w-full px-5 py-3.5 bg-slate-100 border border-slate-200 rounded-xl" />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Allergies</label>
-                      <input type="text" disabled className="w-full px-5 py-3.5 bg-slate-100 border border-slate-200 rounded-xl" />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Occupation</label>
-                      <input type="text" disabled className="w-full px-5 py-3.5 bg-slate-100 border border-slate-200 rounded-xl" />
                    </div>
                 </div>
              </div>
@@ -383,14 +386,26 @@ const PatientRegistrationView = () => {
                    </div>
                 </div>
 
-                <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 flex gap-4">
-                   <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                   <div>
-                      <h4 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Clinic Policy</h4>
-                      <p className="text-[11px] font-bold text-amber-700 leading-relaxed">
-                         Registration is the first gate. MRD is permanent. 
-                         Ensure contact number is verified to avoid duplicate records.
-                      </p>
+                <div className="space-y-4">
+                   <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 flex gap-4">
+                      <Lock className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                      <div>
+                         <h4 className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-1">Extended Profile</h4>
+                         <p className="text-[11px] font-bold text-blue-700 leading-relaxed">
+                            Full patient history, allergies, and clinical details can be completed from the patient's file after registration.
+                         </p>
+                      </div>
+                   </div>
+
+                   <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100 flex gap-4">
+                      <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                         <h4 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">Clinic Policy</h4>
+                         <p className="text-[11px] font-bold text-amber-700 leading-relaxed">
+                            Registration is the first gate. MRD is permanent. 
+                            Ensure contact number is verified to avoid duplicate records.
+                         </p>
+                      </div>
                    </div>
                 </div>
              </div>
@@ -418,7 +433,7 @@ const PatientRegistrationView = () => {
                          </div>
                          <div>
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Gender | Age</p>
-                            <p className="text-xs font-black text-slate-800">{selectedGender} | -- Yrs</p>
+                            <p className="text-xs font-black text-slate-800">{selectedGender} | {ageVal ? `${ageVal} Yrs` : '-- Yrs'}</p>
                          </div>
                       </div>
 

@@ -148,7 +148,7 @@ model Patient {
   firstName               String
   middleName              String?
   lastName                String
-  mobile                  String                   @unique
+  mobile                  String
   gender                  String
   profileCompletionStatus Int                      @default(20)
   isActive                Boolean                  @default(true)
@@ -709,16 +709,16 @@ model PatientGuardian {
 }
 
 model PatientDocument {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   patientId      String
   documentType   String
   documentNumber String?
   labName        String?
   reportDate     DateTime?
   fileUrl        String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model PatientFlag {
@@ -5317,41 +5317,41 @@ model DataResidencyAudit {
 
 // BATCH 1 — ENTERPRISE DIGITAL TWIN ENGINE
 model DigitalTwinScenario {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   tenantId    String
   branchId    String?
   name        String
   description String?
-  config      Json     // Parameters for the simulation (e.g. disaster type, casualty counts)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  config      Json // Parameters for the simulation (e.g. disaster type, casualty counts)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   runs        SimulationRun[]
 }
 
 model SimulationRun {
-  id              String              @id @default(uuid())
-  tenantId        String
-  branchId        String?
-  scenarioId      String
-  status          String              @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
-  startedAt       DateTime?
-  completedAt     DateTime?
-  inputConfig     Json
-  outputMetrics   Json?               // Simulated ICU occupancy, ER wait times, staff saturation
-  scenario        DigitalTwinScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  createdAt       DateTime            @default(now())
+  id            String              @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  scenarioId    String
+  status        String              @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  startedAt     DateTime?
+  completedAt   DateTime?
+  inputConfig   Json
+  outputMetrics Json? // Simulated ICU occupancy, ER wait times, staff saturation
+  scenario      DigitalTwinScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  createdAt     DateTime            @default(now())
 }
 
 model OperationalForecast {
   id            String   @id @default(uuid())
   tenantId      String
   branchId      String?
-  forecastType  String   // ER_CONGESTION, BED_DEMAND, STAFF_SATURATION
+  forecastType  String // ER_CONGESTION, BED_DEMAND, STAFF_SATURATION
   targetTime    DateTime
   forecastValue Float
-  confidence    Float    // 0.0 to 1.0 confidence score
-  metadata      Json?    // Detailed simulation values & metrics
+  confidence    Float // 0.0 to 1.0 confidence score
+  metadata      Json? // Detailed simulation values & metrics
   createdAt     DateTime @default(now())
 }
 
@@ -5359,9 +5359,9 @@ model CapacitySimulation {
   id               String   @id @default(uuid())
   tenantId         String
   branchId         String?
-  resourceType     String   // BED, ICU, VENTILATOR, STAFF
+  resourceType     String // BED, ICU, VENTILATOR, STAFF
   simulatedLoad    Float
-  bottleneckRisk   String   // LOW, MEDIUM, HIGH, CRITICAL
+  bottleneckRisk   String // LOW, MEDIUM, HIGH, CRITICAL
   mitigationAdvice String?
   createdAt        DateTime @default(now())
 }
@@ -5370,8 +5370,8 @@ model TwinEvent {
   id        String   @id @default(uuid())
   tenantId  String
   branchId  String?
-  severity  String   // INFO, WARNING, CRITICAL
-  category  String   // AMBULANCE_ROUTE, STAFF_SHORTAGE, PATIENT_SPIKE
+  severity  String // INFO, WARNING, CRITICAL
+  category  String // AMBULANCE_ROUTE, STAFF_SHORTAGE, PATIENT_SPIKE
   message   String
   metadata  Json?
   createdAt DateTime @default(now())
@@ -5383,35 +5383,35 @@ model TwinRecommendation {
   branchId    String?
   title       String
   description String
-  impactScore Float    // Estimated efficiency gain
+  impactScore Float // Estimated efficiency gain
   isApplied   Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
 
 // BATCH 2 — AUTONOMOUS AI OPERATIONS LAYER
 model AutonomousDecision {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   tenantId        String
   branchId        String?
-  decisionType    String   // STAFF_REBALANCE, OVERFLOW_ROOM, TRIAGE_ROUTING
+  decisionType    String // STAFF_REBALANCE, OVERFLOW_ROOM, TRIAGE_ROUTING
   rationale       String
   confidenceScore Float
   evidence        Json
-  status          String   @default("PENDING") // PENDING, APPROVED, EXECUTED, REJECTED
+  status          String    @default("PENDING") // PENDING, APPROVED, EXECUTED, REJECTED
   actionedBy      String?
   actionedAt      DateTime?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 }
 
 model AiOperationalDirective {
-  id          String   @id @default(uuid())
-  tenantId    String
-  branchId    String?
-  directive   String
-  targetDept  String
-  priority    String   @default("HIGH") // MEDIUM, HIGH, IMMEDIATE
-  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, SUPERSEDED
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  tenantId   String
+  branchId   String?
+  directive  String
+  targetDept String
+  priority   String   @default("HIGH") // MEDIUM, HIGH, IMMEDIATE
+  status     String   @default("ACTIVE") // ACTIVE, COMPLETED, SUPERSEDED
+  createdAt  DateTime @default(now())
 }
 
 model OptimizationPolicy {
@@ -5427,42 +5427,42 @@ model OptimizationPolicy {
 }
 
 model AiEscalation {
-  id            String    @id @default(uuid())
-  tenantId      String
-  branchId      String?
-  issueSummary  String
-  urgency       String    @default("CRITICAL")
-  assignedRole  String    @default("SUPERADMIN")
-  status        String    @default("OPEN") // OPEN, RESOLVED
-  resolvedAt    DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  issueSummary String
+  urgency      String    @default("CRITICAL")
+  assignedRole String    @default("SUPERADMIN")
+  status       String    @default("OPEN") // OPEN, RESOLVED
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
 }
 
 model AutonomousWorkflowExecution {
-  id           String   @id @default(uuid())
-  tenantId     String
-  branchId     String?
-  workflowName String
-  triggerEvent String
-  stepsRun     Json
-  executionTime Int      // in ms
-  status       String   @default("SUCCESS") // SUCCESS, FAILED
-  createdAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  workflowName  String
+  triggerEvent  String
+  stepsRun      Json
+  executionTime Int // in ms
+  status        String   @default("SUCCESS") // SUCCESS, FAILED
+  createdAt     DateTime @default(now())
 }
 
 // BATCH 3 — COGNITIVE CLINICAL NAVIGATION AI
 model CareJourney {
-  id             String   @id @default(uuid())
-  tenantId       String
-  branchId       String?
-  patientId      String
-  conditionName  String
-  currentStage   String
-  predictedRisk  String   @default("LOW") // LOW, MEDIUM, HIGH
-  progressPct    Float    @default(0.0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  milestones     CareMilestone[]
+  id            String          @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
+  conditionName String
+  currentStage  String
+  predictedRisk String          @default("LOW") // LOW, MEDIUM, HIGH
+  progressPct   Float           @default(0.0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  milestones    CareMilestone[]
 }
 
 model CareMilestone {
@@ -5478,15 +5478,15 @@ model CareMilestone {
 }
 
 model NavigationRecommendation {
-  id           String   @id @default(uuid())
-  tenantId     String
-  branchId     String?
-  patientId    String
+  id            String   @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  patientId     String
   suggestedStep String
   clinicalBasis String
-  priority     String   @default("ROUTINE") // ROUTINE, URGENT
-  isDismissed  Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  priority      String   @default("ROUTINE") // ROUTINE, URGENT
+  isDismissed   Boolean  @default(false)
+  createdAt     DateTime @default(now())
 }
 
 model CareRiskSignal {
@@ -5494,8 +5494,8 @@ model CareRiskSignal {
   tenantId    String
   branchId    String?
   patientId   String
-  signalType  String   // READMISSION_RISK, DROP_OUT_RISK, TREATMENT_ADHERENCE
-  riskScore   Float    // 0.0 to 100.0
+  signalType  String // READMISSION_RISK, DROP_OUT_RISK, TREATMENT_ADHERENCE
+  riskScore   Float // 0.0 to 100.0
   indicators  String[]
   isAddressed Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -5503,13 +5503,13 @@ model CareRiskSignal {
 
 // BATCH 4 — ENTERPRISE KNOWLEDGE GRAPH & MEDICAL INTELLIGENCE MESH
 model KnowledgeNode {
-  id           String   @id @default(uuid())
-  tenantId     String
-  nodeType     String   // DISEASE, DRUG, SYMPTOM, TREATMENT
-  conceptCode  String   @unique // e.g. RxNorm, SNOMED-CT code
-  label        String
-  description  String?
-  createdAt    DateTime @default(now())
+  id          String   @id @default(uuid())
+  tenantId    String
+  nodeType    String // DISEASE, DRUG, SYMPTOM, TREATMENT
+  conceptCode String   @unique // e.g. RxNorm, SNOMED-CT code
+  label       String
+  description String?
+  createdAt   DateTime @default(now())
 }
 
 model KnowledgeRelation {
@@ -5517,61 +5517,61 @@ model KnowledgeRelation {
   tenantId       String
   sourceNodeCode String
   targetNodeCode String
-  relationType   String   // TREATS, CAUSES, CONTRAINDICATED, COMPLICATES
+  relationType   String // TREATS, CAUSES, CONTRAINDICATED, COMPLICATES
   weight         Float    @default(1.0)
   createdAt      DateTime @default(now())
 }
 
 model ClinicalOntology {
-  id          String   @id @default(uuid())
-  tenantId    String
-  domainName  String   // CARDIOLOGY, ONCOLOGY, PEDIATRICS
-  rulesCount  Int      @default(0)
-  version     String   @default("1.0.0")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  tenantId   String
+  domainName String // CARDIOLOGY, ONCOLOGY, PEDIATRICS
+  rulesCount Int      @default(0)
+  version    String   @default("1.0.0")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
 }
 
 model InferenceGraph {
-  id             String   @id @default(uuid())
-  tenantId       String
-  branchId       String?
-  queryContext   String   // Patient context, query terms
-  inferredChain  String[] // Array of logical steps
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  queryContext    String // Patient context, query terms
+  inferredChain   String[] // Array of logical steps
   executionTimeMs Int
-  createdAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
 }
 
 model SemanticRecommendation {
   id              String   @id @default(uuid())
   tenantId        String
   branchId        String?
-  contextId       String   // Patient Case, Prescription ID
+  contextId       String // Patient Case, Prescription ID
   recommendation  String
-  cognitivePath   String   // Graph path details showing rationale
+  cognitivePath   String // Graph path details showing rationale
   confidenceScore Float
   createdAt       DateTime @default(now())
 }
 
 // BATCH 5 — GLOBAL AI COORDINATION & SWARM INTELLIGENCE
 model RegionalAiNode {
-  id             String   @id @default(uuid())
-  tenantId       String
-  regionName     String   // NORTH, WEST, SOUTH-EAST
-  endpointUrl    String
-  healthStatus   String   @default("ONLINE") // ONLINE, OFFLINE
-  lastSyncAt     DateTime @default(now())
+  id           String   @id @default(uuid())
+  tenantId     String
+  regionName   String // NORTH, WEST, SOUTH-EAST
+  endpointUrl  String
+  healthStatus String   @default("ONLINE") // ONLINE, OFFLINE
+  lastSyncAt   DateTime @default(now())
 }
 
 model DistributedInference {
-  id             String   @id @default(uuid())
-  tenantId       String
-  branchId       String?
-  modelName      String
-  subTaskName    String
+  id              String   @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  modelName       String
+  subTaskName     String
   nodeContributed String
-  inferenceData  Json
-  createdAt      DateTime @default(now())
+  inferenceData   Json
+  createdAt       DateTime @default(now())
 }
 
 model FederatedModel {
@@ -5589,7 +5589,7 @@ model FederatedModel {
 model SwarmOptimization {
   id              String   @id @default(uuid())
   tenantId        String
-  optimizationKey String   // SUPPLY_CHAIN, PATIENT_ROUTING, REVENUE_CYCLE
+  optimizationKey String // SUPPLY_CHAIN, PATIENT_ROUTING, REVENUE_CYCLE
   localStatus     String
   globalTarget    String
   deltaValue      Float
@@ -5599,7 +5599,7 @@ model SwarmOptimization {
 model GlobalLearningEvent {
   id          String   @id @default(uuid())
   tenantId    String
-  eventName   String   // OUTBREAK_PATTERN, TREATMENT_VARIANT
+  eventName   String // OUTBREAK_PATTERN, TREATMENT_VARIANT
   sourceNode  String
   payloadData Json
   sharedAt    DateTime @default(now())
@@ -5613,10 +5613,10 @@ model GlobalCommandCenterTelemetry {
   id              String   @id @default(uuid())
   tenantId        String
   branchId        String?
-  platformHealth  String   // HEALTHY, WARNING, CRITICAL
+  platformHealth  String // HEALTHY, WARNING, CRITICAL
   activeIncidents Int      @default(0)
   throughputRate  Float    @default(0.0) // patients/hr
-  revenueSummary  Decimal  @db.Decimal(10, 2) @default(0.0)
+  revenueSummary  Decimal  @default(0.0) @db.Decimal(10, 2)
   securityAlerts  Int      @default(0)
   interopTraffic  Int      @default(0)
   cpuUsage        Float    @default(0.0)
@@ -5625,40 +5625,39 @@ model GlobalCommandCenterTelemetry {
 }
 
 model QuantumOptimizationRecommendation {
-  id               String   @id @default(uuid())
-  tenantId         String
-  branchId         String?
-  targetAsset      String   // STAFFING, BED_FLOW, QUEUE_BALANCING, APPOINTMENT_SPOTS
-  recommendation   String
-  rationale        String
-  confidenceScore  Float    @default(0.95)
-  isSimulated      Boolean  @default(false)
-  isApplied        Boolean  @default(false)
-  appliedAt        DateTime?
-  createdAt        DateTime @default(now())
+  id              String    @id @default(uuid())
+  tenantId        String
+  branchId        String?
+  targetAsset     String // STAFFING, BED_FLOW, QUEUE_BALANCING, APPOINTMENT_SPOTS
+  recommendation  String
+  rationale       String
+  confidenceScore Float     @default(0.95)
+  isSimulated     Boolean   @default(false)
+  isApplied       Boolean   @default(false)
+  appliedAt       DateTime?
+  createdAt       DateTime  @default(now())
 }
 
 model SystemLiveIncident {
-  id            String    @id @default(uuid())
-  tenantId      String
-  branchId      String?
-  sourceModule  String    // SOC, TELEMETRY, INSURANCE, INTEROP
-  title         String
-  severity      String    @default("WARNING") // INFO, WARNING, CRITICAL
-  status        String    @default("OPEN") // OPEN, MITIGATED, RESOLVED
-  resolvedAt    DateTime?
-  createdAt     DateTime  @default(now())
+  id           String    @id @default(uuid())
+  tenantId     String
+  branchId     String?
+  sourceModule String // SOC, TELEMETRY, INSURANCE, INTEROP
+  title        String
+  severity     String    @default("WARNING") // INFO, WARNING, CRITICAL
+  status       String    @default("OPEN") // OPEN, MITIGATED, RESOLVED
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
 }
 
 model OperationalTimelineEvent {
-  id           String   @id @default(uuid())
-  tenantId     String
-  branchId     String?
-  eventType    String   // SECURITY, PATIENT, INFRASTRUCTURE, BILLING, INTEROP, AI_ESCALATION
-  severity     String   @default("INFO") // INFO, WARNING, CRITICAL
-  message      String
-  metadata     Json?
-  regionName   String   @default("GLOBAL")
-  createdAt    DateTime @default(now())
+  id         String   @id @default(uuid())
+  tenantId   String
+  branchId   String?
+  eventType  String // SECURITY, PATIENT, INFRASTRUCTURE, BILLING, INTEROP, AI_ESCALATION
+  severity   String   @default("INFO") // INFO, WARNING, CRITICAL
+  message    String
+  metadata   Json?
+  regionName String   @default("GLOBAL")
+  createdAt  DateTime @default(now())
 }
-

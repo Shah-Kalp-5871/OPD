@@ -21,26 +21,37 @@ export class PatientsService {
   ) {}
 
   async create(createPatientDto: CreatePatientDto) {
-    // Check if patient with same mobile already exists
-    const existingPatient = await this.prisma.patient.findUnique({
-      where: { mobile: createPatientDto.mobile },
-    });
-
-    if (existingPatient) {
-      throw new ConflictException(
-        'Patient with this mobile number already exists',
-      );
-    }
-
     // Generate MRD Number: MRD-YYYY-NNNN
     const mrdNumber = await this.generateMrdNumber();
 
+    // Handle DOB and Age calculation
+    let dobDate: Date | undefined = undefined;
+    let computedAge: number | undefined = createPatientDto.age;
+
+    if (createPatientDto.dob) {
+      dobDate = new Date(createPatientDto.dob);
+      if (!computedAge) {
+        const today = new Date();
+        let age = today.getFullYear() - dobDate.getFullYear();
+        const m = today.getMonth() - dobDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
+          age--;
+        }
+        computedAge = age;
+      }
+    }
+
+    const { dob, age, ...patientData } = createPatientDto;
+
     const patient = await this.prisma.patient.create({
       data: {
-        ...createPatientDto,
+        ...patientData,
         mrdNumber,
         profile: {
-          create: {}, // Create empty profile
+          create: {
+            dob: dobDate,
+            age: computedAge,
+          },
         },
       },
       include: {
@@ -54,13 +65,6 @@ export class PatientsService {
   async update(id: string, updateDto: UpdatePatientDto) {
     const patient = await this.prisma.patient.findUnique({ where: { id } });
     if (!patient) throw new NotFoundException('Patient not found');
-
-    if (updateDto.mobile && updateDto.mobile !== patient.mobile) {
-      const existing = await this.prisma.patient.findUnique({
-        where: { mobile: updateDto.mobile },
-      });
-      if (existing) throw new ConflictException('Mobile number already in use');
-    }
 
     return this.prisma.patient.update({
       where: { id },

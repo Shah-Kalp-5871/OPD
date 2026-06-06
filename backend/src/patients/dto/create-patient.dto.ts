@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
 
 export class CreatePatientDto {
   @IsString()
@@ -20,4 +20,12 @@ export class CreatePatientDto {
   @IsString()
   @IsNotEmpty()
   gender: string;
+
+  @IsString()
+  @IsOptional()
+  dob?: string;
+
+  @IsNumber()
+  @IsOptional()
+  age?: number;
 }
