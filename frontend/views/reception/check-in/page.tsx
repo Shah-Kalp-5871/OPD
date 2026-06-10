@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { Clock, Sunrise, Sun, Sunset, Stethoscope } from 'lucide-react';
 
 const CheckInView = () => {
   const searchParams = useSearchParams();
@@ -39,6 +40,9 @@ const CheckInView = () => {
   const [checkInResult, setCheckInResult] = useState<any>(null);
   const [patientAppointments, setPatientAppointments] = useState<any[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const checkInSubmittingRef = useRef(false);
 
   const handleMissedActionSubmit = async () => {
@@ -119,8 +123,38 @@ const CheckInView = () => {
     try {
       const res = await api.get('/doctors');
       setDoctors(res.data);
+      if (res.data.length > 0 && !selectedDoctorId) {
+        setSelectedDoctorId(res.data[0].doctorProfile?.id || res.data[0].id);
+      }
     } catch (error) {
       toast.error('Failed to load doctors');
+    }
+  };
+
+  useEffect(() => {
+    if (selectedDoctorId && !selectedAppointment) {
+      fetchSlots();
+    }
+  }, [selectedDoctorId, selectedAppointment]);
+
+  const fetchSlots = async () => {
+    setIsSlotsLoading(true);
+    try {
+      const today = new Date();
+      // Ensure local timezone formatting for YYYY-MM-DD
+      const dateString = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const res = await api.get(`/appointments/slots`, {
+        params: {
+          doctorId: selectedDoctorId,
+          date: dateString
+        }
+      });
+      setAvailableSlots(res.data);
+      setSelectedSlot(null);
+    } catch (error) {
+      toast.error('Failed to load available slots');
+    } finally {
+      setIsSlotsLoading(false);
     }
   };
 
@@ -216,23 +250,36 @@ const CheckInView = () => {
       if (selectedAppointment) {
           res = await api.post('/appointments/check-in', checkInData);
       } else {
-          // Manual walk-in flow
-          if (checkInData.vitals) {
-            await api.post(`/patients/${selectedPatient.id}/vitals`, checkInData.vitals);
+          // Manual walk-in flow now books a slot first
+          if (!selectedSlot) {
+            toast.error('Please select an available time slot');
+            setIsSubmitting(false);
+            checkInSubmittingRef.current = false;
+            return;
           }
-          const caseRes = await api.post(`/patients/${selectedPatient.id}/cases`, {
-            doctorId: selectedDoctorId,
-            visitType: checkInData.visitType,
-            priority,
-            complaint
-          });
-          res = await api.post('/queue/check-in', {
-            caseId: caseRes.data.id,
+
+          const today = new Date();
+          const dateString = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+          const apptRes = await api.post('/appointments', {
             patientId: selectedPatient.id,
             doctorId: selectedDoctorId,
-            priority: priority
+            appointmentDate: dateString,
+            appointmentTime: selectedSlot,
+            purpose: checkInData.visitType,
+            remarks: complaint
+          });
+
+          if (checkInData.vitals) {
+             await api.post(`/patients/${selectedPatient.id}/vitals`, checkInData.vitals);
+          }
+
+          res = await api.post('/appointments/check-in', {
+            ...checkInData,
+            appointmentId: apptRes.data.id
           });
       }
+
 
       setCheckInResult(res.data?.queueEntry || res.data);
       toast.success('Patient checked in successfully!');
@@ -354,18 +401,29 @@ const CheckInView = () => {
                       <div className="text-xs text-slate-500 font-medium mb-1">Case ID</div>
                       <div className="text-sm font-semibold text-slate-800">{checkInResult?.caseId || 'Pending'}</div>
                     </div>
-                    <div>
-                      <div className="text-xs text-slate-500 font-medium mb-1">Appointment Time</div>
-                      <div className="text-sm font-semibold text-slate-800">{selectedAppointment ? new Date(selectedAppointment.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Walk-In'}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500 font-medium mb-1">Purpose</div>
-                      <div className="text-sm font-semibold text-slate-800">{selectedAppointment?.purpose || 'Consultation'}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500 font-medium mb-1">Doctor</div>
-                      <div className="text-sm font-semibold text-slate-800">{selectedAppointment?.doctor?.user?.name || doctors.find(d => d.id === selectedDoctorId)?.name || 'Not Assigned'}</div>
-                    </div>
+                    {selectedAppointment ? (
+                      <>
+                        <div>
+                          <div className="text-xs text-slate-500 font-medium mb-1">Appointment Time</div>
+                          <div className="text-sm font-semibold text-slate-800">{new Date(selectedAppointment.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-slate-500 font-medium mb-1">Purpose</div>
+                          <div className="text-sm font-semibold text-slate-800">{selectedAppointment.purpose || 'Consultation'}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-slate-500 font-medium mb-1">Doctor</div>
+                          <div className="text-sm font-semibold text-slate-800">{selectedAppointment.doctor?.user?.name || 'Not Assigned'}</div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="col-span-3">
+                          <div className="text-xs text-slate-500 font-medium mb-1 flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5" /> Walk-in Details</div>
+                          <div className="text-sm font-semibold text-slate-800">Please select Doctor and Time Slot below</div>
+                        </div>
+                      </>
+                    )}
                  </div>
 
                  <div className="flex flex-wrap items-center gap-4 mb-4">
@@ -387,6 +445,111 @@ const CheckInView = () => {
                  )}
               </div>
             </div>
+
+             {/* Walk-In Clinical Details */}
+            {!selectedAppointment && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-slate-500" />
+                  <h2 className="font-semibold text-slate-700 text-sm">Walk-In Clinical Details</h2>
+                </div>
+                <div className="p-6 space-y-6">
+                  {/* Doctor selection */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Select Doctor *</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {doctors.map(doc => {
+                        const profileId = doc.doctorProfile?.id || doc.id;
+                        const name = doc.name || doc.user?.name || '';
+                        const spec = doc.doctorProfile?.specialization || doc.specialization || 'General';
+                        const isActive = selectedDoctorId === profileId;
+                        return (
+                          <button
+                            key={doc.id}
+                            onClick={() => setSelectedDoctorId(profileId)}
+                            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                              isActive ? 'bg-teal-50 border-teal-300 ring-1 ring-teal-500/20' : 'bg-white border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isActive ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              {name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className={`text-sm font-bold ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>Dr. {name}</div>
+                              <div className="text-xs text-slate-500">{spec}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Slot Selection */}
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+                      <span>Available Time Slots *</span>
+                      <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{availableSlots.length} slots</span>
+                    </label>
+                    
+                    {isSlotsLoading ? (
+                      <div className="text-xs text-slate-400 py-4 flex items-center gap-2">
+                         <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin"></div>
+                         Loading slots...
+                      </div>
+                    ) : availableSlots.length === 0 ? (
+                      <div className="text-xs text-slate-400 py-4 italic border border-dashed border-slate-200 rounded-lg text-center bg-slate-50">
+                        No slots available for this doctor today.
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {availableSlots.map((slot, i) => {
+                          const isBooked = slot.status === 'booked';
+                          const isSel = selectedSlot === slot.time;
+                          return (
+                            <button
+                              key={i}
+                              disabled={isBooked}
+                              onClick={() => setSelectedSlot(slot.time)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' :
+                                isSel ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20 scale-105' :
+                                'bg-white text-slate-600 border border-slate-200 hover:border-teal-400 hover:text-teal-600'
+                              }`}
+                            >
+                              {slot.time}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Purpose & Complaint */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                       <label className="text-xs font-medium text-slate-600">Purpose of Visit *</label>
+                       <input 
+                         type="text" 
+                         value={visitType} 
+                         onChange={e => setVisitType(e.target.value)} 
+                         placeholder="e.g. Follow-up, Fever..."
+                         className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" 
+                       />
+                    </div>
+                    <div className="space-y-1.5">
+                       <label className="text-xs font-medium text-slate-600">Complaint / Remarks</label>
+                       <input 
+                         type="text" 
+                         value={complaint} 
+                         onChange={e => setComplaint(e.target.value)} 
+                         placeholder="Brief details..."
+                         className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" 
+                       />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Vitals Entry Section */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -445,8 +608,9 @@ const CheckInView = () => {
             </div>
 
             {/* Missed / No-Show Management Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8">
-              <div className="bg-slate-50/80 p-4 border-b border-slate-100">
+            {selectedAppointment && (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+                <div className="bg-slate-50/80 p-4 border-b border-slate-100">
                  <h2 className="font-semibold text-slate-700 text-sm">Missed / No-Show Management</h2>
                  <p className="text-xs text-slate-500 mt-1">Update status if patient did not arrive on scheduled follow-up date</p>
               </div>
@@ -506,6 +670,7 @@ const CheckInView = () => {
                  )}
               </div>
             </div>
+            )}
 
           </div>
         )}

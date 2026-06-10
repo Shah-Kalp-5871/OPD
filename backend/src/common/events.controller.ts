@@ -1,4 +1,4 @@
-import { Controller, Sse, MessageEvent, UseGuards } from '@nestjs/common';
+import { Controller, Sse, MessageEvent, UseGuards, Post } from '@nestjs/common';
 import { EventsService } from '../common/events.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -25,5 +25,18 @@ export class EventsController {
         data: event.data,
       })),
     );
+  }
+
+  @Post('test-bell')
+  triggerTestBell() {
+    this.eventsService.emitQueueUpdate({
+      type: 'SESSION_ENDED',
+      id: 'test-bell-123',
+      status: 'COMPLETED',
+      token: 'TEST-001',
+      patientName: 'Demo Patient',
+      nextStage: 'RECEPTION',
+    });
+    return { success: true, message: 'Test bell triggered' };
   }
 }

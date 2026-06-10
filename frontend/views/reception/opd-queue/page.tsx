@@ -5,36 +5,31 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useQueueSSE } from '@/hooks/useQueueSSE';
-import { ReactTabulator, ColumnDefinition } from 'react-tabulator';
-import 'react-tabulator/css/tabulator.min.css';
 
 import Link from 'next/link';
 import { 
-  Users, 
-  Clock, 
-  CheckCircle2, 
   Activity, 
   Search,
-  PhoneCall,
-  UserX,
-  FileSignature,
-  Upload,
   ChevronLeft,
   ChevronRight,
-  Filter,
   CheckSquare,
   Square,
-  Eye
+  RotateCcw,
+  ArrowRight,
+  X
 } from 'lucide-react';
 
 const OpdQueueView = () => {
   const [queue, setQueue] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({ total: 0, checkedIn: 0, waiting: 0, completed: 0, cancelled: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [sendingIds, setSendingIds] = useState<Set<string>>(new Set());
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
   
   // New Filters
+  const [queueTab, setQueueTab] = useState<'current' | 'completed'>('current');
+  const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<string>(new Date().toISOString().split('T')[0]);
   const [purposeFilter, setPurposeFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -42,6 +37,9 @@ const OpdQueueView = () => {
   
   // Legend Selection
   const [selectedLegends, setSelectedLegends] = useState<string[]>([]);
+
+  // Sorting
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'asc' });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,11 +49,73 @@ const OpdQueueView = () => {
     doctorId: selectedDoctor === 'all' ? undefined : selectedDoctor
   });
 
-  useEffect(() => {
-    if (sseEntries.length > 0) {
-      setQueue(sseEntries);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [vitals, setVitals] = useState({ height: '', weight: '', temperature: '', pulse: '', bloodPressure: '', spo2: '' });
+  const [appointmentsQueue, setAppointmentsQueue] = useState<any[]>([]);
+
+  // Check-In Modal Additions
+  const [activeTab, setActiveTab] = useState<'check-in' | 'missed'>('check-in');
+  const [missedAction, setMissedAction] = useState<string>(''); // 'reschedule', 'no-answer', 'not-called'
+  const [newFuDate, setNewFuDate] = useState<string>('');
+  const [missedNote, setMissedNote] = useState<string>('');
+  const [isSubmittingMissed, setIsSubmittingMissed] = useState(false);
+
+  const playBellSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      // First Tone (Ding)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1046.50, ctx.currentTime); // High C
+      gain1.gain.setValueAtTime(0, ctx.currentTime);
+      gain1.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.05);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.0);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 1.0);
+
+      // Second Tone (Dong - lasts for 2 seconds)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880.00, ctx.currentTime + 0.4); // A note, starts slightly later
+      gain2.gain.setValueAtTime(0, ctx.currentTime + 0.4);
+      gain2.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.45);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.0); // Fades out over 2 seconds
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.4);
+      osc2.stop(ctx.currentTime + 2.0);
+
+    } catch (e) {
+      console.error('Audio playback failed', e);
     }
-  }, [sseEntries]);
+  };
+
+  useEffect(() => {
+    if (lastEvent) {
+      if (lastEvent.type === 'SESSION_ENDED') {
+        playBellSound();
+        toast.success(`Session ended for ${lastEvent.patientName}. Ready for next patient!`, {
+          duration: 5000,
+          position: 'top-center'
+        });
+        fetchQueue();
+      }
+    }
+  }, [lastEvent]);
+
+  useEffect(() => {
+    if (sseEntries.length > 0 || appointmentsQueue.length > 0) {
+      setQueue([...sseEntries, ...appointmentsQueue]);
+    }
+  }, [sseEntries, appointmentsQueue]);
 
   useEffect(() => {
     if (sseStats) {
@@ -67,18 +127,104 @@ const OpdQueueView = () => {
     fetchQueue();
     fetchStats();
     fetchDoctors();
-  }, [selectedDoctor, dateFilter]); // Refresh if date changes
+  }, [selectedDoctor, dateFilter]);
 
   const fetchQueue = async () => {
     try {
       setIsLoading(true);
-      const url = selectedDoctor === 'all' ? '/queue/live' : `/queue/live?doctorId=${selectedDoctor}`;
-      const response = await api.get(url);
-      setQueue(response.data);
+      const queueUrl = selectedDoctor === 'all' ? '/queue/live' : `/queue/live?doctorId=${selectedDoctor}`;
+      const apptUrl = `/appointments?date=${dateFilter}${selectedDoctor !== 'all' ? `&doctorId=${selectedDoctor}` : ''}`;
+      
+      const [queueRes, apptRes] = await Promise.all([
+        api.get(queueUrl),
+        api.get(apptUrl)
+      ]);
+
+      const queueData = queueRes.data;
+      const apptData = (apptRes.data?.data || [])
+        .filter((a: any) => a.status === 'SCHEDULED' || a.status === 'CONFIRMED')
+        .map((a: any) => ({
+          isAppointment: true,
+          appointmentId: a.id,
+          id: a.id,
+          status: 'SCHEDULED_APPOINTMENT',
+          tokenDisplay: 'APP-' + new Date(a.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          tokenNumber: 9999,
+          patient: a.patient,
+          doctor: a.doctor,
+          case: { visitType: a.purpose, createdAt: a.appointmentTime },
+          checkInTime: null,
+          createdAt: a.createdAt,
+        }));
+
+      setAppointmentsQueue(apptData);
+      setQueue([...queueData, ...apptData]);
     } catch (error) {
-      toast.error('Failed to refresh queue');
+      toast.error('Failed to refresh data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const submitCheckIn = async (skipVitals: boolean) => {
+    if (!selectedAppointmentId) return;
+    try {
+      const payload: any = { appointmentId: selectedAppointmentId };
+      if (!skipVitals) {
+        payload.vitals = {};
+        if (vitals.height) payload.vitals.height = Number(vitals.height);
+        if (vitals.weight) payload.vitals.weight = Number(vitals.weight);
+        if (vitals.temperature) payload.vitals.temperature = Number(vitals.temperature);
+        if (vitals.pulse) payload.vitals.pulse = Number(vitals.pulse);
+        if (vitals.bloodPressure) payload.vitals.bloodPressure = vitals.bloodPressure;
+        if (vitals.spo2) payload.vitals.spo2 = Number(vitals.spo2);
+      }
+      
+      await api.post('/appointments/check-in', payload);
+      toast.success('Patient checked in successfully!');
+      setShowCheckInModal(false);
+      setSelectedAppointmentId(null);
+      setVitals({ height: '', weight: '', temperature: '', pulse: '', bloodPressure: '', spo2: '' });
+      fetchQueue();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to check in patient');
+    }
+  };
+
+  const handleMissedActionSubmit = async () => {
+    if (!selectedAppointmentId) {
+      toast.error('No appointment selected.');
+      return;
+    }
+    if (missedAction === 'reschedule' && !newFuDate) {
+      toast.error('Please select a new follow-up date for rescheduling.');
+      return;
+    }
+    
+    setIsSubmittingMissed(true);
+    try {
+      const entry = queue.find(e => e.appointmentId === selectedAppointmentId);
+      
+      await api.post('/appointments/missed-action', {
+        patientId: entry?.patient?.id,
+        appointmentId: selectedAppointmentId,
+        action: missedAction,
+        newFuDate: newFuDate || undefined,
+        note: missedNote || undefined
+      });
+
+      toast.success('Patient status updated successfully');
+      setMissedAction('');
+      setNewFuDate('');
+      setMissedNote('');
+      setShowCheckInModal(false);
+      setSelectedAppointmentId(null);
+      fetchQueue();
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'Failed to update appointment status';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    } finally {
+      setIsSubmittingMissed(false);
     }
   };
 
@@ -113,30 +259,52 @@ const OpdQueueView = () => {
     return entry.case?.visitType || 'Consultation';
   };
 
-  const getAgeSex = (entry: any) => {
-    const age = entry.patient?.profile?.age || '--';
-    const sex = entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U';
-    return `${age}/${sex}`;
-  };
-
   const getBillingStatus = (entry: any) => {
     if (entry.patient?.isFoc) return 'FOC';
     return entry.case?.bill?.paymentStatus || 'PENDING';
   };
 
   const isNewPatient = (entry: any) => {
-    // If the patient has 1 or fewer cases, they are considered NEW (since the current visit creates a case)
     if (entry.patient?._count?.cases !== undefined) {
       return entry.patient._count.cases <= 1;
     }
     return false;
   };
 
-  // Filter Logic
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getNestedValue = (obj: any, path: string) => {
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  };
+
   let filteredQueue = queue.filter(entry => {
     let match = true;
+
+    // Filter by Tab (Current vs Completed)
+    const isCompleted = entry.status === 'COMPLETED' || entry.status === 'SESSION_ENDED';
+    if (queueTab === 'current' && isCompleted) match = false;
+    if (queueTab === 'completed' && !isCompleted) match = false;
+
+    // Search Query
+    if (searchQuery.trim() !== '') {
+      const patient = entry.patient || entry.patientObj;
+      if (patient) {
+        const searchStr = searchQuery.toLowerCase();
+        const nameMatch = `${patient.firstName || ''} ${patient.lastName || ''}`.toLowerCase().includes(searchStr);
+        const idMatch = patient.patientId?.toLowerCase().includes(searchStr);
+        const phoneMatch = patient.mobile?.includes(searchStr);
+        if (!nameMatch && !idMatch && !phoneMatch) match = false;
+      } else {
+        match = false;
+      }
+    }
     
-    // Status Filter dropdown
     if (statusFilter !== 'All') {
       if (statusFilter === 'Completed' && entry.status !== 'COMPLETED') match = false;
       if (statusFilter === 'Waiting' && entry.status !== 'WAITING') match = false;
@@ -144,12 +312,10 @@ const OpdQueueView = () => {
       if (statusFilter === 'Cancelled' && entry.status === 'CANCELLED') match = false;
     }
 
-    // Purpose Filter
     if (purposeFilter !== 'All') {
       if (getVisitType(entry) !== purposeFilter) match = false;
     }
 
-    // Legend Filters (Checkbox acting as OR filters if any selected)
     if (selectedLegends.length > 0) {
       let legendMatch = false;
       if (selectedLegends.includes('Waiting') && entry.status === 'WAITING') legendMatch = true;
@@ -165,9 +331,38 @@ const OpdQueueView = () => {
     return match;
   });
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredQueue.length / itemsPerPage) || 1;
-  const currentQueueData = filteredQueue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const sortedQueue = React.useMemo(() => {
+    let sortableItems = [...filteredQueue];
+    sortableItems.sort((a, b) => {
+      let aValue: any = '';
+      let bValue: any = '';
+
+      if (sortConfig.key === 'createdAt') {
+        aValue = new Date(a.case?.createdAt || 0).getTime();
+        bValue = new Date(b.case?.createdAt || 0).getTime();
+      } else if (sortConfig.key === 'checkInTime') {
+        aValue = new Date(a.checkInTime || 0).getTime();
+        bValue = new Date(b.checkInTime || 0).getTime();
+      } else if (sortConfig.key === 'patientName') {
+        aValue = `${a.patient?.firstName || ''} ${a.patient?.lastName || ''}`.toLowerCase();
+        bValue = `${b.patient?.firstName || ''} ${b.patient?.lastName || ''}`.toLowerCase();
+      } else if (sortConfig.key === 'age') {
+        aValue = parseInt(a.patient?.profile?.age) || 0;
+        bValue = parseInt(b.patient?.profile?.age) || 0;
+      } else {
+        aValue = getNestedValue(a, sortConfig.key) || '';
+        bValue = getNestedValue(b, sortConfig.key) || '';
+      }
+
+      if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sortableItems;
+  }, [filteredQueue, sortConfig]);
+
+  const totalPages = Math.ceil(sortedQueue.length / itemsPerPage) || 1;
+  const currentQueueData = sortedQueue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const formatTime = (dateString: string) => {
     if (!dateString) return '--:--';
@@ -184,60 +379,23 @@ const OpdQueueView = () => {
         return `<div class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-black uppercase tracking-widest border border-emerald-200 inline-block">COMPLETED</div>`;
       case 'CANCELLED':
         return `<div class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-[10px] font-black uppercase tracking-widest border border-rose-200 inline-block">CANCELLED</div>`;
+      case 'SCHEDULED_APPOINTMENT':
+        return `<div class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-[10px] font-black uppercase tracking-widest border border-indigo-200 inline-block">SCHEDULED APPT</div>`;
       default:
         return `<div class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-[10px] font-black uppercase tracking-widest border border-slate-200 inline-block">${status}</div>`;
     }
   };
 
-  const columns: ColumnDefinition[] = [
-    { title: "Case No", field: "case.caseNumber", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-800 tracking-wider">${cell.getData().case?.caseNumber || cell.getData().tokenDisplay}</span>`, width: 170 },
-    { title: "Appointment Time", field: "case.createdAt", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${formatTime(cell.getValue())}</span>`, width: 180 },
-    { title: "Check In Time", field: "checkInTime", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 tracking-wider">${cell.getValue() ? formatTime(cell.getValue()) : '--'}</span>`, width: 140 },
-    { title: "Patient Name", field: "patient.firstName", resizable: true, formatter: (cell: any) => {
-        const data = cell.getData();
-        const isNew = isNewPatient(data);
-        const isInSession = data.status === 'IN_SESSION';
-        const badge = isNew 
-          ? `<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-[9px] font-black tracking-widest">NEW PT</span>`
-          : `<span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-[9px] font-black tracking-widest">OLD PT</span>`;
-        return `<div class="text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center gap-2">
-                   ${data.patient.firstName} ${data.patient.lastName} 
-                   ${badge}
-                </div>`;
-    }},
-    { title: "Visit For", field: "case.visitType", resizable: true, formatter: (cell: any) => `<span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider">${getVisitType(cell.getData())}</span>`, width: 120 },
-    { title: "Age", field: "patient.profile.age", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() || '--'}</span>`, width: 70 },
-    { title: "Gender", field: "patient.gender", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-black text-slate-700 tracking-widest">${cell.getValue() ? cell.getValue().charAt(0).toUpperCase() : 'U'}</span>`, width: 90 },
-    { title: "Address", field: "patient.address.city", resizable: true, formatter: (cell: any) => `<span class="text-[12px] font-bold text-slate-600 uppercase tracking-widest">${cell.getValue() || '--'}</span>`, width: 100 },
-    { title: "Billing", field: "billing", resizable: true, formatter: (cell: any) => {
-        const billing = getBillingStatus(cell.getData());
-        if (billing === 'FOC') return `<div class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200 inline-block">FOC</div>`;
-        if (billing === 'PAID') return `<div class="text-[11px] font-black text-slate-600 uppercase">PAID</div>`;
-        return `<div class="text-[11px] font-black text-rose-600 uppercase">PENDING</div>`;
-    }, width: 90 },
-    { title: "Status", field: "status", resizable: true, formatter: (cell: any) => getStatusBadgeString(cell.getValue()), width: 120 },
-    { title: "Action", field: "action", headerSort: false, resizable: false, formatter: (cell: any) => {
-        return `<a href="/opd/reception/patients/${cell.getData().patient.id}" class="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-teal-600 transition-colors"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
-                </a>`;
-    }, hozAlign: "center" as const, width: 90 }
-  ];
-
-  // Dynamic row class handler for Tabulator to match our custom design
-  const rowFormatter = (row: any) => {
-    const data = row.getData();
-    const isNew = isNewPatient(data);
-    const isInSession = data.status === 'IN_SESSION';
-    
-    if (isNew) row.getElement().classList.add('row-new');
-    if (isInSession) row.getElement().classList.add('row-insession');
+  const SortIcon = ({ columnKey }: { columnKey: string }) => {
+    if (sortConfig.key !== columnKey) return <span className="text-slate-300 ml-1 inline-block">↕</span>;
+    return <span className="text-teal-600 ml-1 inline-block">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
   };
 
   return (
     <ReceptionLayout>
       <div className="max-w-[1600px] mx-auto space-y-6 pb-20 px-6">
         
-        {/* Modern Top Header - Replacing utilitarian wireframe with our app's sleek styling */}
+        {/* Modern Top Header */}
         <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm gap-6">
           <div className="flex items-center gap-4">
              <div className="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200">
@@ -249,8 +407,37 @@ const OpdQueueView = () => {
              </div>
           </div>
 
-          {/* Top Row Filters */}
-          <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+          {/* TABS */}
+          <div className="flex items-center gap-6 border-b border-slate-200 px-2 mt-4">
+             <button 
+               onClick={() => setQueueTab('current')}
+               className={`pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all border-b-4 ${
+                 queueTab === 'current' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'
+               }`}
+             >
+               Current Queue
+             </button>
+             <button 
+               onClick={() => setQueueTab('completed')}
+               className={`pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all border-b-4 ${
+                 queueTab === 'completed' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-400 hover:text-slate-600'
+               }`}
+             >
+               Completed
+             </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100 flex-1 justify-end mt-4">
+             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 min-w-[200px]">
+                <Search className="w-4 h-4 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search patient..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent w-full"
+                />
+             </div>
              <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
                 <span className="text-[10px] font-black text-slate-500 uppercase">Date:</span>
                 <input 
@@ -301,10 +488,26 @@ const OpdQueueView = () => {
                   <option value="60+">60+</option>
                 </select>
              </div>
+
+             <button 
+                onClick={() => {
+                   setDateFilter(new Date().toISOString().split('T')[0]);
+                   setPurposeFilter('All');
+                   setStatusFilter('All');
+                   setAgeRangeFilter('All');
+                   setSelectedLegends([]);
+                   setSearchQuery('');
+                   setSortConfig({ key: 'createdAt', direction: 'asc' });
+                }}
+                className="ml-2 flex items-center justify-center p-2 bg-slate-200 text-slate-600 hover:bg-slate-300 hover:text-slate-800 rounded-xl transition-all shadow-sm"
+                title="Reset Filters"
+             >
+                <Square className="w-5 h-5 opacity-50 absolute" />
+                <span className="text-[10px] font-black uppercase px-2 z-10 relative">Reset</span>
+             </button>
           </div>
         </div>
 
-        {/* Legend / Filter Checkboxes */}
         <div className="flex flex-wrap items-center gap-4 px-2">
           {['Waiting', 'In Progress', 'Completed', 'Cancelled', 'New Patient', 'FOC'].map((legend) => {
             const isSelected = selectedLegends.includes(legend);
@@ -335,40 +538,124 @@ const OpdQueueView = () => {
                 <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
             </div>
           )}
-          <div className="flex-1 relative overflow-hidden bg-white">
-            <div className="absolute inset-0">
-              <ReactTabulator
-                data={currentQueueData}
-                columns={columns}
-                layout="fitColumns"
-                responsiveLayout="hide"
-                rowFormatter={rowFormatter}
-                options={{
-                  headerSort: true,
-                  selectableRows: false,
-                  placeholder: currentQueueData.length === 0 ? `
-                    <div class="flex flex-col items-center justify-center p-12 text-slate-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-slate-300">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
-                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                      </svg>
-                      <span class="text-sm font-bold uppercase tracking-widest text-slate-500">No patients found matching filters</span>
-                    </div>
-                  ` : undefined,
-                  columnDefaults: { resizable: "header" },
-                  resizableColumnFit: true,
-                  initialSort: [
-                    { column: "case.createdAt", dir: "asc" }
-                  ]
-                }}
-                className="w-full h-full border-none"
-              />
-            </div>
+          
+          <div className="flex-1 relative overflow-auto bg-white">
+            <table className="w-full text-sm text-center">
+              <thead className="text-[11px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.caseNumber')}>Case No <SortIcon columnKey="case.caseNumber" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('createdAt')}>Appt Time <SortIcon columnKey="createdAt" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
+                  <th className="px-4 py-4 whitespace-nowrap border-r border-slate-100 last:border-0">Billing</th>
+                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('status')}>Status <SortIcon columnKey="status" /></th>
+                  <th className="px-4 py-4 whitespace-nowrap">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {currentQueueData.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-20 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center">
+                        <Search className="w-12 h-12 mb-4 text-slate-300" />
+                        <span className="text-sm font-bold uppercase tracking-widest">No patients found</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  currentQueueData.map((entry, idx) => {
+                    const isNew = isNewPatient(entry);
+                    const isInSession = entry.status === 'IN_SESSION';
+                    const rowBg = isInSession ? 'bg-teal-50/50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30');
+                    const billing = getBillingStatus(entry);
+
+                    return (
+                      <tr key={entry.id || idx} className={`${rowBg} hover:bg-slate-50 transition-colors`}>
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-800 border-r border-slate-50">
+                          {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
+                          {formatTime(entry.case?.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
+                          {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
+                          <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-2`}>
+                             {entry.patient?.firstName} {entry.patient?.lastName} 
+                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
+                               {isNew ? 'NEW PT' : 'OLD PT'}
+                             </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-slate-600 uppercase border-r border-slate-50">
+                          {getVisitType(entry)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
+                          {entry.patient?.profile?.age || '--'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
+                          {entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 uppercase border-r border-slate-50">
+                          {entry.patient?.address?.city || '--'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
+                          {billing === 'FOC' ? (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
+                          ) : billing === 'PAID' ? (
+                            <span className="text-[11px] font-black text-slate-600 uppercase">PAID</span>
+                          ) : (
+                            <span className="text-[11px] font-black text-rose-600 uppercase">PENDING</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50" dangerouslySetInnerHTML={{ __html: getStatusBadgeString(entry.status) }} />
+                        <td className="px-4 py-3 whitespace-nowrap">
+                           {entry.isAppointment ? (
+                             <button 
+                               onClick={() => { setSelectedAppointmentId(entry.appointmentId); setShowCheckInModal(true); }}
+                               className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
+                             >
+                               Mark Arrived
+                             </button>
+                           ) : entry.status === 'WAITING' ? (
+                             <button 
+                               disabled={sendingIds.has(entry.id)}
+                               onClick={async () => {
+                                 const entryId = entry.id;
+                                 setSendingIds(prev => new Set(prev).add(entryId));
+                                 try {
+                                   await api.patch(`/queue/${entryId}/status`, { status: 'IN_SESSION' });
+                                   toast.success(`${entry.patient?.firstName} sent to doctor!`);
+                                   await fetchQueue();
+                                 } catch (err: any) {
+                                   toast.error(err?.response?.data?.message || 'Failed to send patient');
+                                 } finally {
+                                   setSendingIds(prev => { const s = new Set(prev); s.delete(entryId); return s; });
+                                 }
+                               }}
+                               className="px-4 py-2 bg-slate-900 text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-wait rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all"
+                             >
+                               {sendingIds.has(entry.id) ? 'Sending...' : 'Send to Doctor'}
+                             </button>
+                           ) : (
+                            <Link href={`/opd/reception/patients/${entry.patient?.id}`} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-teal-600 hover:border-teal-200 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all inline-block shadow-sm">
+                              View Profile
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
 
-          {/* Footer Pagination Strip */}
           <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between mt-auto">
             <div className="flex items-center gap-4">
               <button 
@@ -395,10 +682,136 @@ const OpdQueueView = () => {
             <div className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
               Total: {filteredQueue.length} appointments
             </div>
+        </div>
+      </div>
+    </div>
+
+      {showCheckInModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="text-xl font-black text-slate-800 tracking-tighter">Patient Status</h3>
+              <button onClick={() => setShowCheckInModal(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="flex border-b border-slate-200">
+              <button 
+                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'check-in' ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                onClick={() => setActiveTab('check-in')}
+              >
+                Check-In (Vitals)
+              </button>
+              <button 
+                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'missed' ? 'text-rose-600 border-b-2 border-rose-600 bg-rose-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                onClick={() => setActiveTab('missed')}
+              >
+                Missed / No-Show
+              </button>
+            </div>
+
+            {activeTab === 'check-in' && (
+              <>
+                <div className="p-6 overflow-y-auto space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Height (cm)</label>
+                      <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Weight (kg)</label>
+                      <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Temperature (°F)</label>
+                      <input type="number" value={vitals.temperature} onChange={e => setVitals({...vitals, temperature: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Pulse (bpm)</label>
+                      <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Blood Pressure</label>
+                      <input type="text" placeholder="120/80" value={vitals.bloodPressure} onChange={e => setVitals({...vitals, bloodPressure: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">SpO2 (%)</label>
+                      <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-4">
+                  <button onClick={() => submitCheckIn(true)} className="px-6 py-3 bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
+                    Skip Vitals
+                  </button>
+                  <button onClick={() => submitCheckIn(false)} className="px-6 py-3 bg-teal-600 text-white shadow-xl shadow-teal-600/20 hover:bg-teal-700 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
+                    Save & Check In
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'missed' && (
+              <>
+                <div className="p-6 overflow-y-auto space-y-5">
+                  <div className="grid grid-cols-1 gap-3">
+                     <button 
+                       onClick={() => setMissedAction('reschedule')}
+                       className={`border p-4 rounded-xl text-left text-sm transition-all ${missedAction === 'reschedule' ? 'bg-blue-50 border-blue-300 text-blue-800 font-bold ring-4 ring-blue-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-semibold'}`}
+                     >
+                        <div className="mb-1">Called - Rescheduled</div>
+                        <div className="text-[10px] font-normal opacity-70">Requires new date</div>
+                     </button>
+                     <button 
+                       onClick={() => setMissedAction('no-answer')}
+                       className={`border p-4 rounded-xl text-left text-sm transition-all ${missedAction === 'no-answer' ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold ring-4 ring-amber-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-semibold'}`}
+                     >
+                        <div className="mb-1">Called - No Answer</div>
+                        <div className="text-[10px] font-normal opacity-70">Auto-notes failure</div>
+                     </button>
+                     <button 
+                       onClick={() => setMissedAction('not-called')}
+                       className={`border p-4 rounded-xl text-left text-sm transition-all ${missedAction === 'not-called' ? 'bg-slate-100 border-slate-300 text-slate-800 font-bold ring-4 ring-slate-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-semibold'}`}
+                     >
+                        <div className="mb-1">Not Called / Cancelled</div>
+                        <div className="text-[10px] font-normal opacity-70">Patient cancelled or no action taken</div>
+                     </button>
+                  </div>
+                  
+                  {(missedAction === 'reschedule' || missedAction === 'no-answer' || missedAction === 'not-called') && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-5 p-5 bg-slate-50 rounded-xl border border-slate-100">
+                           {missedAction === 'reschedule' && (
+                             <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-500 uppercase">New F/U Date</label>
+                                <input type="date" value={newFuDate} onChange={(e) => setNewFuDate(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
+                             </div>
+                           )}
+                           <div className="space-y-1.5">
+                              <label className="text-xs font-bold text-slate-500 uppercase">Internal Note (Optional)</label>
+                              <input type="text" placeholder="Add details..." value={missedNote} onChange={(e) => setMissedNote(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
+                           </div>
+                        </div>
+                      </div>
+                  )}
+                </div>
+                <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-4">
+                   <button 
+                     onClick={handleMissedActionSubmit}
+                     disabled={isSubmittingMissed || !missedAction}
+                     className="bg-slate-900 text-white font-black uppercase tracking-widest py-3 px-8 text-sm rounded-xl hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
+                   >
+                     {isSubmittingMissed ? 'Saving...' : 'Save Update'}
+                   </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
-
-      </div>
+      )}
     </ReceptionLayout>
   );
 };
