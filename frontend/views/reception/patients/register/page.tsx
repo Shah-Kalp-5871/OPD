@@ -34,6 +34,8 @@ const patientSchema = z.object({
   gender: z.string().min(1, 'Gender is required'),
   dob: z.string().optional(),
   age: z.any().optional(),
+  ageMonths: z.any().optional(),
+  ageDays: z.any().optional(),
 });
 
 type PatientFormValues = z.infer<typeof patientSchema>;
@@ -67,13 +69,26 @@ const PatientRegistrationView = () => {
     if (dob) {
       const birthDate = new Date(dob);
       const today = new Date();
-      let calculatedAge = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        calculatedAge--;
+      let calculatedYears = today.getFullYear() - birthDate.getFullYear();
+      let calculatedMonths = today.getMonth() - birthDate.getMonth();
+      let calculatedDays = today.getDate() - birthDate.getDate();
+
+      if (calculatedDays < 0) {
+        calculatedMonths--;
+        // Get days in the previous month
+        const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        calculatedDays += prevMonth.getDate();
       }
-      if (calculatedAge >= 0) {
-        setValue('age', calculatedAge, { shouldValidate: true, shouldDirty: true });
+
+      if (calculatedMonths < 0) {
+        calculatedYears--;
+        calculatedMonths += 12;
+      }
+
+      if (calculatedYears >= 0) {
+        setValue('age', calculatedYears, { shouldValidate: true, shouldDirty: true });
+        setValue('ageMonths', calculatedMonths, { shouldValidate: true, shouldDirty: true });
+        setValue('ageDays', calculatedDays, { shouldValidate: true, shouldDirty: true });
       }
     }
   }, [dob, setValue]);
@@ -211,10 +226,12 @@ const PatientRegistrationView = () => {
       const payload = {
         ...data,
         age: data.age ? Number(data.age) : undefined,
+        ageMonths: data.ageMonths ? Number(data.ageMonths) : undefined,
+        ageDays: data.ageDays ? Number(data.ageDays) : undefined,
       };
       const response = await api.post('/patients', payload);
       toast.success('Patient registered successfully');
-      router.push(`/reception/patients/${response.data.id}`);
+      router.push(`/reception/appointments?patientId=${response.data.id}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to register patient');
     } finally {
@@ -298,14 +315,32 @@ const PatientRegistrationView = () => {
                        />
                     </div>
                     <div className="space-y-2">
-                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Age (Years)</label>
-                       <input 
-                         {...register('age')}
-                         type="number" 
-                         min="0"
-                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
-                         placeholder="e.g. 30"
-                       />
+                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Age (Y / M / D)</label>
+                       <div className="flex gap-2">
+                         <input 
+                           {...register('age')}
+                           type="number" 
+                           min="0"
+                           className="w-1/3 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
+                           placeholder="Yrs"
+                         />
+                         <input 
+                           {...register('ageMonths')}
+                           type="number" 
+                           min="0"
+                           max="11"
+                           className="w-1/3 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
+                           placeholder="Mos"
+                         />
+                         <input 
+                           {...register('ageDays')}
+                           type="number" 
+                           min="0"
+                           max="31"
+                           className="w-1/3 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
+                           placeholder="Dys"
+                         />
+                       </div>
                     </div>
                     <div className="space-y-2 md:col-span-1">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Contact Number *</label>

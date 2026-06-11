@@ -10,6 +10,7 @@ import PatientHeader from './components/PatientHeader';
 import TopNavBar from './components/TopNavBar';
 import MasterChartTab from './components/tabs/MasterChartTab';
 import TimelineTab from './components/tabs/TimelineTab';
+import ComplaintsTab from './components/tabs/ComplaintsTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
 import ConsentTab from './components/tabs/ConsentTab';
 
@@ -20,7 +21,7 @@ const PatientHubView = () => {
   
   const [patient, setPatient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<'master_chart' | 'cases' | 'documents' | 'consent' | 'billing'>('master_chart');
+  const [activeSection, setActiveSection] = useState<'master_chart' | 'complaints' | 'cases' | 'documents' | 'consent' | 'billing'>('master_chart');
   const [doctors, setDoctors] = useState<any[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +40,7 @@ const PatientHubView = () => {
       });
     }, { rootMargin: '-20% 0px -80% 0px' });
 
-    const sections = ['master_chart', 'cases', 'documents', 'consent'].map(id => document.getElementById(id));
+    const sections = ['master_chart', 'complaints', 'cases', 'documents', 'consent'].map(id => document.getElementById(id));
     sections.forEach(s => s && observer.observe(s));
     
     return () => observer.disconnect();
@@ -155,6 +156,11 @@ const PatientHubView = () => {
                      }
                    }}
                  />
+               </div>
+
+               <div id="complaints" className="scroll-mt-48 pt-12 border-t border-slate-200">
+                 <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Complaints & History</h2>
+                 <ComplaintsTab patient={patient} />
                </div>
 
                <div id="cases" className="scroll-mt-48 pt-12 border-t border-slate-200">

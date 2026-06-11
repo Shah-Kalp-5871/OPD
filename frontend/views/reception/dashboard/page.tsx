@@ -706,7 +706,10 @@ const ReceptionDashboardView = () => {
                            <td className="px-4 py-3 whitespace-nowrap text-center">
                              {entry.isAppointment ? (
                                <button 
-                                 onClick={(e) => { e.stopPropagation(); setSelectedAppointmentId(entry.appointmentId); setShowCheckInModal(true); }}
+                                 onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    router.push(`/reception/checkin?mrd=${entry.patient?.mrdNumber}&appt=${entry.appointmentId}`);
+                                 }}
                                  className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
                                >
                                  Mark Arrived

@@ -28,4 +28,12 @@ export class CreatePatientDto {
   @IsNumber()
   @IsOptional()
   age?: number;
+
+  @IsNumber()
+  @IsOptional()
+  ageMonths?: number;
+
+  @IsNumber()
+  @IsOptional()
+  ageDays?: number;
 }

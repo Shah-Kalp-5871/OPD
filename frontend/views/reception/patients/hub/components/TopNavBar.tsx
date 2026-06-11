@@ -9,6 +9,7 @@ interface TopNavBarProps {
 const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }) => {
   const sections = [
     { id: 'master_chart', label: 'Master Chart', icon: FolderOpen },
+    { id: 'complaints', label: 'Complaints', icon: History },
     { id: 'cases', label: 'Clinical History', icon: History },
     { id: 'documents', label: 'Reports & Files', icon: FileText },
     { id: 'consent', label: 'Consent Forms', icon: FileSignature },

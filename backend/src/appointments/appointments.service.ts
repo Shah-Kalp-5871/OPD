@@ -572,7 +572,7 @@ export class AppointmentsService {
   }
 
   async checkIn(dto: CheckInAppointmentDto, userId: string, branchId: string) {
-    const { appointmentId, vitals, visitType, priority, complaint } = dto;
+    const { appointmentId, vitals, visitComplaint, visitType, priority, complaint } = dto;
 
     return this.prisma.$transaction(
       async (tx) => {
@@ -637,6 +637,26 @@ export class AppointmentsService {
             where: { id: patientCase.id },
             data: { stage: 'NURSING' }
           });
+        }
+
+        // 2b. Save Visit Complaint if provided
+        if (visitComplaint) {
+          const existingComplaint = await tx.visitComplaint.findUnique({
+            where: { caseId: patientCase!.id }
+          });
+          if (existingComplaint) {
+            await tx.visitComplaint.update({
+              where: { caseId: patientCase!.id },
+              data: visitComplaint
+            });
+          } else {
+            await tx.visitComplaint.create({
+              data: {
+                ...visitComplaint,
+                caseId: patientCase!.id,
+              }
+            });
+          }
         }
 
         // 3. Save Vitals if provided

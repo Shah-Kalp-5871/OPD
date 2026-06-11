@@ -41,7 +41,7 @@ export class PatientsService {
       }
     }
 
-    const { dob, age, ...patientData } = createPatientDto;
+    const { dob, age, ageMonths, ageDays, ...patientData } = createPatientDto;
 
     const patient = await this.prisma.patient.create({
       data: {
@@ -51,6 +51,8 @@ export class PatientsService {
           create: {
             dob: dobDate,
             age: computedAge,
+            ageMonths,
+            ageDays,
           },
         },
       },

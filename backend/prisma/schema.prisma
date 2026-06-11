@@ -193,6 +193,8 @@ model PatientProfile {
   patientId            String        @unique
   dob                  DateTime?
   age                  Int?
+  ageMonths            Int?
+  ageDays              Int?
   bloodGroup           String?
   address              String?
   city                 String?
@@ -266,8 +268,34 @@ model PatientCase {
   branchId                String
   branch                  Branch                   @relation("BranchCases", fields: [branchId], references: [id])
   telemedicineSessionLogs TelemedicineSessionLog[]
+  visitComplaint          VisitComplaint?
 
   @@unique([caseNumber, branchId])
+}
+
+model VisitComplaint {
+  id                 String       @id @default(uuid())
+  caseId             String       @unique
+  presentComplaint   String?
+  durationDays       Int?
+  durationMonths     Int?
+  durationYears      Int?
+  severity           Severity     @default(MODERATE)
+  onset              String?
+  aggravatingFactors String?
+  relievingFactors   String?
+  pastMedical        String?
+  personalHistory    String?
+  pastSurgical       String?
+  currentMedications String?
+  obstetricHistory   String?
+  allergies          String?
+  nursingNotes       String?
+  patientFeedback    String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  
+  patientCase        PatientCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
 }
 
 model QueueEntry {

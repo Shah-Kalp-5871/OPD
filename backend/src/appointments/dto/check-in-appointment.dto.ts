@@ -9,7 +9,73 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { CasePriority } from '@prisma/client';
+import { CasePriority, Severity } from '@prisma/client';
+
+class VisitComplaintDto {
+  @IsString()
+  @IsOptional()
+  presentComplaint?: string;
+
+  @IsNumber()
+  @IsOptional()
+  durationDays?: number;
+
+  @IsNumber()
+  @IsOptional()
+  durationMonths?: number;
+
+  @IsNumber()
+  @IsOptional()
+  durationYears?: number;
+
+  @IsEnum(Severity)
+  @IsOptional()
+  severity?: Severity;
+
+  @IsString()
+  @IsOptional()
+  onset?: string;
+
+  @IsString()
+  @IsOptional()
+  aggravatingFactors?: string;
+
+  @IsString()
+  @IsOptional()
+  relievingFactors?: string;
+
+  @IsString()
+  @IsOptional()
+  pastMedical?: string;
+
+  @IsString()
+  @IsOptional()
+  personalHistory?: string;
+
+  @IsString()
+  @IsOptional()
+  pastSurgical?: string;
+
+  @IsString()
+  @IsOptional()
+  currentMedications?: string;
+
+  @IsString()
+  @IsOptional()
+  obstetricHistory?: string;
+
+  @IsString()
+  @IsOptional()
+  allergies?: string;
+
+  @IsString()
+  @IsOptional()
+  nursingNotes?: string;
+
+  @IsString()
+  @IsOptional()
+  patientFeedback?: string;
+}
 
 class AppointmentVitalsDto {
   @IsNumber()
@@ -75,4 +141,9 @@ export class CheckInAppointmentDto {
   @Type(() => AppointmentVitalsDto)
   @IsOptional()
   vitals?: AppointmentVitalsDto;
+
+  @IsObject()
+  @Type(() => VisitComplaintDto)
+  @IsOptional()
+  visitComplaint?: VisitComplaintDto;
 }

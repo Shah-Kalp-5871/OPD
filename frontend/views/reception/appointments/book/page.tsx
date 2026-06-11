@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { 
   CalendarCheck,
@@ -21,6 +22,9 @@ import { AppointmentBookingStep } from './components/AppointmentBookingStep';
 const BookAppointmentView = () => {
   // Wizard Step State: 1 = Patient Selection, 2 = Appointment Details
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const queryPatientId = searchParams.get('patientId');
 
   // Shared Form & Query States
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,6 +51,22 @@ const BookAppointmentView = () => {
     fetchDoctors();
     fetchRecentPatients();
   }, []);
+
+  // Auto-select patient from query param
+  useEffect(() => {
+    if (queryPatientId) {
+      const fetchPatientFromQuery = async () => {
+        try {
+          const res = await api.get(`/patients/${queryPatientId}`);
+          setSelectedPatient(res.data);
+          setCurrentStep(2);
+        } catch (error) {
+          console.error('Failed to load patient from query:', error);
+        }
+      };
+      fetchPatientFromQuery();
+    }
+  }, [queryPatientId]);
 
   // Fetch slots when doctor or date changes
   useEffect(() => {
@@ -216,17 +236,21 @@ const BookAppointmentView = () => {
         width: '420px',
         showCloseButton: true,
         closeButtonHtml: '<span class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</span>'
+      }).then(() => {
+        if (selectedPatient) {
+          router.push(`/reception/patients/${selectedPatient.id}`);
+        } else {
+          // Reset flow
+          setSelectedPatient(null);
+          setSearchQuery('');
+          setPurpose('');
+          setRemarks('');
+          setSelectedSlot(null);
+          setCurrentStep(1); // Return back to first step
+          fetchSlots();
+          fetchRecentPatients();
+        }
       });
-      
-      // Reset flow
-      setSelectedPatient(null);
-      setSearchQuery('');
-      setPurpose('');
-      setRemarks('');
-      setSelectedSlot(null);
-      setCurrentStep(1); // Return back to first step
-      fetchSlots();
-      fetchRecentPatients();
     } catch (error: any) {
       const message = error?.response?.data?.message;
       toast.error(Array.isArray(message) ? message.join(', ') : message || 'Booking failed');

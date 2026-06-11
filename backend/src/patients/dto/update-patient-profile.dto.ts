@@ -15,6 +15,14 @@ export class UpdatePatientProfileDto {
   @IsOptional()
   age?: number;
 
+  @IsInt()
+  @IsOptional()
+  ageMonths?: number;
+
+  @IsInt()
+  @IsOptional()
+  ageDays?: number;
+
   @IsString()
   @IsOptional()
   bloodGroup?: string;

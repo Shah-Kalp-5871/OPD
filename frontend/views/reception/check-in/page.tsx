@@ -6,6 +6,7 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Clock, Sunrise, Sun, Sunset, Stethoscope } from 'lucide-react';
+import ComplaintsForm, { VisitComplaintData } from './components/ComplaintsForm';
 
 const CheckInView = () => {
   const searchParams = useSearchParams();
@@ -27,6 +28,25 @@ const CheckInView = () => {
     bpSys: '',
     bpDia: '',
     spo2: ''
+  });
+
+  const [visitComplaint, setVisitComplaint] = useState<VisitComplaintData>({
+    presentComplaint: '',
+    durationDays: '',
+    durationMonths: '',
+    durationYears: '',
+    severity: 'MODERATE',
+    onset: '',
+    aggravatingFactors: '',
+    relievingFactors: '',
+    pastMedical: '',
+    personalHistory: '',
+    pastSurgical: '',
+    currentMedications: '',
+    obstetricHistory: '',
+    allergies: '',
+    nursingNotes: '',
+    patientFeedback: ''
   });
   
   // New State for Missed/No-Show Management
@@ -243,6 +263,12 @@ const CheckInView = () => {
           pulse: parseInt(vitals.pulse) || null,
           bloodPressure: bpString,
           spo2: parseInt(vitals.spo2) || null
+        } : undefined,
+        visitComplaint: visitComplaint.presentComplaint || visitComplaint.pastMedical || visitComplaint.allergies ? {
+          ...visitComplaint,
+          durationDays: parseInt(visitComplaint.durationDays) || null,
+          durationMonths: parseInt(visitComplaint.durationMonths) || null,
+          durationYears: parseInt(visitComplaint.durationYears) || null,
         } : undefined
       };
 
@@ -290,6 +316,12 @@ const CheckInView = () => {
         setCheckInResult(null);
         setSearchQuery('');
         setVitals({ height: '', weight: '', bmi: '0.0', temp: '', pulse: '', bpSys: '', bpDia: '', spo2: '' });
+        setVisitComplaint({
+          presentComplaint: '', durationDays: '', durationMonths: '', durationYears: '',
+          severity: 'MODERATE', onset: '', aggravatingFactors: '', relievingFactors: '',
+          pastMedical: '', personalHistory: '', pastSurgical: '', currentMedications: '',
+          obstetricHistory: '', allergies: '', nursingNotes: '', patientFeedback: ''
+        });
       }, 3000);
       
     } catch (error: any) {
@@ -592,6 +624,16 @@ const CheckInView = () => {
                        <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" />
                     </div>
                  </div>
+              </div>
+            </div>
+
+            {/* Complaints Form */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="bg-slate-50/80 p-4 border-b border-slate-100 flex items-center justify-between">
+                 <h2 className="font-semibold text-slate-700 text-sm">Complaints & History</h2>
+              </div>
+              <div className="p-6">
+                <ComplaintsForm data={visitComplaint} onChange={setVisitComplaint} />
               </div>
             </div>
 
