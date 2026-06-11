@@ -48,7 +48,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
 
   const getDocIconColor = (type: string) => {
     switch (type) {
-      case 'Prescription': return 'bg-teal-50 text-teal-600 border-teal-100';
+      case 'Prescription': return 'bg-orange-50 text-orange-600 border-orange-100';
       case 'Lab Report': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
       case 'Scan/X-Ray': return 'bg-violet-50 text-violet-600 border-violet-100';
       case 'Discharge Summary': return 'bg-amber-50 text-amber-600 border-amber-100';
@@ -397,11 +397,11 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`relative border-2 border-dashed rounded-3xl p-10 transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer ${isDragging ? 'border-slate-950 bg-slate-50 scale-[1.01]' : uploadedFile ? 'border-teal-500 bg-teal-50/10' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'}`}
+                    className={`relative border-2 border-dashed rounded-3xl p-10 transition-all flex flex-col items-center justify-center gap-4 group cursor-pointer ${isDragging ? 'border-slate-950 bg-slate-50 scale-[1.01]' : uploadedFile ? 'border-orange-500 bg-orange-50/10' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'}`}
                   >
                     {uploadedFile ? (
                       <div className="text-center space-y-4">
-                        <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 mx-auto border border-teal-100 shadow-sm animate-bounce">
+                        <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 mx-auto border border-orange-100 shadow-sm animate-bounce">
                           <FileText className="w-7 h-7" />
                         </div>
                         <div>
@@ -412,7 +412,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                         </div>
                         {saving && (
                           <div className="mx-auto h-2 w-64 overflow-hidden rounded-full bg-slate-200">
-                            <div className="h-full bg-teal-600 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            <div className="h-full bg-orange-600 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                           </div>
                         )}
                         <button 
@@ -485,7 +485,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                      <CheckCircle2 className="w-4 h-4 text-orange-400" />
                       Save Document
                     </>
                   )}

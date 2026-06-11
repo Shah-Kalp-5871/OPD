@@ -150,7 +150,7 @@ const LabUploadView = () => {
     return (
       <ReceptionLayout>
         <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+          <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Initialising Lab Engine...</p>
         </div>
       </ReceptionLayout>
@@ -179,7 +179,7 @@ const LabUploadView = () => {
         {/* PAGE HEADER */}
         <div>
            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
-              Lab Report Upload — <span className="text-teal-600 uppercase tracking-tight">{patientProfile?.firstName} {patientProfile?.lastName}</span>
+              Lab Report Upload — <span className="text-orange-600 uppercase tracking-tight">{patientProfile?.firstName} {patientProfile?.lastName}</span>
            </h1>
            <div className="flex items-center gap-4 mt-3">
               <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
@@ -206,7 +206,7 @@ const LabUploadView = () => {
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Investigation Order</label>
                        <select 
-                         className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black outline-none focus:border-teal-600 transition-all"
+                         className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black outline-none focus:border-orange-600 transition-all"
                          value={selectedOrder}
                          onChange={(e) => setSelectedOrder(e.target.value)}
                        >
@@ -221,18 +221,18 @@ const LabUploadView = () => {
                     <div className="space-y-2 relative group">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
                           Report Date
-                          <Info className="w-2.5 h-2.5 text-teal-600" />
+                          <Info className="w-2.5 h-2.5 text-orange-600" />
                        </label>
                        <input 
                          type="date" 
-                         className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black outline-none focus:border-teal-600 transition-all" 
+                         className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-black outline-none focus:border-orange-600 transition-all" 
                          value={reportDate}
                          onChange={(e) => setReportDate(e.target.value)}
                        />
                     </div>
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lab Name / Source</label>
-                       <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black outline-none focus:border-teal-600 transition-all shadow-inner" placeholder="Enter Lab Name" />
+                       <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black outline-none focus:border-orange-600 transition-all shadow-inner" placeholder="Enter Lab Name" />
                     </div>
                  </div>
 
@@ -241,11 +241,11 @@ const LabUploadView = () => {
                    onDragOver={handleDragOver}
                    onDragLeave={handleDragLeave}
                    onDrop={handleDrop}
-                   className={`relative border-2 border-dashed rounded-3xl p-16 transition-all flex flex-col items-center justify-center gap-4 group ${isDragging ? 'border-teal-500 bg-teal-50/50 scale-[1.01]' : uploadedFile ? 'border-teal-500 bg-teal-50/20 shadow-inner' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'}`}
+                   className={`relative border-2 border-dashed rounded-3xl p-16 transition-all flex flex-col items-center justify-center gap-4 group ${isDragging ? 'border-orange-500 bg-orange-50/50 scale-[1.01]' : uploadedFile ? 'border-orange-500 bg-orange-50/20 shadow-inner' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'}`}
                  >
                     {uploadedFile ? (
                       <div className="text-center space-y-4">
-                         <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center text-teal-600 mx-auto">
+                         <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 mx-auto">
                             <FileText className="w-8 h-8" />
                          </div>
                          <div>
@@ -254,7 +254,7 @@ const LabUploadView = () => {
                          </div>
                          {saving && (
                            <div className="mx-auto h-2 w-64 overflow-hidden rounded-full bg-slate-200">
-                              <div className="h-full bg-teal-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                              <div className="h-full bg-orange-600 transition-all" style={{ width: `${uploadProgress}%` }} />
                            </div>
                          )}
                          <button onClick={() => setUploadedFile(null)} className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:underline">Remove & Replace</button>
@@ -297,7 +297,7 @@ const LabUploadView = () => {
                 disabled={saving || !uploadedFile || !selectedOrder}
                 className="px-16 py-5 bg-slate-900 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3 group disabled:opacity-50"
               >
-                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-teal-400" />}
+                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-orange-400" />}
                  {saving ? `Uploading ${uploadProgress}%` : 'Save & Link to Case'}
                  <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               </button>
@@ -323,7 +323,7 @@ const LabUploadView = () => {
                        {investigationOrders.map((order, idx) => (
                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
                             <td className="px-8 py-5">
-                               <span className={`text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest ${order.status === 'RESULT_READY' ? 'bg-teal-100 text-teal-700' : 'bg-amber-100 text-amber-700'}`}>
+                               <span className={`text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-widest ${order.status === 'RESULT_READY' ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700'}`}>
                                   {order.status}
                                </span>
                             </td>

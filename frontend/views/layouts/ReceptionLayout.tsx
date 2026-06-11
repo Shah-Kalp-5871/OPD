@@ -10,7 +10,7 @@ interface ReceptionLayoutProps {
 
 const ReceptionLayout: React.FC<ReceptionLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#fafaf8] flex flex-col">
       <TopNavbar role="reception" />
 
       {/* Main Content Area */}
@@ -27,8 +27,8 @@ const ReceptionLayout: React.FC<ReceptionLayoutProps> = ({ children }) => {
         <footer className="px-10 py-6 border-t border-slate-100 flex items-center justify-between text-slate-400">
            <p className="text-[10px] font-bold uppercase tracking-widest">MedFlow Clinic Management System &copy; 2026</p>
            <div className="flex items-center gap-6">
-              <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest cursor-pointer hover:underline">Support</span>
-              <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest cursor-pointer hover:underline">Help Center</span>
+              <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest cursor-pointer hover:underline">Support</span>
+              <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest cursor-pointer hover:underline">Help Center</span>
            </div>
         </footer>
       </div>

@@ -230,14 +230,14 @@ const PatientRegistrationView = () => {
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">New Patient Registration</h1>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-              <Info className="w-3.5 h-3.5 text-teal-500" />
+              <Info className="w-3.5 h-3.5 text-orange-500" />
               Fields marked with * are mandatory for registration
             </p>
           </div>
           
           {/* MRD Display Box */}
-          <div className="bg-teal-50 px-6 py-4 rounded-2xl border border-teal-100 flex flex-col items-end">
-             <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest leading-none mb-1">MRD No. (Auto-generated)</span>
+          <div className="bg-orange-50 px-6 py-4 rounded-2xl border border-orange-100 flex flex-col items-end">
+             <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest leading-none mb-1">MRD No. (Auto-generated)</span>
              <h3 className="text-xl font-black text-slate-800 tracking-widest">{mrdPreview}</h3>
           </div>
         </div>
@@ -246,7 +246,7 @@ const PatientRegistrationView = () => {
           {/* 🔷 SECTION 1: BASIC REGISTRATION DETAILS */}
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
              <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-                <div className="p-2 bg-teal-100 rounded-lg text-teal-600">
+                <div className="p-2 bg-orange-100 rounded-lg text-orange-600">
                    <User className="w-5 h-5" />
                 </div>
                 <h3 className="text-sm font-black text-slate-800 uppercase tracking-[0.1em]">Basic Registration Details</h3>
@@ -260,7 +260,7 @@ const PatientRegistrationView = () => {
                       <input 
                         {...register('firstName')}
                         type="text" 
-                        className={`w-full px-5 py-3.5 bg-slate-50 border ${errors.firstName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all`} 
+                        className={`w-full px-5 py-3.5 bg-slate-50 border ${errors.firstName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all`} 
                         placeholder="Enter First Name" 
                       />
                       {errors.firstName && <p className="text-[10px] font-black text-rose-500 uppercase">{errors.firstName.message}</p>}
@@ -270,7 +270,7 @@ const PatientRegistrationView = () => {
                       <input 
                         {...register('middleName')}
                         type="text" 
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all" 
+                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
                         placeholder="Enter Middle Name" 
                       />
                    </div>
@@ -279,7 +279,7 @@ const PatientRegistrationView = () => {
                       <input 
                         {...register('lastName')}
                         type="text" 
-                        className={`w-full px-5 py-3.5 bg-slate-50 border ${errors.lastName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all`} 
+                        className={`w-full px-5 py-3.5 bg-slate-50 border ${errors.lastName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all`} 
                         placeholder="Enter Last Name" 
                       />
                       {errors.lastName && <p className="text-[10px] font-black text-rose-500 uppercase">{errors.lastName.message}</p>}
@@ -294,7 +294,7 @@ const PatientRegistrationView = () => {
                          {...register('dob')}
                          type="date" 
                          max="9999-12-31"
-                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all" 
+                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
                        />
                     </div>
                     <div className="space-y-2">
@@ -303,7 +303,7 @@ const PatientRegistrationView = () => {
                          {...register('age')}
                          type="number" 
                          min="0"
-                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all" 
+                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
                          placeholder="e.g. 30"
                        />
                     </div>
@@ -315,7 +315,7 @@ const PatientRegistrationView = () => {
                            {...register('mobile')}
                            type="text" 
                            maxLength={10}
-                           className={`w-full pl-12 pr-5 py-3.5 bg-slate-50 border ${errors.mobile ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-teal-600 transition-all`} 
+                           className={`w-full pl-12 pr-5 py-3.5 bg-slate-50 border ${errors.mobile ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 transition-all`} 
                            placeholder="10-digit Mobile" 
                          />
                       </div>
@@ -329,7 +329,7 @@ const PatientRegistrationView = () => {
                              key={opt} 
                              type="button"
                              onClick={() => setValue('gender', opt)}
-                             className={`flex-1 py-3.5 border rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedGender === opt ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-white hover:border-teal-300'}`}
+                             className={`flex-1 py-3.5 border rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedGender === opt ? 'bg-orange-600 text-white border-orange-600 shadow-md shadow-orange-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-white hover:border-orange-300'}`}
                            >
                               {opt}
                            </button>
@@ -356,7 +356,7 @@ const PatientRegistrationView = () => {
                    <button 
                      type="submit"
                      disabled={isSubmitting}
-                     className="w-full flex items-center justify-center gap-3 py-5 bg-teal-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg shadow-teal-100 disabled:opacity-50"
+                     className="w-full flex items-center justify-center gap-3 py-5 bg-orange-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg shadow-orange-100 disabled:opacity-50"
                    >
                       {isSubmitting ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -378,7 +378,7 @@ const PatientRegistrationView = () => {
                       <button 
                         type="button"
                         onClick={handlePrintSticker}
-                        className="flex items-center justify-center gap-3 py-4 bg-white border border-slate-200 text-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-teal-300 transition-all shadow-sm"
+                        className="flex items-center justify-center gap-3 py-4 bg-white border border-slate-200 text-slate-800 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-orange-300 transition-all shadow-sm"
                       >
                          <Printer className="w-4 h-4" />
                          PRINT STICKER
@@ -429,7 +429,7 @@ const PatientRegistrationView = () => {
                       <div className="grid grid-cols-2 gap-4">
                          <div>
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">MRD Number</p>
-                            <p className="text-sm font-black text-teal-700 tracking-widest">{mrdPreview}</p>
+                            <p className="text-sm font-black text-orange-700 tracking-widest">{mrdPreview}</p>
                          </div>
                          <div>
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Gender | Age</p>

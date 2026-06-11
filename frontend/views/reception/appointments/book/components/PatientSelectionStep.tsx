@@ -46,7 +46,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
 
   const avatarColor = (name: string) => {
     const colors = [
-      'bg-teal-100 text-teal-700',
+      'bg-orange-100 text-orange-700',
       'bg-violet-100 text-violet-700',
       'bg-amber-100 text-amber-700',
       'bg-sky-100 text-sky-700',
@@ -88,10 +88,10 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
           <button
             onClick={handleSearch}
             disabled={isSearching}
-            className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] hover:bg-slate-50 hover:text-teal-600 transition-colors disabled:opacity-40"
+            className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] hover:bg-slate-50 hover:text-orange-600 transition-colors disabled:opacity-40"
           >
             {isSearching
-              ? <div className="w-3.5 h-3.5 border-2 border-teal-500/30 border-t-teal-500 rounded-full animate-spin" />
+              ? <div className="w-3.5 h-3.5 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
               : <ScanLine className="w-3.5 h-3.5" />
             }
             Search DB
@@ -100,7 +100,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
           {/* New Register button */}
           <button
             onClick={() => router.push('/reception/patients/register')}
-            className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-teal-600 uppercase tracking-[0.15em] hover:bg-teal-50 transition-colors"
+            className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-orange-600 uppercase tracking-[0.15em] hover:bg-orange-50 transition-colors"
           >
             <UserPlus className="w-3.5 h-3.5" />
             New Patient
@@ -145,7 +145,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                   <button
                     key={p.id}
                     onClick={() => handleSelect(p)}
-                    className="group flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-teal-300 hover:bg-white hover:shadow-sm transition-all duration-200 text-left w-full"
+                    className="group flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-orange-300 hover:bg-white hover:shadow-sm transition-all duration-200 text-left w-full"
                   >
                     {/* Avatar */}
                     <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-[11px] font-black uppercase ${colorClass}`}>
@@ -153,7 +153,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                     </div>
                     {/* Info */}
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-black text-slate-800 uppercase leading-tight truncate group-hover:text-teal-700 transition-colors">
+                      <p className="text-[12px] font-black text-slate-800 uppercase leading-tight truncate group-hover:text-orange-700 transition-colors">
                         {p.firstName} {p.lastName}
                       </p>
                       <p className="text-[9px] font-semibold text-slate-400 mt-0.5 truncate">
@@ -161,7 +161,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                       </p>
                     </div>
                     {/* Arrow */}
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-teal-500 shrink-0 transition-colors" />
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-orange-500 shrink-0 transition-colors" />
                   </button>
                 );
               })}
@@ -177,7 +177,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                   Try a different search or{' '}
                   <button
                     onClick={() => router.push('/reception/patients/register')}
-                    className="text-teal-500 hover:underline font-bold"
+                    className="text-orange-500 hover:underline font-bold"
                   >
                     register a new patient
                   </button>

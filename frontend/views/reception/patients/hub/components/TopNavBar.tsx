@@ -55,11 +55,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }
               }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
                 isActive
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_4px_12px_rgba(249,115,22,0.35)]'
+                  : 'text-slate-500 hover:text-orange-600 hover:bg-orange-50'
               }`}
             >
-              <section.icon className={`w-3.5 h-3.5 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+              <section.icon className={`w-3.5 h-3.5 ${isActive ? 'text-white/80' : 'text-slate-400'}`} />
               {section.label}
             </button>
           );

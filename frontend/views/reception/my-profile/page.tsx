@@ -170,7 +170,7 @@ const MyProfileView = () => {
     return (
       <ReceptionLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-          <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+          <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
           <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading your profile...</p>
         </div>
       </ReceptionLayout>
@@ -214,7 +214,7 @@ const MyProfileView = () => {
                           </label>
                           <input 
                             type="text" 
-                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-800 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-50 transition-all shadow-sm" 
+                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-800 outline-none focus:border-orange-600 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm" 
                             value={profileData.fullName}
                             onChange={(e) => setProfileData({...profileData, fullName: e.target.value})}
                           />
@@ -225,7 +225,7 @@ const MyProfileView = () => {
                           </label>
                           <input 
                             type="email" 
-                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-800 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-50 transition-all shadow-sm" 
+                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-800 outline-none focus:border-orange-600 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm" 
                             value={profileData.email}
                             onChange={(e) => setProfileData({...profileData, email: e.target.value})}
                           />
@@ -236,7 +236,7 @@ const MyProfileView = () => {
                           </label>
                           <input 
                             type="text" 
-                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-800 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-50 transition-all shadow-sm" 
+                            className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-800 outline-none focus:border-orange-600 focus:ring-4 focus:ring-orange-50 transition-all shadow-sm" 
                             value={profileData.contact}
                             onChange={(e) => setProfileData({...profileData, contact: e.target.value})}
                           />
@@ -271,7 +271,7 @@ const MyProfileView = () => {
                        <button 
                          onClick={handleUpdateProfile}
                          disabled={isUpdating}
-                         className="flex items-center gap-3 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:opacity-50 transition-all shadow-lg shadow-teal-100 group"
+                         className="flex items-center gap-3 px-8 py-4 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-orange-700 disabled:opacity-50 transition-all shadow-lg shadow-orange-100 group"
                        >
                           {isUpdating ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -318,7 +318,7 @@ const MyProfileView = () => {
                           <img src={profileData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                           profileData.fullName ? (
-                            <span className="text-2xl font-black text-teal-600 uppercase tracking-widest">
+                            <span className="text-2xl font-black text-orange-600 uppercase tracking-widest">
                               {profileData.fullName.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                             </span>
                           ) : (
@@ -328,7 +328,7 @@ const MyProfileView = () => {
                      </div>
                      <button 
                        onClick={() => fileInputRef.current?.click()}
-                       className="absolute bottom-0 right-0 p-2.5 bg-teal-600 text-white rounded-full border-4 border-white shadow-lg hover:scale-110 transition-transform"
+                       className="absolute bottom-0 right-0 p-2.5 bg-orange-600 text-white rounded-full border-4 border-white shadow-lg hover:scale-110 transition-transform"
                      >
                         <Camera className="w-4 h-4" />
                      </button>

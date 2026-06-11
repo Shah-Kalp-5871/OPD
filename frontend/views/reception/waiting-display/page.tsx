@@ -94,12 +94,12 @@ const WaitingDisplay = () => {
       {/* Top Banner */}
       <div className="h-24 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-12 shadow-2xl z-20">
         <div className="flex items-center gap-6">
-          <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-900/50">
+          <div className="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-900/50">
             <Activity className="w-8 h-8 text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-black tracking-tighter uppercase">OPD Live Queue Display</h1>
-            <p className="text-xs font-bold text-teal-500 uppercase tracking-[0.3em]">MedFlow Digital Health Systems</p>
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-[0.3em]">MedFlow Digital Health Systems</p>
           </div>
         </div>
         
@@ -134,14 +134,14 @@ const WaitingDisplay = () => {
                    <h2 className="text-[14rem] font-black leading-none tracking-tighter text-white drop-shadow-[0_0_50px_rgba(20,184,166,0.3)]">
                       {currentCalling.tokenDisplay.split('-')[1]}
                    </h2>
-                   <div className="px-10 py-3 bg-teal-600 text-white rounded-3xl inline-block transform -rotate-1 shadow-2xl">
+                   <div className="px-10 py-3 bg-orange-600 text-white rounded-3xl inline-block transform -rotate-1 shadow-2xl">
                       <span className="text-3xl font-black uppercase tracking-[0.1em]">{currentCalling.tokenDisplay.split('-')[0]} SERIES</span>
                    </div>
                 </div>
 
                 <div className="bg-slate-900/50 rounded-[4rem] p-12 border border-slate-800 text-center space-y-4 backdrop-blur-xl">
                    <p className="text-xl font-bold text-slate-500 uppercase tracking-[0.5em]">Patient Name</p>
-                   <h3 className="text-7xl font-black uppercase tracking-tight text-teal-400">
+                   <h3 className="text-7xl font-black uppercase tracking-tight text-orange-400">
                       {currentCalling.patient.firstName} {currentCalling.patient.lastName}
                    </h3>
                 </div>
@@ -183,18 +183,18 @@ const WaitingDisplay = () => {
            {/* Last Called / In-Session */}
            <div className="p-10 border-b border-slate-900">
               <div className="flex items-center gap-3 mb-8">
-                 <div className="w-1.5 h-6 bg-teal-500 rounded-full"></div>
+                 <div className="w-1.5 h-6 bg-orange-500 rounded-full"></div>
                  <h4 className="text-xl font-black uppercase tracking-widest text-slate-400">Consulting Now</h4>
               </div>
               <div className="grid grid-cols-1 gap-4">
                  {lastCalled.length > 0 ? lastCalled.map((p, i) => (
-                   <div key={p.id} className="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl flex items-center justify-between group hover:border-teal-500/30 transition-all">
+                   <div key={p.id} className="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl flex items-center justify-between group hover:border-orange-500/30 transition-all">
                       <div className="flex items-center gap-6">
                          <div className="w-16 h-16 bg-white text-slate-950 rounded-2xl flex items-center justify-center">
                             <span className="text-2xl font-black">{p.tokenDisplay.split('-')[1]}</span>
                          </div>
                          <div>
-                            <p className="text-lg font-black text-white group-hover:text-teal-400 transition-colors uppercase leading-tight">{p.patient.firstName} {p.patient.lastName}</p>
+                            <p className="text-lg font-black text-white group-hover:text-orange-400 transition-colors uppercase leading-tight">{p.patient.firstName} {p.patient.lastName}</p>
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">DR. {p.doctor?.name || 'GENERAL'}</p>
                          </div>
                       </div>
@@ -243,13 +243,13 @@ const WaitingDisplay = () => {
       </main>
 
       {/* Scrolling News Ticker / Footer */}
-      <div className="h-16 bg-teal-600 flex items-center overflow-hidden whitespace-nowrap relative">
-         <div className="absolute left-0 inset-y-0 w-40 bg-teal-600 z-10 flex items-center px-8 border-r border-teal-500 shadow-2xl">
+      <div className="h-16 bg-orange-600 flex items-center overflow-hidden whitespace-nowrap relative">
+         <div className="absolute left-0 inset-y-0 w-40 bg-orange-600 z-10 flex items-center px-8 border-r border-orange-500 shadow-2xl">
             <span className="text-xs font-black text-white uppercase tracking-widest">Information</span>
          </div>
          <div className="animate-marquee flex gap-20 items-center">
-            <span className="text-sm font-black text-teal-50 uppercase tracking-widest">WELCOME TO MEDFLOW CLINIC • PLEASE KEEP YOUR TOKEN READY • FOR EMERGENCIES CONTACT RECEPTION DESK IMMEDIATELY • DR. SHAH IS CURRENTLY IN SURGERY • DR. KHAN WILL BE AVAILABLE FROM 2:00 PM • WASH YOUR HANDS REGULARLY • WEAR A MASK FOR SAFETY • FEEDBACK IS VALUED</span>
-            <span className="text-sm font-black text-teal-50 uppercase tracking-widest">WELCOME TO MEDFLOW CLINIC • PLEASE KEEP YOUR TOKEN READY • FOR EMERGENCIES CONTACT RECEPTION DESK IMMEDIATELY • DR. SHAH IS CURRENTLY IN SURGERY • DR. KHAN WILL BE AVAILABLE FROM 2:00 PM • WASH YOUR HANDS REGULARLY • WEAR A MASK FOR SAFETY • FEEDBACK IS VALUED</span>
+            <span className="text-sm font-black text-orange-50 uppercase tracking-widest">WELCOME TO MEDFLOW CLINIC • PLEASE KEEP YOUR TOKEN READY • FOR EMERGENCIES CONTACT RECEPTION DESK IMMEDIATELY • DR. SHAH IS CURRENTLY IN SURGERY • DR. KHAN WILL BE AVAILABLE FROM 2:00 PM • WASH YOUR HANDS REGULARLY • WEAR A MASK FOR SAFETY • FEEDBACK IS VALUED</span>
+            <span className="text-sm font-black text-orange-50 uppercase tracking-widest">WELCOME TO MEDFLOW CLINIC • PLEASE KEEP YOUR TOKEN READY • FOR EMERGENCIES CONTACT RECEPTION DESK IMMEDIATELY • DR. SHAH IS CURRENTLY IN SURGERY • DR. KHAN WILL BE AVAILABLE FROM 2:00 PM • WASH YOUR HANDS REGULARLY • WEAR A MASK FOR SAFETY • FEEDBACK IS VALUED</span>
          </div>
       </div>
 

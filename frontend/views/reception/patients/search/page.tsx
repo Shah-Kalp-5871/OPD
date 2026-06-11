@@ -96,7 +96,7 @@ const PatientSearchView = () => {
           </div>
           <button 
             onClick={() => router.push('/reception/patients/register')}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-teal-100"
+            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-orange-100"
           >
             <UserPlus className="w-4 h-4" />
             New Registration
@@ -106,17 +106,17 @@ const PatientSearchView = () => {
         {/* 🔷 SEARCH & FILTER BAR */}
         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
           <div className="relative group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-orange-600 transition-colors" />
             <input 
               type="text" 
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-teal-600 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
               placeholder="Search by MRD Number, Name, or Mobile Number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {isLoading && (
               <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 border-2 border-teal-600/20 border-t-teal-600 rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-orange-600/20 border-t-orange-600 rounded-full animate-spin"></div>
               </div>
             )}
           </div>
@@ -148,7 +148,7 @@ const PatientSearchView = () => {
                       onClick={() => router.push(`/reception/patients/${p.id}`)}
                     >
                       <td className="px-8 py-5">
-                        <span className="px-3 py-1 bg-teal-50 text-teal-700 rounded-lg text-[10px] font-black tracking-widest border border-teal-100">
+                        <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-lg text-[10px] font-black tracking-widest border border-orange-100">
                           {p.mrdNumber}
                         </span>
                       </td>
@@ -180,7 +180,7 @@ const PatientSearchView = () => {
                       </td>
                       <td className="px-8 py-5 text-center">
                          {p.cases && p.cases.length > 0 ? (
-                           <span className="text-[10px] font-black text-teal-600 uppercase tracking-tight">{formatDate(p.cases[0].createdAt)}</span>
+                           <span className="text-[10px] font-black text-orange-600 uppercase tracking-tight">{formatDate(p.cases[0].createdAt)}</span>
                          ) : (
                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">New Patient</span>
                          )}
@@ -198,7 +198,7 @@ const PatientSearchView = () => {
                               e.stopPropagation();
                               router.push(`/reception/patients/${p.id}`);
                             }}
-                            className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-teal-600 hover:border-teal-200 hover:shadow-sm rounded-xl transition-all"
+                            className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:shadow-sm rounded-xl transition-all"
                             title="Open Patient File"
                           >
                             <Eye className="w-4 h-4" />
@@ -254,7 +254,7 @@ const PatientSearchView = () => {
                       onClick={() => handlePageChange(i + 1)}
                       className={`w-8 h-8 rounded-xl text-[10px] font-black transition-all ${
                         pagination?.page === i + 1 
-                          ? 'bg-teal-600 text-white shadow-md shadow-teal-100' 
+                          ? 'bg-orange-600 text-white shadow-md shadow-orange-100' 
                           : 'bg-white text-slate-400 hover:text-slate-800 border border-slate-100'
                       }`}
                     >

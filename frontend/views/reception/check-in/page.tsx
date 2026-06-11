@@ -316,7 +316,7 @@ const CheckInView = () => {
         <div className="flex gap-3 mb-8">
            <input 
              type="text" 
-             className="flex-1 p-4 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all shadow-sm"
+             className="flex-1 p-4 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all shadow-sm"
              placeholder="Search arriving patient by Name or Mobile Number..."
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
@@ -337,17 +337,17 @@ const CheckInView = () => {
                 <h3 className="font-semibold text-slate-800 mb-4">Multiple Patients Found. Select one:</h3>
                 <div className="grid gap-2">
                     {searchResults.map(p => (
-                        <div key={p.id} onClick={() => handleSelectPatient(p)} className="p-4 border border-slate-100 rounded-lg hover:border-teal-500 hover:bg-teal-50/30 cursor-pointer transition-all flex items-center justify-between group">
+                        <div key={p.id} onClick={() => handleSelectPatient(p)} className="p-4 border border-slate-100 rounded-lg hover:border-orange-500 hover:bg-orange-50/30 cursor-pointer transition-all flex items-center justify-between group">
                             <div className="flex items-center gap-4">
                               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold">
                                 {p.firstName?.charAt(0)}{p.lastName?.charAt(0)}
                               </div>
                               <div>
-                                <div className="font-semibold text-slate-800 group-hover:text-teal-700">{p.firstName} {p.lastName}</div>
+                                <div className="font-semibold text-slate-800 group-hover:text-orange-700">{p.firstName} {p.lastName}</div>
                                 <div className="text-xs text-slate-500">MRD: {p.mrdNumber} • Mob: {p.mobile}</div>
                               </div>
                             </div>
-                            <div className="text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity">Select &rarr;</div>
+                            <div className="text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">Select &rarr;</div>
                         </div>
                     ))}
                 </div>
@@ -356,14 +356,14 @@ const CheckInView = () => {
 
         {/* If CheckIn Successful */}
         {checkInResult && (
-            <div className="mb-8 p-5 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between shadow-sm">
+            <div className="mb-8 p-5 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
                     ✓
                   </div>
                   <div>
-                    <div className="text-teal-900 font-semibold">Check-In Successful!</div>
-                    <div className="text-teal-700 text-sm">Token: <span className="font-bold">{checkInResult?.tokenDisplay || checkInResult?.tokenNumber || 'N/A'}</span>. Preparing for next patient...</div>
+                    <div className="text-orange-900 font-semibold">Check-In Successful!</div>
+                    <div className="text-orange-700 text-sm">Token: <span className="font-bold">{checkInResult?.tokenDisplay || checkInResult?.tokenNumber || 'N/A'}</span>. Preparing for next patient...</div>
                   </div>
                 </div>
             </div>
@@ -468,14 +468,14 @@ const CheckInView = () => {
                             key={doc.id}
                             onClick={() => setSelectedDoctorId(profileId)}
                             className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                              isActive ? 'bg-teal-50 border-teal-300 ring-1 ring-teal-500/20' : 'bg-white border-slate-200 hover:border-slate-300'
+                              isActive ? 'bg-orange-50 border-orange-300 ring-1 ring-orange-500/20' : 'bg-white border-slate-200 hover:border-slate-300'
                             }`}
                           >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isActive ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isActive ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                               {name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className={`text-sm font-bold ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>Dr. {name}</div>
+                              <div className={`text-sm font-bold ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>Dr. {name}</div>
                               <div className="text-xs text-slate-500">{spec}</div>
                             </div>
                           </button>
@@ -488,7 +488,7 @@ const CheckInView = () => {
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center justify-between">
                       <span>Available Time Slots *</span>
-                      <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{availableSlots.length} slots</span>
+                      <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">{availableSlots.length} slots</span>
                     </label>
                     
                     {isSlotsLoading ? (
@@ -512,8 +512,8 @@ const CheckInView = () => {
                               onClick={() => setSelectedSlot(slot.time)}
                               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' :
-                                isSel ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20 scale-105' :
-                                'bg-white text-slate-600 border border-slate-200 hover:border-teal-400 hover:text-teal-600'
+                                isSel ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20 scale-105' :
+                                'bg-white text-slate-600 border border-slate-200 hover:border-orange-400 hover:text-orange-600'
                               }`}
                             >
                               {slot.time}
@@ -533,7 +533,7 @@ const CheckInView = () => {
                          value={visitType} 
                          onChange={e => setVisitType(e.target.value)} 
                          placeholder="e.g. Follow-up, Fever..."
-                         className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" 
+                         className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" 
                        />
                     </div>
                     <div className="space-y-1.5">
@@ -543,7 +543,7 @@ const CheckInView = () => {
                          value={complaint} 
                          onChange={e => setComplaint(e.target.value)} 
                          placeholder="Brief details..."
-                         className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" 
+                         className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" 
                        />
                     </div>
                   </div>
@@ -562,11 +562,11 @@ const CheckInView = () => {
                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                     <div className="space-y-1.5">
                        <label className="text-xs font-medium text-slate-600">Height (cm)</label>
-                       <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" />
+                       <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-xs font-medium text-slate-600">Weight (kg)</label>
-                       <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" />
+                       <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-xs font-medium text-slate-600">BMI</label>
@@ -574,22 +574,22 @@ const CheckInView = () => {
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-xs font-medium text-slate-600">Temp (°F)</label>
-                       <input type="number" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" />
+                       <input type="number" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" />
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-xs font-medium text-slate-600">Pulse (bpm)</label>
-                       <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" />
+                       <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" />
                     </div>
                     <div className="space-y-1.5 md:col-span-2 lg:col-span-1 col-span-2">
                        <label className="text-xs font-medium text-slate-600">BP (mmHg)</label>
-                       <div className="flex border border-slate-200 rounded-lg overflow-hidden focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
+                       <div className="flex border border-slate-200 rounded-lg overflow-hidden focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all">
                           <input type="number" placeholder="Sys" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-1/2 bg-slate-50 p-2.5 outline-none text-sm text-center border-r border-slate-200" />
                           <input type="number" placeholder="Dia" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-1/2 bg-slate-50 p-2.5 outline-none text-sm text-center" />
                        </div>
                     </div>
                     <div className="space-y-1.5">
                        <label className="text-xs font-medium text-slate-600">SpO2 (%)</label>
-                       <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 text-sm transition-all" />
+                       <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2.5 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-sm transition-all" />
                     </div>
                  </div>
               </div>
@@ -600,7 +600,7 @@ const CheckInView = () => {
                <button 
                  onClick={handleCheckIn}
                  disabled={isSubmitting}
-                 className="bg-teal-600 text-white font-bold py-3.5 px-10 text-sm rounded-xl hover:bg-teal-700 transition-all shadow-sm shadow-teal-600/20 disabled:opacity-70 flex items-center gap-2"
+                 className="bg-orange-600 text-white font-bold py-3.5 px-10 text-sm rounded-xl hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20 disabled:opacity-70 flex items-center gap-2"
                >
                  {isSubmitting ? 'Processing...' : 'Confirm Check-In'}
                  {!isSubmitting && <span>&rarr;</span>}

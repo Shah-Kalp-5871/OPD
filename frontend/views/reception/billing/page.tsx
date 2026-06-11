@@ -307,7 +307,7 @@ const BillingView = () => {
       <ReceptionLayout>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <div className="flex flex-col items-center justify-center py-40 space-y-4">
-           <div className="w-10 h-10 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
+           <div className="w-10 h-10 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin"></div>
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Loading Financial Records...</p>
         </div>
       </ReceptionLayout>
@@ -347,7 +347,7 @@ const BillingView = () => {
                    <input 
                      type="text" 
                      placeholder="SEARCH MRD OR NAME..." 
-                     className="bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-[10px] font-black outline-none focus:border-teal-500 w-64 uppercase"
+                     className="bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-[10px] font-black outline-none focus:border-orange-500 w-64 uppercase"
                    />
                 </div>
              </div>
@@ -434,7 +434,7 @@ const BillingView = () => {
               <button 
                 onClick={handleGenerateBill}
                 disabled={isSubmitting}
-                className="px-8 py-4 bg-teal-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 flex items-center gap-3"
+                className="px-8 py-4 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-100 flex items-center gap-3"
               >
                 {isSubmitting ? 'Generating...' : 'Auto-Generate Bill from Consultation Data'}
                 <ArrowRight className="w-4 h-4" />
@@ -460,14 +460,14 @@ const BillingView = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
            <div>
               <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">
-                 Billing & Payment — <span className="text-teal-600 uppercase">{bill.patient.firstName} {bill.patient.lastName}</span>
+                 Billing & Payment — <span className="text-orange-600 uppercase">{bill.patient.firstName} {bill.patient.lastName}</span>
               </h1>
               <div className="flex items-center gap-4 mt-4">
                  <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                     <FileText className="w-3.5 h-3.5 text-slate-400" />
                     Case: {bill.case.caseNumber}
                  </span>
-                 <span className="bg-teal-50 text-teal-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-teal-100">
+                 <span className="bg-orange-50 text-orange-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-orange-100">
                     <History className="w-3.5 h-3.5" />
                     MRD: {bill.patient.mrdNumber}
                  </span>
@@ -719,7 +719,7 @@ const BillingView = () => {
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer" htmlFor="foc-toggle">FOC Mode</label>
                           <label htmlFor="foc-toggle" className="relative inline-flex items-center cursor-pointer">
                              <input id="foc-toggle" type="checkbox" checked={isFoc} disabled={isSubmitting} onChange={(e) => setIsFoc(e.target.checked)} className="sr-only peer" />
-                             <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal-500"></div>
+                             <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
                           </label>
                        </div>
                      )}
@@ -783,7 +783,7 @@ const BillingView = () => {
                                                 const newSplits = [...splits];
                                                 newSplits[index].amount = e.target.value;
                                                 setSplits(newSplits);
-                                             }} disabled={isSubmitting} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-teal-500 transition-all placeholder:text-slate-300" placeholder="0.00" />
+                                             }} disabled={isSubmitting} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-orange-500 transition-all placeholder:text-slate-300" placeholder="0.00" />
                                           </div>
                                           <div className="space-y-2">
                                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction ID</label>
@@ -791,7 +791,7 @@ const BillingView = () => {
                                                 const newSplits = [...splits];
                                                 newSplits[index].transactionId = e.target.value;
                                                 setSplits(newSplits);
-                                             }} disabled={isSubmitting} placeholder="AUTO-GENERATED IF EMPTY" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-teal-500 transition-all uppercase placeholder:normal-case placeholder:text-slate-300" />
+                                             }} disabled={isSubmitting} placeholder="AUTO-GENERATED IF EMPTY" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-orange-500 transition-all uppercase placeholder:normal-case placeholder:text-slate-300" />
                                           </div>
                                        </div>
                                        <div className="space-y-2">
@@ -809,9 +809,9 @@ const BillingView = () => {
                                                        setSplits(newSplits);
                                                     }}
                                                     disabled={isSubmitting}
-                                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+                                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
                                                   >
-                                                     <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-teal-600' : 'text-slate-400'}`} />
+                                                     <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-orange-600' : 'text-slate-400'}`} />
                                                      <span className="text-[9px] font-black uppercase tracking-widest">{mode.label}</span>
                                                   </button>
                                                 );
@@ -841,7 +841,7 @@ const BillingView = () => {
                             <button 
                               onClick={handleCollectPayment}
                               disabled={isSubmitting}
-                              className="flex-[2] py-4 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 flex items-center justify-center gap-2"
+                              className="flex-[2] py-4 bg-orange-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-100 flex items-center justify-center gap-2"
                             >
                                COLLECT PAYMENT & RECEIPT <ArrowRight className="w-4 h-4" />
                             </button>

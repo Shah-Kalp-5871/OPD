@@ -160,7 +160,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
   if (loading) {
     return (
       <div className="h-[40vh] flex flex-col items-center justify-center gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
-        <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+        <Loader2 className="w-10 h-10 text-orange-600 animate-spin" />
         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Loading Templates...</p>
       </div>
     );
@@ -211,7 +211,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
             <ClipboardCheck className="w-4 h-4 text-slate-400" />
             Auto-populated Details
           </h3>
-          <div className="bg-teal-100/50 text-teal-700 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-teal-100">
+          <div className="bg-orange-100/50 text-orange-700 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-orange-100">
             System Verified
           </div>
         </div>
@@ -228,7 +228,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
               { label: 'Date', value: new Date().toLocaleDateString(), icon: Calendar },
             ].map((field, idx) => (
               <div key={idx} className="group">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-teal-600 transition-colors">{field.label}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-orange-600 transition-colors">{field.label}</p>
                 <div className="flex items-center gap-2">
                   <field.icon className="w-3.5 h-3.5 text-slate-300" />
                   <p className="text-xs font-black text-slate-800 uppercase tracking-wider truncate">{field.value}</p>
@@ -254,9 +254,9 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
                 <button
                   key={template.id}
                   onClick={() => setSelectedTemplate(template)}
-                  className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${selectedTemplate?.id === template.id ? 'bg-teal-50 border-teal-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                  className={`w-full p-4 rounded-2xl border-2 transition-all text-left group ${selectedTemplate?.id === template.id ? 'bg-orange-50 border-orange-500' : 'bg-white border-slate-100 hover:border-slate-200'}`}
                 >
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${selectedTemplate?.id === template.id ? 'text-teal-700' : 'text-slate-500'}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${selectedTemplate?.id === template.id ? 'text-orange-700' : 'text-slate-500'}`}>
                     {template.name}
                   </p>
                 </button>
@@ -278,7 +278,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
                   className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedLanguage === lang ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-100 hover:border-slate-200 text-slate-600'}`}
                 >
                   <span className="text-[10px] font-black uppercase tracking-widest">{lang}</span>
-                  {selectedLanguage === lang && <CheckCircle2 className="w-4 h-4 text-teal-400" />}
+                  {selectedLanguage === lang && <CheckCircle2 className="w-4 h-4 text-orange-400" />}
                 </button>
               ))}
             </div>
@@ -365,7 +365,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
                   />
                 </label>
                 {signatureFile && (
-                  <p className="text-[10px] font-black uppercase tracking-widest text-teal-700">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-orange-700">
                     {signatureFile.name}
                   </p>
                 )}
@@ -386,7 +386,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
                 <button 
                   onClick={handleSaveConsent}
                   disabled={saving || !selectedTemplate}
-                  className="flex-1 py-4 bg-teal-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-teal-700 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="flex-1 py-4 bg-orange-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-orange-700 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSignature className="w-4 h-4" />}
                   {saving && signatureFile ? `Uploading ${uploadProgress}%` : t.recordConsent}

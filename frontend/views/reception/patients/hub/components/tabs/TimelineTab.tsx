@@ -53,7 +53,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
             {clinicalJourney.map((event, index) => (
               <div key={event.id} className="relative flex gap-6 group">
                 <div className={`z-10 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center shadow-sm ${
-                  event.status === 'OPEN' ? 'bg-teal-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500'
+                  event.status === 'OPEN' ? 'bg-orange-500 text-white animate-pulse' : 'bg-slate-200 text-slate-500'
                 }`}>
                   <event.icon className="w-3.5 h-3.5" />
                 </div>
@@ -62,7 +62,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div className="space-y-0.5">
                       <p className={`text-[11px] font-black uppercase tracking-tight ${
-                        event.status === 'OPEN' ? 'text-teal-700' : 'text-slate-800'
+                        event.status === 'OPEN' ? 'text-orange-700' : 'text-slate-800'
                       }`}>
                         {event.title}
                       </p>
@@ -106,7 +106,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
       <div className="p-6 bg-slate-900 rounded-xl flex items-center justify-between text-white">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-            <Activity className="w-5 h-5 text-teal-400" />
+            <Activity className="w-5 h-5 text-orange-400" />
           </div>
           <div className="space-y-0.5">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">Journey Summary</p>

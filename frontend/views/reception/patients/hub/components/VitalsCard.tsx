@@ -66,14 +66,14 @@ const VitalsCard: React.FC<VitalsCardProps> = ({ latestVitals, vitalsHistory = [
     <div className="bg-white border border-slate-200/60 rounded-3xl overflow-hidden shadow-sm mt-8">
       <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
-          <Activity className="w-4 h-4 text-teal-600" />
+          <Activity className="w-4 h-4 text-orange-600" />
           Patient Vitals & Measurements
         </h3>
         <button 
           onClick={handleSave}
           disabled={isSaving || !isDirty}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            isDirty && !isSaving ? 'bg-teal-600 text-white hover:bg-teal-700 shadow-sm' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            isDirty && !isSaving ? 'bg-orange-600 text-white hover:bg-orange-700 shadow-sm' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
         >
           <Save className="w-3.5 h-3.5" />
@@ -85,31 +85,31 @@ const VitalsCard: React.FC<VitalsCardProps> = ({ latestVitals, vitalsHistory = [
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Temp (°F)</label>
-            <input type="text" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="98.6" />
+            <input type="text" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="98.6" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Pulse (BPM)</label>
-            <input type="text" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="72" />
+            <input type="text" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="72" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sys (mmHg)</label>
-            <input type="text" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="120" />
+            <input type="text" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="120" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Dia (mmHg)</label>
-            <input type="text" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="80" />
+            <input type="text" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="80" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Weight (Kg)</label>
-            <input type="text" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="70" />
+            <input type="text" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="70" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Height (cm)</label>
-            <input type="text" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="170" />
+            <input type="text" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="170" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">SpO2 (%)</label>
-            <input type="text" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none text-center" placeholder="98" />
+            <input type="text" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-3 text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none text-center" placeholder="98" />
           </div>
         </div>
 

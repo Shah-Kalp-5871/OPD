@@ -376,7 +376,7 @@ const OpdQueueView = () => {
       case 'WAITING':
         return `<div class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 inline-block">WAITING</div>`;
       case 'IN_SESSION':
-        return `<div class="px-2 py-1 bg-teal-100 text-teal-700 rounded text-[10px] font-black uppercase tracking-widest border border-teal-200 inline-block animate-pulse">IN PROGRESS</div>`;
+        return `<div class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-[10px] font-black uppercase tracking-widest border border-orange-200 inline-block animate-pulse">IN PROGRESS</div>`;
       case 'COMPLETED':
         return `<div class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-black uppercase tracking-widest border border-emerald-200 inline-block">COMPLETED</div>`;
       case 'CANCELLED':
@@ -390,7 +390,7 @@ const OpdQueueView = () => {
 
   const SortIcon = ({ columnKey }: { columnKey: string }) => {
     if (sortConfig.key !== columnKey) return <span className="text-slate-300 ml-1 inline-block">↕</span>;
-    return <span className="text-teal-600 ml-1 inline-block">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
+    return <span className="text-orange-600 ml-1 inline-block">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>;
   };
 
   return (
@@ -400,7 +400,7 @@ const OpdQueueView = () => {
         {/* Modern Top Header */}
         <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm gap-6">
           <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200">
+             <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
                 <Activity className="w-6 h-6 text-white animate-pulse" />
              </div>
              <div>
@@ -414,7 +414,7 @@ const OpdQueueView = () => {
              <button 
                onClick={() => setQueueTab('current')}
                className={`pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all border-b-4 ${
-                 queueTab === 'current' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-400 hover:text-slate-600'
+                 queueTab === 'current' ? 'border-orange-600 text-orange-700' : 'border-transparent text-slate-400 hover:text-slate-600'
                }`}
              >
                Current Queue
@@ -519,11 +519,11 @@ const OpdQueueView = () => {
                 onClick={() => toggleLegend(legend)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
                   isSelected 
-                    ? 'bg-teal-50 border-teal-200 text-teal-800 shadow-sm' 
+                    ? 'bg-orange-50 border-orange-200 text-orange-800 shadow-sm' 
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                {isSelected ? <CheckSquare className="w-4 h-4 text-teal-600" /> : <Square className="w-4 h-4 text-slate-400" />}
+                {isSelected ? <CheckSquare className="w-4 h-4 text-orange-600" /> : <Square className="w-4 h-4 text-slate-400" />}
                 <span className="text-[11px] font-black uppercase tracking-wider">
                   {legend} {legend === 'In Progress' && '(Blinking)'}
                 </span>
@@ -536,7 +536,7 @@ const OpdQueueView = () => {
         <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden relative min-h-[500px] flex flex-col">
           {isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6 min-h-[400px]">
-                <div className="w-16 h-16 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
+                <div className="w-16 h-16 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin"></div>
                 <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
             </div>
           )}
@@ -572,7 +572,7 @@ const OpdQueueView = () => {
                   currentQueueData.map((entry, idx) => {
                     const isNew = isNewPatient(entry);
                     const isInSession = entry.status === 'IN_SESSION';
-                    const rowBg = isInSession ? 'bg-teal-50/50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30');
+                    const rowBg = isInSession ? 'bg-orange-50/50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30');
                     const billing = getBillingStatus(entry);
 
                     return (
@@ -591,7 +591,7 @@ const OpdQueueView = () => {
                           {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
-                          <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-teal-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-2`}>
+                          <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-2`}>
                              {entry.patient?.firstName} {entry.patient?.lastName} 
                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
                                {isNew ? 'NEW PT' : 'OLD PT'}
@@ -645,7 +645,7 @@ const OpdQueueView = () => {
                                    setSendingIds(prev => { const s = new Set(prev); s.delete(entryId); return s; });
                                  }
                                }}
-                               className="px-4 py-2 bg-slate-900 text-white hover:bg-teal-600 disabled:opacity-50 disabled:cursor-wait rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all"
+                               className="px-4 py-2 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-wait rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all"
                              >
                                {sendingIds.has(entry.id) ? 'Sending...' : 'Send to Doctor'}
                              </button>
@@ -653,7 +653,7 @@ const OpdQueueView = () => {
                             <Link 
                               href={`/opd/reception/patients/${entry.patient?.id}`} 
                               onClick={(e) => e.stopPropagation()}
-                              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-teal-600 hover:border-teal-200 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all inline-block shadow-sm"
+                              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-orange-600 hover:border-orange-200 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all inline-block shadow-sm"
                             >
                               View Profile
                             </Link>
@@ -709,7 +709,7 @@ const OpdQueueView = () => {
             
             <div className="flex border-b border-slate-200">
               <button 
-                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'check-in' ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'check-in' ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
                 onClick={() => setActiveTab('check-in')}
               >
                 Check-In (Vitals)
@@ -728,31 +728,31 @@ const OpdQueueView = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">Temperature (°F)</label>
-                      <input type="number" placeholder="98.6" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="98.6" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">Pulse Rate (BPM)</label>
-                      <input type="number" placeholder="72" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="72" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">BP Systolic (mmHg)</label>
-                      <input type="number" placeholder="120" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="120" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">BP Diastolic (mmHg)</label>
-                      <input type="number" placeholder="80" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="80" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">Height (cm)</label>
-                      <input type="number" placeholder="170" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="170" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">Body Weight (Kg)</label>
-                      <input type="number" placeholder="70" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="70" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">SPO2 Oxygen (%)</label>
-                      <input type="number" placeholder="98" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="98" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">Auto-Calc BMI</label>
@@ -767,7 +767,7 @@ const OpdQueueView = () => {
                   <button onClick={() => submitCheckIn(true)} className="px-6 py-3 bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
                     Skip Vitals
                   </button>
-                  <button onClick={() => submitCheckIn(false)} className="px-6 py-3 bg-teal-600 text-white shadow-xl shadow-teal-600/20 hover:bg-teal-700 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
+                  <button onClick={() => submitCheckIn(false)} className="px-6 py-3 bg-orange-600 text-white shadow-xl shadow-orange-600/20 hover:bg-orange-700 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
                     Save & Check In
                   </button>
                 </div>

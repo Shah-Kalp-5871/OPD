@@ -100,7 +100,7 @@ export default function ChatWidget() {
     return (
       <button
         onClick={() => { setIsOpen(true); setIsMinimized(false); }}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-teal-600 text-white rounded-full shadow-2xl shadow-teal-600/30 flex items-center justify-center hover:bg-teal-700 transition-all z-50 hover:scale-110 active:scale-95"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-orange-500 text-white rounded-full shadow-2xl shadow-orange-500/30 flex items-center justify-center hover:bg-orange-600 transition-all z-50 hover:scale-110 active:scale-95"
       >
         <MessageCircle className="w-6 h-6" />
         {unreadCount > 0 && (
@@ -121,12 +121,12 @@ export default function ChatWidget() {
         onClick={() => setIsMinimized(!isMinimized)}
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-teal-500/20 rounded-full flex items-center justify-center">
-            <MessageCircle className="w-4 h-4 text-teal-400" />
+          <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center">
+            <MessageCircle className="w-4 h-4 text-orange-400" />
           </div>
           <div>
             <h3 className="text-xs font-black text-white uppercase tracking-widest leading-none">Clinic Chat</h3>
-            <p className="text-[9px] font-bold text-teal-400 uppercase tracking-widest mt-1">Live Comms</p>
+            <p className="text-[9px] font-bold text-orange-400 uppercase tracking-widest mt-1">Live Comms</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export default function ChatWidget() {
                 return (
                   <div key={msg.id || i} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                     {!isMe && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">{msg.sender} • {msg.senderRole}</span>}
-                    <div className={`px-4 py-2 rounded-2xl max-w-[85%] text-sm ${isMe ? 'bg-teal-600 text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm shadow-sm'}`}>
+                    <div className={`px-4 py-2 rounded-2xl max-w-[85%] text-sm ${isMe ? 'bg-orange-500 text-white rounded-br-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-sm shadow-sm'}`}>
                       {msg.content}
                     </div>
                     <span className="text-[8px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
@@ -181,12 +181,12 @@ export default function ChatWidget() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-teal-500 focus:bg-white transition-all pr-12"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 focus:bg-white transition-all pr-12"
               />
               <button 
                 type="submit"
                 disabled={!newMessage.trim()}
-                className="absolute right-1.5 p-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:hover:bg-teal-600 transition-colors"
+                className="absolute right-1.5 p-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>

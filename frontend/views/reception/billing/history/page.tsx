@@ -82,7 +82,7 @@ const BillingHistoryView = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
            <div>
               <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none flex items-center gap-4">
-                 <History className="w-8 h-8 text-teal-600" />
+                 <History className="w-8 h-8 text-orange-600" />
                  Billing History
               </h1>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-4">View and filter past patient bills and collections</p>
@@ -141,7 +141,7 @@ const BillingHistoryView = () => {
            <div className="flex-1 relative overflow-auto bg-white">
              {isLoading && (
                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6">
-                   <div className="w-16 h-16 border-4 border-slate-100 border-t-teal-600 rounded-full animate-spin"></div>
+                   <div className="w-16 h-16 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin"></div>
                    <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading History Data...</p>
                </div>
              )}
@@ -229,7 +229,7 @@ const BillingHistoryView = () => {
                          <td className="py-3 px-6 whitespace-nowrap text-center">
                            <Link 
                              href={`/reception/billing?caseId=${bill.caseId}`}
-                             className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-teal-600 transition-colors shadow-sm inline-block group cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600"
+                             className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-orange-600 transition-colors shadow-sm inline-block group cursor-pointer text-[10px] font-black uppercase tracking-widest text-slate-600"
                            >
                              View
                            </Link>

@@ -152,8 +152,8 @@ const BookAppointmentView = () => {
       MySwal.fire({
         html: `
           <div class="flex flex-col items-center pt-2">
-            <div class="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-5 ring-8 ring-teal-50">
-              <svg class="w-8 h-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-5 ring-8 ring-orange-50">
+              <svg class="w-8 h-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -191,16 +191,16 @@ const BookAppointmentView = () => {
               </div>
             </div>
 
-            <div class="w-full bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 p-5 rounded-2xl mt-5 text-center shadow-[inset_0_2px_10px_rgba(20,184,166,0.05)]">
-              <p class="text-[10px] uppercase font-black tracking-widest text-teal-600/80 mb-2 flex items-center justify-center gap-1.5">
+            <div class="w-full bg-gradient-to-br from-orange-50 to-emerald-50 border border-orange-200 p-5 rounded-2xl mt-5 text-center shadow-[inset_0_2px_10px_rgba(20,184,166,0.05)]">
+              <p class="text-[10px] uppercase font-black tracking-widest text-orange-600/80 mb-2 flex items-center justify-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Generated Case ID
               </p>
-              <p class="text-3xl font-black text-teal-900 tracking-wider drop-shadow-sm">${caseNumber}</p>
+              <p class="text-3xl font-black text-orange-900 tracking-wider drop-shadow-sm">${caseNumber}</p>
             </div>
             
             <div class="mt-5 flex items-center gap-2 text-[11px] font-bold text-slate-500 bg-slate-50 px-4 py-2.5 rounded-full border border-slate-200">
-              <svg class="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              <svg class="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
               Confirmation SMS has been sent
             </div>
           </div>
@@ -210,7 +210,7 @@ const BookAppointmentView = () => {
         customClass: {
           container: 'font-sans',
           popup: 'rounded-[2rem] p-4 md:p-6 shadow-2xl border border-slate-100',
-          confirmButton: 'bg-teal-600 text-white font-black uppercase tracking-widest text-[11px] px-8 py-3.5 rounded-2xl w-full mt-4 hover:bg-teal-700 transition-all shadow-lg shadow-teal-500/20 active:scale-[0.98]',
+          confirmButton: 'bg-orange-600 text-white font-black uppercase tracking-widest text-[11px] px-8 py-3.5 rounded-2xl w-full mt-4 hover:bg-orange-700 transition-all shadow-lg shadow-orange-500/20 active:scale-[0.98]',
         },
         buttonsStyling: false,
         width: '420px',
@@ -245,7 +245,7 @@ const BookAppointmentView = () => {
            <div>
               <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">Book Appointment</h1>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2 flex items-center gap-1.5">
-                 <CalendarCheck className="w-3 h-3 text-teal-600" />
+                 <CalendarCheck className="w-3 h-3 text-orange-600" />
                  OPD Scheduling Workflow
               </p>
            </div>
@@ -264,7 +264,7 @@ const BookAppointmentView = () => {
                }`}
              >
                <div className={`w-5 h-5 rounded-lg text-[9px] font-black flex items-center justify-center shrink-0 ${
-                 currentStep === 1 ? 'bg-teal-600 text-white' :
+                 currentStep === 1 ? 'bg-orange-600 text-white' :
                  selectedPatient ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
                }`}>
                  {selectedPatient ? <Check className="w-3 h-3" /> : '1'}
@@ -286,7 +286,7 @@ const BookAppointmentView = () => {
                }`}
              >
                <div className={`w-5 h-5 rounded-lg text-[9px] font-black flex items-center justify-center shrink-0 ${
-                 currentStep === 2 ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-400'
+                 currentStep === 2 ? 'bg-orange-600 text-white' : 'bg-slate-200 text-slate-400'
                }`}>
                  2
                </div>

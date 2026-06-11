@@ -57,8 +57,8 @@ const slotClass = (slot: any, selectedSlot: string | null) => {
   if (slot.status === 'booked')
     return 'bg-slate-50 border border-slate-100 text-slate-300 cursor-not-allowed line-through';
   if (selectedSlot === slot.time)
-    return 'bg-teal-600 border border-teal-600 text-white shadow-sm';
-  return 'bg-white border border-slate-200 text-slate-600 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50/30';
+    return 'bg-orange-600 border border-orange-600 text-white shadow-sm';
+  return 'bg-white border border-slate-200 text-slate-600 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50/30';
 };
 
 const SlotGroup = ({
@@ -140,8 +140,8 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
       {/* ─── PATIENT CONTEXT STRIP ─── */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-t-3xl border-b-0">
         <div className="flex items-center gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center">
-            <User className="w-4 h-4 text-teal-600" />
+          <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center">
+            <User className="w-4 h-4 text-orange-600" />
           </div>
           <div>
             <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">
@@ -154,7 +154,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
         </div>
         <button
           onClick={onPrevStep}
-          className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-teal-600 transition-colors"
+          className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-colors"
         >
           <ArrowLeft className="w-3 h-3" />
           Change Patient
@@ -192,24 +192,24 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                       disabled={isSubmitting}
                       className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all duration-150 ${
                         isActive
-                          ? 'bg-teal-50 border-teal-300'
+                          ? 'bg-orange-50 border-orange-300'
                           : 'bg-slate-50/50 border-slate-100 hover:border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center gap-3 text-left">
                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 ${
-                          isActive ? 'bg-teal-600 text-white' : 'bg-white text-slate-500 border border-slate-100'
+                          isActive ? 'bg-orange-600 text-white' : 'bg-white text-slate-500 border border-slate-100'
                         }`}>
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className={`text-[11px] font-black uppercase leading-none ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>
+                          <p className={`text-[11px] font-black uppercase leading-none ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>
                             Dr. {name}
                           </p>
                           <span className="text-[9px] font-semibold text-slate-400">{spec}</span>
                         </div>
                       </div>
-                      {isActive && <CheckCircle2 className="w-4 h-4 text-teal-500 shrink-0" />}
+                      {isActive && <CheckCircle2 className="w-4 h-4 text-orange-500 shrink-0" />}
                     </button>
                   );
                 })}
@@ -223,7 +223,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                 type="text"
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-teal-500 focus:bg-white transition-all placeholder:text-slate-300"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-orange-500 focus:bg-white transition-all placeholder:text-slate-300"
                 placeholder="e.g. Follow-up, Chest Pain…"
               />
             </div>
@@ -235,7 +235,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                 rows={2}
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-teal-500 focus:bg-white transition-all resize-none placeholder:text-slate-300"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-orange-500 focus:bg-white transition-all resize-none placeholder:text-slate-300"
                 placeholder="Any special notes for the doctor…"
               />
             </div>
@@ -246,7 +246,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
               <span className="text-[11px] font-bold text-slate-500">{format(selectedDate, 'dd MMM yyyy')}</span>
               <div className="w-px h-3 bg-slate-200" />
               <Clock className="w-4 h-4 text-slate-300 shrink-0" />
-              <span className={`text-[11px] font-black ${selectedSlot ? 'text-teal-600' : 'text-slate-300'}`}>
+              <span className={`text-[11px] font-black ${selectedSlot ? 'text-orange-600' : 'text-slate-300'}`}>
                 {selectedSlot || 'No slot selected'}
               </span>
             </div>
@@ -304,9 +304,9 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                     onClick={() => setSelectedDate(day)}
                     className={`
                       aspect-square flex items-center justify-center rounded-xl text-[11px] font-bold transition-all
-                      ${isPast ? 'text-slate-200 cursor-not-allowed' : 'hover:bg-teal-50 hover:text-teal-600'}
+                      ${isPast ? 'text-slate-200 cursor-not-allowed' : 'hover:bg-orange-50 hover:text-orange-600'}
                       ${isSelected ? 'bg-slate-900 text-white shadow-sm font-black scale-105' : ''}
-                      ${isTd && !isSelected ? 'text-teal-600 font-black ring-1 ring-teal-200' : ''}
+                      ${isTd && !isSelected ? 'text-orange-600 font-black ring-1 ring-orange-200' : ''}
                       ${!isPast && !isSelected && !isTd ? 'text-slate-600' : ''}
                     `}
                   >
@@ -325,14 +325,14 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                     Available Slots
                   </span>
                 </div>
-                <span className="text-[9px] font-bold text-teal-600">
+                <span className="text-[9px] font-bold text-orange-600">
                   {availableSlots.length} total
                 </span>
               </div>
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-teal-500/20 border-t-teal-500 rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
                 </div>
               ) : availableSlots.length === 0 ? (
                 <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
@@ -388,7 +388,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
             <button
               onClick={handleBook}
               disabled={!canBook}
-              className="flex items-center gap-2.5 px-7 py-2.5 rounded-xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-sm shadow-teal-200 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
+              className="flex items-center gap-2.5 px-7 py-2.5 rounded-xl bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-sm shadow-orange-200 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

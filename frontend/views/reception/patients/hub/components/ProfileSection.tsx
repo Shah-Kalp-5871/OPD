@@ -57,7 +57,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ patient, onSaveProfile 
           onClick={handleSave}
           disabled={isSaving || !isDirty}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
-            isDirty && !isSaving ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            isDirty && !isSaving ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
           }`}
         >
           <Save className="w-3 h-3" />
@@ -105,13 +105,13 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ patient, onSaveProfile 
 
         <div>
           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
             Extended Demographics
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Marital Status</label>
-            <select value={profile.maritalStatus} onChange={e => setProfile({...profile, maritalStatus: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+            <select value={profile.maritalStatus} onChange={e => setProfile({...profile, maritalStatus: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all">
               <option value="">Select</option>
               <option value="SINGLE">Single</option>
               <option value="MARRIED">Married</option>
@@ -121,37 +121,37 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ patient, onSaveProfile 
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Occupation</label>
-            <input type="text" value={profile.occupation} onChange={e => setProfile({...profile, occupation: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="Engineer, etc." />
+            <input type="text" value={profile.occupation} onChange={e => setProfile({...profile, occupation: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all" placeholder="Engineer, etc." />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Emergency Contact</label>
-            <input type="text" value={profile.emergencyContact} onChange={e => setProfile({...profile, emergencyContact: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="Name / Phone" />
+            <input type="text" value={profile.emergencyContact} onChange={e => setProfile({...profile, emergencyContact: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all" placeholder="Name / Phone" />
           </div>
           
           {/* Editable Clinical Profile Info */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Blood Group</label>
-            <select value={profile.bloodGroup} onChange={e => setProfile({...profile, bloodGroup: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all">
+            <select value={profile.bloodGroup} onChange={e => setProfile({...profile, bloodGroup: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all">
               <option value="">Select</option>
               {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
             </select>
           </div>
           <div className="space-y-2 lg:col-span-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Allergies</label>
-            <input type="text" value={profile.allergies} onChange={e => setProfile({...profile, allergies: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="None Reported" />
+            <input type="text" value={profile.allergies} onChange={e => setProfile({...profile, allergies: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all" placeholder="None Reported" />
           </div>
 
           <div className="col-span-1 md:col-span-2 lg:col-span-4 space-y-2">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Address</label>
-            <textarea value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} rows={2} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" placeholder="Full home address..." />
+            <textarea value={profile.address} onChange={e => setProfile({...profile, address: e.target.value})} rows={2} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all" placeholder="Full home address..." />
           </div>
           <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">City</label>
-              <input type="text" value={profile.city} onChange={e => setProfile({...profile, city: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+              <input type="text" value={profile.city} onChange={e => setProfile({...profile, city: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">State</label>
-              <input type="text" value={profile.state} onChange={e => setProfile({...profile, state: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+              <input type="text" value={profile.state} onChange={e => setProfile({...profile, state: e.target.value})} className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
             </div>
           </div>
         </div>

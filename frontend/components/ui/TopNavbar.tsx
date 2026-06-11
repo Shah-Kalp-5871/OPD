@@ -34,13 +34,13 @@ const roleThemes = {
     lightIconText: 'text-indigo-600'
   },
   reception: {
-    accent: 'teal',
-    activeText: 'text-teal-600',
-    activeBorder: 'border-teal-600',
-    iconBg: 'bg-teal-600',
+    accent: 'orange',
+    activeText: 'text-orange-500',
+    activeBorder: 'border-orange-500',
+    iconBg: 'bg-gradient-to-br from-orange-500 to-orange-600',
     iconText: 'text-white',
-    lightIconBg: 'bg-teal-50',
-    lightIconText: 'text-teal-600'
+    lightIconBg: 'bg-orange-50',
+    lightIconText: 'text-orange-600'
   },
   nursing: {
     accent: 'rose',
@@ -137,18 +137,20 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
     toast.success('Logged out successfully');
   };
 
+  const isReception = role === 'reception';
+
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-slate-200">
+    <header className={`sticky top-0 z-50 bg-white ${isReception ? 'shadow-[0_2px_12px_rgba(249,115,22,0.10)] border-b border-orange-100' : 'border-b border-slate-200'}`}>
       <div className="flex h-16 items-center justify-between px-6">
         
         {/* BRANDING */}
         <div className="flex items-center gap-6">
           <Link href={`/${role}/dashboard`} className="flex items-center gap-3 group">
-            <div className={`w-8 h-8 ${theme.iconBg} ${theme.iconText} rounded-lg flex items-center justify-center shadow-[2px_2px_0px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-105`}>
+            <div className={`w-8 h-8 ${theme.iconBg} ${theme.iconText} rounded-lg flex items-center justify-center shadow-[2px_2px_0px_rgba(249,115,22,0.25)] transition-transform group-hover:scale-105`}>
               <Activity className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[14px] font-black tracking-[0.15em] text-slate-900 leading-none">
+              <span className="text-[14px] font-black tracking-[0.15em] leading-none text-slate-900">
                 MEDFLOW
               </span>
               <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${theme.activeText} leading-none mt-0.5`}>
@@ -173,12 +175,12 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
                   className={`
                     group flex items-center gap-2.5 px-4 h-16 border-b-2 transition-colors
                     ${isActive 
-                      ? `${theme.activeBorder} ${theme.activeText} bg-slate-50/50` 
-                      : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300'
+                      ? `border-orange-500 text-orange-600 bg-orange-50/50` 
+                      : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-orange-300'
                     }
                   `}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400 group-hover:text-slate-700'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-orange-500' : 'text-slate-400 group-hover:text-slate-700'}`} />
                   <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
                 </Link>
               );
