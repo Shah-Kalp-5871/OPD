@@ -31,6 +31,13 @@ cd backend
 npx prisma studio
 ```
 
+### 4. (Optional) Seed Daily Test Data
+To populate the queue and dashboard with fresh appointments and walk-ins for today:
+```bash
+cd backend
+npm run seed:daily
+```
+
 ---
 
 ## 🛠 Troubleshooting Common Issues

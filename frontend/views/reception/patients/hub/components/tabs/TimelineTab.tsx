@@ -5,13 +5,11 @@ import { Patient } from '../../types';
 interface TimelineTabProps {
   patient: Patient;
   hasOpenCase: boolean;
-  onStartVisit: () => void;
 }
 
 const TimelineTab: React.FC<TimelineTabProps> = ({
   patient,
-  hasOpenCase,
-  onStartVisit
+  hasOpenCase
 }) => {
   // Combine cases and registration into a single clinical journey
   const clinicalJourney = [
@@ -45,14 +43,6 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
             <Clock className="w-4 h-4 text-slate-500" />
             Chronological Patient Story
           </h3>
-          {!hasOpenCase && (
-            <button 
-              onClick={onStartVisit}
-              className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
-            >
-              Log New Visit
-            </button>
-          )}
         </div>
 
         <div className="p-8">
@@ -123,9 +113,6 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
             <p className="text-xs font-bold uppercase tracking-tight">Systematic Review Complete</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-teal-400 transition-colors">
-          View Detailed Analytics <ArrowRight className="w-3 h-3" />
-        </button>
       </div>
     </div>
   );

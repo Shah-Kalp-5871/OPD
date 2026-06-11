@@ -6,19 +6,12 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
-// Components
 import PatientHeader from './components/PatientHeader';
-import PatientStatusStrip from './components/PatientStatusStrip';
-import PatientSidebar from './components/PatientSidebar';
-import OverviewTab from './components/tabs/OverviewTab';
+import TopNavBar from './components/TopNavBar';
+import MasterChartTab from './components/tabs/MasterChartTab';
 import TimelineTab from './components/tabs/TimelineTab';
-import VitalsTab from './components/tabs/VitalsTab';
-import ProfileTab from './components/tabs/ProfileTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
 import ConsentTab from './components/tabs/ConsentTab';
-import AddVitalsModal from './components/AddVitalsModal';
-import StartVisitModal from './components/StartVisitModal';
-import EditPatientModal from './components/EditPatientModal';
 
 const PatientHubView = () => {
   const params = useParams();
@@ -27,13 +20,7 @@ const PatientHubView = () => {
   
   const [patient, setPatient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'vitals' | 'cases' | 'profile' | 'documents' | 'consent'>('overview');
-  
-  // Modals
-  const [showVitalsModal, setShowVitalsModal] = useState(false);
-  const [showEditBasicModal, setShowEditBasicModal] = useState(false);
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
-  const [showVisitModal, setShowVisitModal] = useState(false);
+  const [activeSection, setActiveSection] = useState<'master_chart' | 'cases' | 'documents' | 'consent' | 'billing'>('master_chart');
   const [doctors, setDoctors] = useState<any[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +29,21 @@ const PatientHubView = () => {
     fetchPatientData();
     fetchDoctors();
   }, [patientId]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id as any);
+        }
+      });
+    }, { rootMargin: '-20% 0px -80% 0px' });
+
+    const sections = ['master_chart', 'cases', 'documents', 'consent'].map(id => document.getElementById(id));
+    sections.forEach(s => s && observer.observe(s));
+    
+    return () => observer.disconnect();
+  }, []);
 
   const fetchDoctors = async () => {
     try {
@@ -77,7 +79,6 @@ const PatientHubView = () => {
         height: data.height ? parseFloat(data.height) : undefined,
       });
       toast.success('Vitals recorded successfully');
-      setShowVitalsModal(false);
       fetchPatientData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to record vitals');
@@ -86,26 +87,13 @@ const PatientHubView = () => {
     }
   };
 
-  const handleBasicInfoSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      await api.patch(`/patients/${patientId}`, data);
-      toast.success('Patient info updated');
-      setShowEditBasicModal(false);
-      fetchPatientData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Update failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
 
   const handleProfileSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
       await api.patch(`/patients/${patientId}/profile`, data);
       toast.success('Profile updated');
-      setShowEditProfileModal(false);
       fetchPatientData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Update failed');
@@ -114,31 +102,7 @@ const PatientHubView = () => {
     }
   };
 
-  const handleCreateCase = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      const response = await api.post(`/patients/${patientId}/cases`, data);
-      const newCase = response.data;
 
-      // Automatic Check-In to Queue
-      await api.post('/queue/check-in', {
-        caseId: newCase.id,
-        patientId: patientId,
-        doctorId: data.doctorId,
-        queueType: 'OPD',
-        priority: data.priority || 'NORMAL'
-      });
-
-      toast.success('Visit started & Token generated');
-      setShowVisitModal(false);
-      fetchPatientData();
-      setActiveTab('cases');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to start visit');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   if (isLoading || !patient) {
     return (
@@ -159,120 +123,76 @@ const PatientHubView = () => {
   return (
     <ReceptionLayout>
       {/* Clinical Workspace Container */}
-      <div className="min-h-screen bg-slate-50/50">
-        <div className="max-w-[1600px] mx-auto bg-white border-x border-slate-200 shadow-sm min-h-screen pb-24">
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-7xl mx-auto min-h-screen pb-24 px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           
           <PatientHeader 
             patient={patient} 
             completion={completion} 
             hasOpenCase={hasOpenCase} 
-            onEditBasic={() => setShowEditBasicModal(true)}
-            onStartVisit={() => setShowVisitModal(true)}
+            activeCase={activeCase}
           />
 
-          <PatientStatusStrip 
-            hasOpenCase={hasOpenCase} 
-            activeCase={activeCase} 
-          />
+          <div className="sticky top-16 z-40">
+            <TopNavBar activeSection={activeSection} setActiveSection={setActiveSection} />
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-             {/* Sidebar: File Navigation Panel */}
-             <div className="lg:col-span-3 border-r border-slate-200 p-6 min-h-[calc(100vh-200px)]">
-               <PatientSidebar 
-                 activeTab={activeTab}
-                 setActiveTab={setActiveTab}
-                 patient={patient}
-               />
-             </div>
+          <div className="space-y-16">
+            <div className="space-y-16">
+               <div id="master_chart" className="scroll-mt-48">
+                 <MasterChartTab 
+                   patient={patient}
+                   latestVitals={latestVitals}
+                   hasOpenCase={hasOpenCase}
+                   onSaveVitals={handleVitalsSubmit}
+                   onSaveProfile={handleProfileSubmit}
+                   onViewCases={() => {
+                     const el = document.getElementById('cases');
+                     if (el) {
+                       const yOffset = -100;
+                       const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                       window.scrollTo({ top: y, behavior: 'smooth' });
+                     }
+                   }}
+                 />
+               </div>
 
-             {/* Main Content: Chart Workspace */}
-             <div className="lg:col-span-9 p-8 space-y-8 bg-slate-50/30">
-                <div className="max-w-5xl">
-                   {activeTab === 'overview' && (
-                     <OverviewTab 
-                       patient={patient}
-                       latestVitals={latestVitals}
-                       hasOpenCase={hasOpenCase}
-                       onAddVitals={() => setShowVitalsModal(true)}
-                       onStartVisit={() => setShowVisitModal(true)}
-                       onViewCases={() => setActiveTab('cases')}
-                     />
-                   )}
+               <div id="cases" className="scroll-mt-48 pt-12 border-t border-slate-200">
+                 <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Clinical History</h2>
+                 <TimelineTab 
+                   patient={patient}
+                   hasOpenCase={hasOpenCase}
+                 />
+               </div>
 
-                   {activeTab === 'cases' && (
-                     <TimelineTab 
-                       patient={patient}
-                       hasOpenCase={hasOpenCase}
-                       onStartVisit={() => setShowVisitModal(true)}
-                     />
-                   )}
+               <div id="documents" className="scroll-mt-48 pt-12 border-t border-slate-200">
+                 <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Reports & Files</h2>
+                 <DocumentsTab 
+                   patient={patient}
+                   onRefresh={fetchPatientData}
+                 />
+               </div>
 
-                   {activeTab === 'vitals' && (
-                     <VitalsTab 
-                       patient={patient}
-                       onAddVitals={() => setShowVitalsModal(true)}
-                     />
-                   )}
+               <div id="consent" className="scroll-mt-48 pt-12 border-t border-slate-200">
+                 <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Consent Forms</h2>
+                 <ConsentTab 
+                   patient={patient}
+                   activeCase={activeCase}
+                 />
+               </div>
 
-                   {activeTab === 'profile' && (
-                     <ProfileTab 
-                       patient={patient}
-                       onEditProfile={() => setShowEditProfileModal(true)}
-                     />
-                   )}
-
-                   {activeTab === 'documents' && (
-                     <DocumentsTab 
-                       patient={patient}
-                       onRefresh={fetchPatientData}
-                     />
-                   )}
-
-                   {activeTab === 'consent' && (
-                     <ConsentTab 
-                       patient={patient}
-                       activeCase={activeCase}
-                     />
-                   )}
-                </div>
-             </div>
+               <div id="billing" className="scroll-mt-48 pt-12 border-t border-slate-200">
+                 <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Billing Records</h2>
+                 <div className="text-center p-12 bg-white rounded-3xl border border-slate-200/60 shadow-sm border-dashed">
+                   <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No Billing Records Yet</p>
+                 </div>
+               </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Modals */}
-      <AddVitalsModal 
-        isOpen={showVitalsModal}
-        onClose={() => setShowVitalsModal(false)}
-        onSubmit={handleVitalsSubmit}
-        isSubmitting={isSubmitting}
-      />
 
-      <StartVisitModal 
-        isOpen={showVisitModal}
-        onClose={() => setShowVisitModal(false)}
-        onSubmit={handleCreateCase}
-        isSubmitting={isSubmitting}
-        doctors={doctors}
-      />
-
-      <EditPatientModal 
-        isOpen={showEditBasicModal}
-        mode="basic"
-        onClose={() => setShowEditBasicModal(false)}
-        onSaveBasic={handleBasicInfoSubmit}
-        isSubmitting={isSubmitting}
-        initialData={patient}
-      />
-
-      <EditPatientModal 
-        isOpen={showEditProfileModal}
-        mode="profile"
-        onClose={() => setShowEditProfileModal(false)}
-        onSaveProfile={handleProfileSubmit}
-        isSubmitting={isSubmitting}
-        initialData={patient}
-      />
 
     </ReceptionLayout>
   );

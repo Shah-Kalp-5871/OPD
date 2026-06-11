@@ -82,14 +82,12 @@ async function main() {
   });
 
   if (doctors.length === 0) {
-    console.error('❌ No doctors found. Run the main seed first: npm run seed');
-    process.exit(1);
+    throw new Error('❌ No doctors found. Run the main seed first: npm run seed');
   }
 
   const branch = await prisma.branch.findFirst();
   if (!branch) {
-    console.error('❌ No branch found. Run the main seed first: npm run seed');
-    process.exit(1);
+    throw new Error('❌ No branch found. Run the main seed first: npm run seed');
   }
 
   const branchId = branch.id;
@@ -220,6 +218,7 @@ async function main() {
 main()
   .catch((e) => {
     console.error('❌ Seed failed:', e);
+    // @ts-ignore
     process.exit(1);
   })
   .finally(async () => {

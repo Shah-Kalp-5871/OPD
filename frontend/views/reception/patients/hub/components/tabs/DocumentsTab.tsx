@@ -211,7 +211,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {documents.map((doc) => (
+              {documents.slice(0, 5).map((doc) => (
                 <tr key={doc.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-8 py-6 flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${getDocIconColor(doc.documentType)}`}>
@@ -284,6 +284,16 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
               ))}
             </tbody>
           </table>
+          {documents.length > 5 && (
+            <div className="p-6 border-t border-slate-50 flex justify-center bg-white">
+              <button 
+                onClick={() => alert("Full Record view coming soon...")}
+                className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+              >
+                See Full Record
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="py-24 text-center space-y-6 animate-in fade-in duration-500">

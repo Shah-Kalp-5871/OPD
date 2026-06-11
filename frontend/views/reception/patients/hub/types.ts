@@ -5,6 +5,7 @@ export interface Patient {
   mobile: string;
   gender: string;
   mrdNumber: string;
+  language?: string;
   profileCompletionStatus?: number;
   profile?: {
     dob?: string;

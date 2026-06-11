@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useQueueSSE } from '@/hooks/useQueueSSE';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Activity, 
   Search,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 const OpdQueueView = () => {
+  const router = useRouter();
   const [queue, setQueue] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({ total: 0, checkedIn: 0, waiting: 0, completed: 0, cancelled: 0 });
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +53,7 @@ const OpdQueueView = () => {
 
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-  const [vitals, setVitals] = useState({ height: '', weight: '', temperature: '', pulse: '', bloodPressure: '', spo2: '' });
+  const [vitals, setVitals] = useState({ temp: '', pulse: '', bpSys: '', bpDia: '', height: '', weight: '', spo2: '' });
   const [appointmentsQueue, setAppointmentsQueue] = useState<any[]>([]);
 
   // Check-In Modal Additions
@@ -174,9 +176,9 @@ const OpdQueueView = () => {
         payload.vitals = {};
         if (vitals.height) payload.vitals.height = Number(vitals.height);
         if (vitals.weight) payload.vitals.weight = Number(vitals.weight);
-        if (vitals.temperature) payload.vitals.temperature = Number(vitals.temperature);
+        if (vitals.temp) payload.vitals.temperature = Number(vitals.temp);
         if (vitals.pulse) payload.vitals.pulse = Number(vitals.pulse);
-        if (vitals.bloodPressure) payload.vitals.bloodPressure = vitals.bloodPressure;
+        if (vitals.bpSys && vitals.bpDia) payload.vitals.bloodPressure = `${vitals.bpSys}/${vitals.bpDia}`;
         if (vitals.spo2) payload.vitals.spo2 = Number(vitals.spo2);
       }
       
@@ -184,7 +186,7 @@ const OpdQueueView = () => {
       toast.success('Patient checked in successfully!');
       setShowCheckInModal(false);
       setSelectedAppointmentId(null);
-      setVitals({ height: '', weight: '', temperature: '', pulse: '', bloodPressure: '', spo2: '' });
+      setVitals({ temp: '', pulse: '', bpSys: '', bpDia: '', height: '', weight: '', spo2: '' });
       fetchQueue();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to check in patient');
@@ -574,7 +576,11 @@ const OpdQueueView = () => {
                     const billing = getBillingStatus(entry);
 
                     return (
-                      <tr key={entry.id || idx} className={`${rowBg} hover:bg-slate-50 transition-colors`}>
+                      <tr 
+                        key={entry.id || idx} 
+                        onClick={() => entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
+                        className={`${rowBg} hover:bg-slate-50 transition-colors cursor-pointer`}
+                      >
                         <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-800 border-r border-slate-50">
                           {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
                         </td>
@@ -617,7 +623,7 @@ const OpdQueueView = () => {
                         <td className="px-4 py-3 whitespace-nowrap">
                            {entry.isAppointment ? (
                              <button 
-                               onClick={() => { setSelectedAppointmentId(entry.appointmentId); setShowCheckInModal(true); }}
+                               onClick={(e) => { e.stopPropagation(); setSelectedAppointmentId(entry.appointmentId); setShowCheckInModal(true); }}
                                className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
                              >
                                Mark Arrived
@@ -625,7 +631,8 @@ const OpdQueueView = () => {
                            ) : entry.status === 'WAITING' ? (
                              <button 
                                disabled={sendingIds.has(entry.id)}
-                               onClick={async () => {
+                               onClick={async (e) => {
+                                 e.stopPropagation();
                                  const entryId = entry.id;
                                  setSendingIds(prev => new Set(prev).add(entryId));
                                  try {
@@ -643,7 +650,11 @@ const OpdQueueView = () => {
                                {sendingIds.has(entry.id) ? 'Sending...' : 'Send to Doctor'}
                              </button>
                            ) : (
-                            <Link href={`/opd/reception/patients/${entry.patient?.id}`} className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-teal-600 hover:border-teal-200 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all inline-block shadow-sm">
+                            <Link 
+                              href={`/opd/reception/patients/${entry.patient?.id}`} 
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-teal-600 hover:border-teal-200 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all inline-block shadow-sm"
+                            >
                               View Profile
                             </Link>
                           )}
@@ -716,28 +727,38 @@ const OpdQueueView = () => {
                 <div className="p-6 overflow-y-auto space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Height (cm)</label>
-                      <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Weight (kg)</label>
-                      <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
-                    </div>
-                    <div>
                       <label className="text-xs font-bold text-slate-500 uppercase">Temperature (°F)</label>
-                      <input type="number" value={vitals.temperature} onChange={e => setVitals({...vitals, temperature: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <input type="number" placeholder="98.6" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Pulse (bpm)</label>
-                      <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <label className="text-xs font-bold text-slate-500 uppercase">Pulse Rate (BPM)</label>
+                      <input type="number" placeholder="72" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Blood Pressure</label>
-                      <input type="text" placeholder="120/80" value={vitals.bloodPressure} onChange={e => setVitals({...vitals, bloodPressure: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <label className="text-xs font-bold text-slate-500 uppercase">BP Systolic (mmHg)</label>
+                      <input type="number" placeholder="120" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">SpO2 (%)</label>
-                      <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                      <label className="text-xs font-bold text-slate-500 uppercase">BP Diastolic (mmHg)</label>
+                      <input type="number" placeholder="80" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Height (cm)</label>
+                      <input type="number" placeholder="170" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Body Weight (Kg)</label>
+                      <input type="number" placeholder="70" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">SPO2 Oxygen (%)</label>
+                      <input type="number" placeholder="98" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 outline-none transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">Auto-Calc BMI</label>
+                      <div className="w-full px-4 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl mt-1 font-black text-slate-700 flex items-center h-[38px]">
+                        {vitals.height && vitals.weight ? (Number(vitals.weight) / Math.pow(Number(vitals.height) / 100, 2)).toFixed(1) : '--'}
+                      </div>
                     </div>
                   </div>
                 </div>
