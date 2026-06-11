@@ -160,7 +160,7 @@ const VitalsCard: React.FC<VitalsCardProps> = ({ latestVitals, vitalsHistory = [
                         <td className="px-6 py-4 text-sm font-semibold text-slate-600 whitespace-nowrap">{vital.weight || '--'}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-slate-600 whitespace-nowrap">{vital.height || '--'}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-slate-600 whitespace-nowrap">{vital.spo2 || '--'}</td>
-                        <td className="px-6 py-4 text-sm font-semibold text-slate-600 whitespace-nowrap">{calculateBMI(vital.weight, vital.height)}</td>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-600 whitespace-nowrap">{calculateBMI(vital.weight || '', vital.height || '')}</td>
                       </tr>
                     );
                   })}
