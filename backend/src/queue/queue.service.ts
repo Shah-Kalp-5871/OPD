@@ -158,6 +158,7 @@ export class QueueService {
         },
         include: {
           patient: true,
+          mr: true,
           doctor: true,
           case: true,
         },
@@ -179,7 +180,7 @@ export class QueueService {
         id: result.id,
         status: result.status,
         token: result.tokenDisplay,
-        patientName: `${result.patient.firstName} ${result.patient.lastName}`,
+        patientName: result.mrId ? `${result.mr?.firstName} ${result.mr?.lastName}` : `${result.patient?.firstName} ${result.patient?.lastName}`,
         room: result.doctor?.name
           ? 'Room ' + (result.doctor as any).roomNumber
           : 'TBD',
@@ -239,7 +240,7 @@ export class QueueService {
 
       const entry = await tx.queueEntry.findFirst({
         where: { caseId, branchId },
-        include: { patient: true, doctor: true },
+        include: { patient: true, mr: true, doctor: true },
       });
       if (entry) {
         await tx.queueEntry.update({
@@ -263,7 +264,7 @@ export class QueueService {
           id: entry.id,
           status: 'IN_SESSION',
           token: entry.tokenDisplay,
-          patientName: `${entry.patient.firstName} ${entry.patient.lastName}`,
+          patientName: entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`,
           doctorId: doctorId,
         });
       }
@@ -293,7 +294,7 @@ export class QueueService {
       // 2. Update Queue Entry to BILLING_PENDING or COMPLETED
       const entry = await tx.queueEntry.findFirst({
         where: { caseId, branchId },
-        include: { patient: true },
+        include: { patient: true, mr: true },
       });
 
       let finalQueueStatus: QueueStatus = 'COMPLETED';
@@ -322,7 +323,7 @@ export class QueueService {
           id: entry.id,
           status: finalQueueStatus,
           token: entry.tokenDisplay,
-          patientName: `${entry.patient.firstName} ${entry.patient.lastName}`,
+          patientName: entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`,
           nextStage: nextStage,
         });
       }
@@ -380,6 +381,22 @@ export class QueueService {
             },
           },
         },
+        mr: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            mobile: true,
+            companyName: true,
+          }
+        },
+        mrVisit: {
+          select: {
+            id: true,
+            visitDate: true,
+            status: true,
+          }
+        }
       },
       orderBy: [{ priority: 'desc' }, { tokenNumber: 'asc' }],
     });

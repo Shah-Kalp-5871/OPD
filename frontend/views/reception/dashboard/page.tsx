@@ -217,6 +217,7 @@ const ReceptionDashboardView = () => {
   };
 
   const getVisitType = (entry: any) => {
+    if (entry.mrId) return 'MR Visit';
     return entry.case?.visitType || 'Consultation';
   };
 
@@ -226,6 +227,7 @@ const ReceptionDashboardView = () => {
   };
 
   const isNewPatient = (entry: any) => {
+    if (entry.mrId) return false;
     if (entry.patient?._count?.cases !== undefined) {
       return entry.patient._count.cases <= 1;
     }
@@ -353,56 +355,8 @@ const ReceptionDashboardView = () => {
 
   return (
     <ReceptionLayout>
-      <div className="space-y-10 pb-20 max-w-[1600px] mx-auto px-6">
-        
-        {/* 🔷 TOP SECTION: QUICK ACTIONS */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-slate-800 uppercase tracking-tighter">Command Center</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-             <Link href="/reception/patients/register" className="flex items-center gap-4 p-6 bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-xl shadow-slate-200 group">
-                <div className="p-3 bg-white/10 rounded-xl group-hover:scale-110 transition-transform">
-                   <UserPlus className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                   <p className="text-[11px] font-black uppercase tracking-widest leading-none mb-1 text-orange-400">Add Entry</p>
-                   <p className="text-sm font-black uppercase tracking-tighter">New Patient</p>
-                </div>
-             </Link>
-             
-             <button 
-                onClick={fetchStats}
-                className="flex items-center gap-4 p-6 bg-white border border-slate-100 text-slate-800 rounded-2xl hover:border-orange-300 transition-all shadow-sm group"
-             >
-                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
-                   <BarChart3 className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                   <p className="text-[11px] font-black uppercase tracking-widest leading-none mb-1 text-slate-400">Total Today</p>
-                   <p className="text-sm font-black uppercase tracking-tighter">View Statistics</p>
-                </div>
-             </button>
-             <Link href="/reception/appointments" className="flex items-center gap-4 p-6 bg-white border border-slate-100 text-slate-800 rounded-2xl hover:border-orange-300 transition-all shadow-sm group">
-                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
-                   <CalendarPlus className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                   <p className="text-[11px] font-black uppercase tracking-widest leading-none mb-1 text-slate-400">Scheduling</p>
-                   <p className="text-sm font-black uppercase tracking-tighter">Book Appointment</p>
-                </div>
-             </Link>
-             <Link href="/reception/patients/search" className="flex items-center gap-4 p-6 bg-white border border-slate-100 text-slate-800 rounded-2xl hover:border-orange-300 transition-all shadow-sm group">
-                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
-                   <Search className="w-6 h-6" />
-                </div>
-                <div className="text-left">
-                   <p className="text-[11px] font-black uppercase tracking-widest leading-none mb-1 text-slate-400">Database</p>
-                   <p className="text-sm font-black uppercase tracking-tighter">Search Patient</p>
-                </div>
-             </Link>
-          </div>
-        </div>
+      <div className="space-y-10 pb-20 w-full mx-auto px-6">
+
 
         {/* 🔷 NOTIFICATION PANEL (LEFT ALERT BOX) */}
         <div className={`rounded-2xl p-6 shadow-xl flex items-center justify-between border-2 overflow-hidden relative group transition-colors duration-500 ${
@@ -599,33 +553,41 @@ const ReceptionDashboardView = () => {
                              {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
-                             {formatTime(entry.case?.createdAt)}
+                             {formatTime(entry.expectedTime || entry.case?.createdAt)}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
                              {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
                              <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-2`}>
-                                {entry.patient?.firstName} {entry.patient?.lastName} 
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
-                                  {isNew ? 'NEW PT' : 'OLD PT'}
-                                </span>
+                                {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
+                                {entry.mrId ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
+                                    MR
+                                  </span>
+                                ) : (
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
+                                    {isNew ? 'NEW PT' : 'OLD PT'}
+                                  </span>
+                                )}
                              </div>
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-slate-600 uppercase border-r border-slate-50">
                              {getVisitType(entry)}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
-                             {entry.patient?.profile?.age || '--'}
+                             {entry.mrId ? '--' : entry.patient?.profile?.age || '--'}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
-                             {entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U'}
+                             {entry.mrId ? '--' : (entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U')}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 uppercase border-r border-slate-50">
-                             {entry.patient?.address?.city || '--'}
+                             {entry.mrId ? (entry.mr?.companyName || '--') : (entry.patient?.address?.city || '--')}
                            </td>
                            <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
-                             {billing === 'FOC' ? (
+                             {entry.mrId ? (
+                               <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[10px] font-black uppercase tracking-widest border border-slate-200">N/A</span>
+                             ) : billing === 'FOC' ? (
                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
                              ) : billing === 'PAID' ? (
                                <span className="text-[11px] font-black text-slate-600 uppercase">PAID</span>

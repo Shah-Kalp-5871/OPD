@@ -37,6 +37,7 @@ import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { JobsModule } from './jobs/jobs.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MedicalRepresentativesModule } from './medical-representatives/medical-representatives.module';
 import { SocketModule } from './socket/socket.module';
 import { PatientPortalModule } from './patient-portal/patient-portal.module';
 import { StockTransferModule } from './inventory/stock-transfer/stock-transfer.module';
@@ -149,6 +150,7 @@ import { ChatModule } from './chat/chat.module';
     AnalyticsModule,
     JobsModule,
     NotificationsModule,
+    MedicalRepresentativesModule,
     SocketModule,
     PatientPortalModule,
     StockTransferModule,

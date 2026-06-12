@@ -252,10 +252,12 @@ const PatientRegistrationView = () => {
             </p>
           </div>
           
-          {/* MRD Display Box */}
-          <div className="bg-orange-50 px-6 py-4 rounded-2xl border border-orange-100 flex flex-col items-end">
-             <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest leading-none mb-1">MRD No. (Auto-generated)</span>
-             <h3 className="text-xl font-black text-slate-800 tracking-widest">{mrdPreview}</h3>
+          {/* Actions & MRD */}
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-orange-50 px-6 py-4 rounded-2xl border border-orange-100 flex flex-col items-end">
+               <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest leading-none mb-1">MRD No. (Auto-generated)</span>
+               <h3 className="text-xl font-black text-slate-800 tracking-widest">{mrdPreview}</h3>
+            </div>
           </div>
         </div>
 

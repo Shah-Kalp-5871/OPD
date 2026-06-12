@@ -386,7 +386,7 @@ export class PatientsService {
             type: 'VITALS_SAVED',
             patientId: id,
             caseId: vitalsDto.caseId,
-            patientName: `${queueEntry.patient.firstName} ${queueEntry.patient.lastName}`,
+            patientName: queueEntry.patient ? `${queueEntry.patient.firstName} ${queueEntry.patient.lastName}` : 'Unknown Patient',
             vitals: vitals,
           });
         }

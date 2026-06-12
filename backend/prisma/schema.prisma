@@ -73,6 +73,7 @@ model User {
   notificationLogs        NotificationLog[]
   notificationPreference  NotificationPreference?
   tenantUsers             TenantUser[]
+  mrVisits                MrVisit[]
 }
 
 model AdminProfile {
@@ -305,23 +306,54 @@ model QueueEntry {
   queueType    QueueType      @default(OPD)
   status       QueueStatus    @default(WAITING)
   priority     String         @default("NORMAL")
-  caseId       String         @unique
-  patientId    String
+  caseId       String?        @unique
+  patientId    String?
+  mrId         String?
+  mrVisitId    String?        @unique
   doctorId     String?
   checkInTime  DateTime       @default(now())
   callCount    Int            @default(0)
   expectedTime DateTime?
   updatedAt    DateTime       @default(now()) @updatedAt
   calls        QueueCall[]
-  case         PatientCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case         PatientCase?   @relation(fields: [caseId], references: [id], onDelete: Cascade)
   doctor       User?          @relation(fields: [doctorId], references: [id])
-  patient      Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient      Patient?       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  mr           MedicalRepresentative? @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  mrVisit      MrVisit?       @relation(fields: [mrVisitId], references: [id], onDelete: Cascade)
   history      QueueHistory[]
   branchId     String
   branch       Branch         @relation("BranchQueue", fields: [branchId], references: [id])
 
   @@unique([tokenDisplay, branchId])
   @@index([status, checkInTime])
+}
+
+model MedicalRepresentative {
+  id             String     @id @default(uuid())
+  firstName      String
+  lastName       String
+  mobile         String     @unique
+  companyName    String?
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  visits         MrVisit[]
+  queueEntries   QueueEntry[]
+}
+
+model MrVisit {
+  id             String                @id @default(uuid())
+  mrId           String
+  doctorId       String
+  branchId       String
+  visitDate      DateTime              @default(now())
+  status         String                @default("OPEN")
+  notes          String?
+  mr             MedicalRepresentative @relation(fields: [mrId], references: [id], onDelete: Cascade)
+  doctor         User                  @relation(fields: [doctorId], references: [id])
+  branch         Branch                @relation("BranchMrVisits", fields: [branchId], references: [id])
+  queueEntry     QueueEntry?
 }
 
 model VisitSession {
@@ -603,6 +635,7 @@ model Branch {
   billItems            BillItem[]            @relation("BranchBillItems")
   userAccess           UserBranchAccess[]    @relation("BranchUsers")
   apiClients           ApiClient[]           @relation("BranchApiClients")
+  mrVisits             MrVisit[]             @relation("BranchMrVisits")
 }
 
 model UserBranchAccess {

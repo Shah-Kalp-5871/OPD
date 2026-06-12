@@ -519,7 +519,7 @@ const OpdQueueView = () => {
                           {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
-                          {formatTime(entry.case?.createdAt)}
+                          {formatTime(entry.expectedTime || entry.case?.createdAt)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
                           {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
