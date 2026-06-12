@@ -243,10 +243,10 @@ const PatientRegistrationView = () => {
     <ReceptionLayout>
       <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-10 pb-24">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight leading-none">New Patient Registration</h1>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
+            <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none">New Patient Registration</h1>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
               <Info className="w-3.5 h-3.5 text-orange-500" />
               Fields marked with * are mandatory for registration
             </p>
@@ -254,9 +254,9 @@ const PatientRegistrationView = () => {
           
           {/* Actions & MRD */}
           <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="bg-orange-50 px-6 py-4 rounded-2xl border border-orange-100 flex flex-col items-end">
-               <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest leading-none mb-1">MRD No. (Auto-generated)</span>
-               <h3 className="text-xl font-black text-slate-800 tracking-widest">{mrdPreview}</h3>
+            <div className="bg-orange-50 px-4 py-3 rounded-xl border border-orange-100 flex flex-col items-end">
+               <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest leading-none mb-1">MRD No. (Auto-generated)</span>
+               <h3 className="text-lg font-black text-slate-800 tracking-widest">{mrdPreview}</h3>
             </div>
           </div>
         </div>

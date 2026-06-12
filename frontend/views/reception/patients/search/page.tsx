@@ -86,7 +86,7 @@ const PatientSearchView = () => {
 
   return (
     <ReceptionLayout>
-      <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      <div className="w-full space-y-6 pb-20 px-6">
         
         {/* 🔷 HEADER SECTION */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -128,15 +128,16 @@ const PatientSearchView = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     <div className="flex items-center gap-2">MRD Number <ArrowUpDown className="w-3 h-3" /></div>
                   </th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Gender</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Last Visit</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reg. Date</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Patient Name</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Gender</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Last Visit</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reg. Date</th>
+                  <th className="px-5 py-3.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -147,12 +148,12 @@ const PatientSearchView = () => {
                       className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                       onClick={() => router.push(`/reception/patients/${p.id}`)}
                     >
-                      <td className="px-8 py-5">
+                      <td className="px-5 py-3">
                         <span className="px-3 py-1 bg-orange-50 text-orange-700 rounded-lg text-[10px] font-black tracking-widest border border-orange-100">
                           {p.mrdNumber}
                         </span>
                       </td>
-                      <td className="px-8 py-5">
+                      <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 font-black text-[10px] uppercase">
                             {p.firstName.charAt(0)}{p.lastName.charAt(0)}
@@ -163,13 +164,18 @@ const PatientSearchView = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-5">
+                      <td className="px-5 py-3">
                         <div className="flex items-center gap-2 text-slate-500">
                           <Phone className="w-3 h-3" />
                           <span className="text-xs font-bold tracking-tight">{p.mobile}</span>
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-center">
+                      <td className="px-5 py-3">
+                        <span className="text-xs font-bold text-slate-500">
+                          {p.profile?.city || 'Unknown'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-center">
                         <span className={`px-2.5 py-1 rounded text-[9px] font-black uppercase tracking-widest ${
                           p.gender === 'MALE' ? 'bg-blue-50 text-blue-600' : 
                           p.gender === 'FEMALE' ? 'bg-rose-50 text-rose-600' : 
@@ -178,20 +184,20 @@ const PatientSearchView = () => {
                           {p.gender}
                         </span>
                       </td>
-                      <td className="px-8 py-5 text-center">
+                      <td className="px-5 py-3 text-center">
                          {p.cases && p.cases.length > 0 ? (
                            <span className="text-[10px] font-black text-orange-600 uppercase tracking-tight">{formatDate(p.cases[0].createdAt)}</span>
                          ) : (
                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">New Patient</span>
                          )}
                       </td>
-                      <td className="px-8 py-5">
+                      <td className="px-5 py-3">
                         <div className="flex items-center gap-2 text-slate-400">
                           <Calendar className="w-3 h-3" />
                           <span className="text-[10px] font-bold">{formatDate(p.createdAt)}</span>
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-right">
+                      <td className="px-5 py-3 text-right">
                         <div className="flex justify-end gap-2">
                           <button 
                             onClick={(e) => {
@@ -209,7 +215,7 @@ const PatientSearchView = () => {
                   ))
                 ) : !isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-8 py-20 text-center">
+                    <td colSpan={8} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center">
                           <Search className="w-6 h-6 text-slate-200" />
@@ -223,7 +229,7 @@ const PatientSearchView = () => {
                   // Skeleton state
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={7} className="px-8 py-6">
+                      <td colSpan={8} className="px-5 py-4">
                         <div className="h-8 bg-slate-50 rounded-xl w-full"></div>
                       </td>
                     </tr>

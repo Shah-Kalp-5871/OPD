@@ -131,13 +131,13 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
         {/* Grid of patients */}
         <div className="p-4">
           {isRecentLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="h-[72px] bg-slate-100 rounded-2xl animate-pulse" />
               ))}
             </div>
           ) : displayList.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {displayList.map((p) => {
                 const initials = `${p.firstName?.charAt(0) ?? ''}${p.lastName?.charAt(0) ?? ''}`;
                 const colorClass = avatarColor(p.firstName ?? 'A');

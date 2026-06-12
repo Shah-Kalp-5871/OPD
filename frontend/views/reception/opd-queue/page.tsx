@@ -329,66 +329,46 @@ const OpdQueueView = () => {
 
   return (
     <ReceptionLayout>
-      <div className="max-w-[1600px] mx-auto space-y-6 pb-20 px-6">
+      <div className="space-y-6 pb-20 w-full mx-auto">
         
         {/* Modern Top Header */}
-        <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm gap-6">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
-                <Activity className="w-6 h-6 text-white animate-pulse" />
+        <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-3 lg:p-4 rounded-[1.5rem] border border-slate-200 shadow-sm gap-4">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200">
+                <Activity className="w-5 h-5 text-white animate-pulse" />
              </div>
              <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none uppercase">OPD Queue Control</h1>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Daily Visit Management</p>
+                <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">OPD Queue Control</h1>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-0.5">Daily Visit Management</p>
              </div>
           </div>
 
-          {/* TABS */}
-          <div className="flex items-center gap-6 border-b border-slate-200 px-2 mt-4">
-             <button 
-               onClick={() => setQueueTab('current')}
-               className={`pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all border-b-4 ${
-                 queueTab === 'current' ? 'border-orange-600 text-orange-700' : 'border-transparent text-slate-400 hover:text-slate-600'
-               }`}
-             >
-               Current Queue
-             </button>
-             <button 
-               onClick={() => setQueueTab('completed')}
-               className={`pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all border-b-4 ${
-                 queueTab === 'completed' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-400 hover:text-slate-600'
-               }`}
-             >
-               Completed
-             </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100 flex-1 justify-end mt-4">
-             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 min-w-[200px]">
-                <Search className="w-4 h-4 text-slate-400" />
+          <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100 flex-1 justify-end">
+             <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200 min-w-[150px]">
+                <Search className="w-3.5 h-3.5 text-slate-400" />
                 <input 
                   type="text" 
                   placeholder="Search patient..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent w-full"
+                  className="text-[11px] font-bold text-slate-800 outline-none bg-transparent w-full"
                 />
              </div>
-             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                <span className="text-[10px] font-black text-slate-500 uppercase">Date:</span>
+             <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                <span className="text-[9px] font-black text-slate-500 uppercase">Date:</span>
                 <input 
                   type="date" 
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent"
+                  className="text-[11px] font-bold text-slate-800 outline-none bg-transparent"
                 />
              </div>
-             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                <span className="text-[10px] font-black text-slate-500 uppercase">Purpose:</span>
+             <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                <span className="text-[9px] font-black text-slate-500 uppercase">Purpose:</span>
                 <select 
                   value={purposeFilter}
                   onChange={(e) => setPurposeFilter(e.target.value)}
-                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                  className="text-[11px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
                 >
                   <option value="All">All</option>
                   <option value="Consultation">Consultation</option>
@@ -396,12 +376,12 @@ const OpdQueueView = () => {
                   <option value="Procedure">Procedure</option>
                 </select>
              </div>
-             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                <span className="text-[10px] font-black text-slate-500 uppercase">Status:</span>
+             <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                <span className="text-[9px] font-black text-slate-500 uppercase">Status:</span>
                 <select 
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                  className="text-[11px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
                 >
                   <option value="All">All</option>
                   <option value="Waiting">Waiting</option>
@@ -410,12 +390,12 @@ const OpdQueueView = () => {
                   <option value="Cancelled">Cancelled</option>
                 </select>
              </div>
-             <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                <span className="text-[10px] font-black text-slate-500 uppercase">Age Range:</span>
+             <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                <span className="text-[9px] font-black text-slate-500 uppercase">Age:</span>
                 <select 
                   value={ageRangeFilter}
                   onChange={(e) => setAgeRangeFilter(e.target.value)}
-                  className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                  className="text-[11px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
                 >
                   <option value="All">All</option>
                   <option value="0-18">0-18</option>
@@ -435,176 +415,218 @@ const OpdQueueView = () => {
                    setSearchQuery('');
                    setSortConfig({ key: 'createdAt', direction: 'asc' });
                 }}
-                className="ml-2 flex items-center justify-center p-2 bg-slate-200 text-slate-600 hover:bg-slate-300 hover:text-slate-800 rounded-xl transition-all shadow-sm"
                 title="Reset Filters"
+                className="p-2 bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1"
              >
-                <Square className="w-5 h-5 opacity-50 absolute" />
-                <span className="text-[10px] font-black uppercase px-2 z-10 relative">Reset</span>
+                <RotateCcw className="w-4 h-4" />
+                <span className="text-[9px] font-black uppercase px-1">Reset</span>
              </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 px-2">
-          {['Waiting', 'In Progress', 'Completed', 'Cancelled', 'New Patient', 'FOC'].map((legend) => {
-            const isSelected = selectedLegends.includes(legend);
-            return (
-              <button 
-                key={legend}
-                onClick={() => toggleLegend(legend)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
-                  isSelected 
-                    ? 'bg-orange-50 border-orange-200 text-orange-800 shadow-sm' 
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                {isSelected ? <CheckSquare className="w-4 h-4 text-orange-600" /> : <Square className="w-4 h-4 text-slate-400" />}
-                <span className="text-[11px] font-black uppercase tracking-wider">
-                  {legend} {legend === 'In Progress' && '(Blinking)'}
-                </span>
-              </button>
-            );
-          })}
+        {/* TABS & Legend */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
+          {/* TABS */}
+          <div className="flex items-center gap-4 bg-slate-100 p-1 rounded-xl">
+             <button 
+               onClick={() => setQueueTab('current')}
+               className={`px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
+                 queueTab === 'current' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+               }`}
+             >
+               Current Queue
+             </button>
+             <button 
+               onClick={() => setQueueTab('completed')}
+               className={`px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
+                 queueTab === 'completed' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+               }`}
+             >
+               Completed
+             </button>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-3">
+            {['Waiting', 'In Progress', 'Completed', 'Cancelled', 'New Patient', 'FOC'].map((legend) => {
+              const isSelected = selectedLegends.includes(legend);
+              return (
+                <button 
+                  key={legend}
+                  onClick={() => toggleLegend(legend)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all ${
+                    isSelected 
+                      ? 'bg-orange-50 border-orange-200 text-orange-800 shadow-sm' 
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {isSelected ? <CheckSquare className="w-3.5 h-3.5 text-orange-600" /> : <Square className="w-3.5 h-3.5 text-slate-400" />}
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    {legend} {legend === 'In Progress' && '(Blinking)'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Main Table Area */}
+        {/* Table Container */}
         <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden relative min-h-[500px] flex flex-col">
-          {isLoading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6 min-h-[400px]">
-                <div className="w-16 h-16 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin"></div>
-                <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
-            </div>
-          )}
-          
-          <div className="flex-1 relative overflow-auto bg-white">
-            <table className="w-full text-sm text-center">
-              <thead className="text-[11px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.caseNumber')}>Case No <SortIcon columnKey="case.caseNumber" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('createdAt')}>Appt Time <SortIcon columnKey="createdAt" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
-                  <th className="px-4 py-4 whitespace-nowrap border-r border-slate-100 last:border-0">Billing</th>
-                  <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('status')}>Status <SortIcon columnKey="status" /></th>
-                  <th className="px-4 py-4 whitespace-nowrap">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {currentQueueData.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="py-20 text-center text-slate-400">
-                      <div className="flex flex-col items-center justify-center">
-                        <Search className="w-12 h-12 mb-4 text-slate-300" />
-                        <span className="text-sm font-bold uppercase tracking-widest">No patients found</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  currentQueueData.map((entry, idx) => {
-                    const isNew = isNewPatient(entry);
-                    const isInSession = entry.status === 'IN_SESSION';
-                    const rowBg = isInSession ? 'bg-orange-50/50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30');
-                    const billing = getBillingStatus(entry);
+           {isLoading && (
+             <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm z-10 space-y-6">
+                 <div className="w-16 h-16 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin"></div>
+                 <p className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em]">Loading Queue Data...</p>
+             </div>
+           )}
+           
+           <div className="flex-1 relative overflow-auto bg-white">
+             <table className="w-full text-sm text-center">
+               <thead className="text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
+                 <tr>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.caseNumber')}>Case No <SortIcon columnKey="case.caseNumber" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('createdAt')}>Appt Time <SortIcon columnKey="createdAt" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
+                   <th className="px-2 lg:px-3 py-3 whitespace-nowrap border-r border-slate-100 last:border-0">Billing</th>
+                   <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('status')}>Status <SortIcon columnKey="status" /></th>
+                   <th className="px-2 lg:px-3 py-3 whitespace-nowrap">Action</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                 {currentQueueData.length === 0 ? (
+                   <tr>
+                     <td colSpan={11} className="py-16 text-center text-slate-400">
+                       <div className="flex flex-col items-center justify-center">
+                         <Search className="w-10 h-10 mb-3 text-slate-300" />
+                         <span className="text-xs font-bold uppercase tracking-widest">No patients found</span>
+                       </div>
+                     </td>
+                   </tr>
+                 ) : (
+                   currentQueueData.map((entry, idx) => {
+                     const isNew = isNewPatient(entry);
+                     const isInSession = entry.status === 'IN_SESSION';
+                     const rowBg = isInSession ? 'bg-orange-50/50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30');
+                     const billing = getBillingStatus(entry);
 
-                    return (
-                      <tr 
-                        key={entry.id || idx} 
-                        onClick={() => entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
-                        className={`${rowBg} hover:bg-slate-50 transition-colors cursor-pointer`}
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-800 border-r border-slate-50">
-                          {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
-                          {formatTime(entry.expectedTime || entry.case?.createdAt)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
-                          {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
-                          <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-2`}>
-                             {entry.patient?.firstName} {entry.patient?.lastName} 
-                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
-                               {isNew ? 'NEW PT' : 'OLD PT'}
-                             </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-slate-600 uppercase border-r border-slate-50">
-                          {getVisitType(entry)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
-                          {entry.patient?.profile?.age || '--'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
-                          {entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 uppercase border-r border-slate-50">
-                          {entry.patient?.address?.city || '--'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
-                          {billing === 'FOC' ? (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
-                          ) : billing === 'PAID' ? (
-                            <span className="text-[11px] font-black text-slate-600 uppercase">PAID</span>
-                          ) : (
-                            <span className="text-[11px] font-black text-rose-600 uppercase">PENDING</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50" dangerouslySetInnerHTML={{ __html: getStatusBadgeString(entry.status) }} />
-                        <td className="px-4 py-3 whitespace-nowrap">
+                     return (
+                       <tr 
+                         key={entry.id || idx} 
+                         onClick={() => entry.patient?.id && router.push(`/opd/reception/patients/${entry.patient.id}`)}
+                         className={`${rowBg} hover:bg-slate-50 transition-colors cursor-pointer`}
+                       >
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-800 border-r border-slate-50">
+                           {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-600 border-r border-slate-50">
+                           {formatTime(entry.expectedTime || entry.case?.createdAt)}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-600 border-r border-slate-50">
+                           {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
+                           <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
+                              {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
+                              {entry.mrId ? (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
+                                  MR
+                                </span>
+                              ) : (
+                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
+                                  {isNew ? 'NEW' : 'OLD'}
+                                </span>
+                              )}
+                           </div>
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[10px] font-bold text-slate-600 uppercase border-r border-slate-50">
+                           {getVisitType(entry)}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-700 border-r border-slate-50">
+                           {entry.mrId ? '--' : entry.patient?.profile?.age || '--'}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-700 border-r border-slate-50">
+                           {entry.mrId ? '--' : (entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U')}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-600 uppercase border-r border-slate-50">
+                           {entry.mrId ? (entry.mr?.companyName || '--') : (entry.patient?.address?.city || '--')}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
+                           {entry.mrId ? (
+                             <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">N/A</span>
+                           ) : billing === 'FOC' ? (
+                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
+                           ) : billing === 'PAID' ? (
+                             <span className="text-[10px] font-black text-slate-600 uppercase">PAID</span>
+                           ) : (
+                             <span className="text-[10px] font-black text-rose-600 uppercase">PENDING</span>
+                           )}
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
+                           <div dangerouslySetInnerHTML={{ __html: getStatusBadgeString(entry.status) }} />
+                         </td>
+                         <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-center">
                            {entry.isAppointment ? (
                              <button 
                                onClick={(e) => { 
-                                 e.stopPropagation(); 
-                                 setSelectedCheckInPatient(entry.patient);
-                                 setSelectedCheckInAppt(entry.appointmentId);
-                                 setIsCheckInModalOpen(true);
+                                  e.stopPropagation(); 
+                                  setSelectedCheckInPatient(entry.patient);
+                                  setSelectedCheckInAppt(entry.appointmentId);
+                                  setIsCheckInModalOpen(true);
                                }}
-                               className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
+                               className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
                              >
-                               Mark Arrived
+                               Arrived
                              </button>
                            ) : entry.status === 'WAITING' ? (
                              <button 
-                               disabled={sendingIds.has(entry.id)}
-                               onClick={async (e) => {
-                                 e.stopPropagation();
+                               onClick={(e) => { 
+                                 e.stopPropagation(); 
                                  const entryId = entry.id;
                                  setSendingIds(prev => new Set(prev).add(entryId));
-                                 try {
-                                   await api.patch(`/queue/${entryId}/status`, { status: 'IN_SESSION' });
-                                   toast.success(`${entry.patient?.firstName} sent to doctor!`);
-                                   await fetchQueue();
-                                 } catch (err: any) {
+                                 api.patch(`/queue/${entryId}/status`, { status: 'IN_SESSION' }).then(() => {
+                                   toast.success(`${entry.patient?.firstName || ''} sent to doctor!`);
+                                   fetchQueue();
+                                 }).catch(err => {
                                    toast.error(err?.response?.data?.message || 'Failed to send patient');
-                                 } finally {
+                                 }).finally(() => {
                                    setSendingIds(prev => { const s = new Set(prev); s.delete(entryId); return s; });
-                                 }
+                                 });
                                }}
-                               className="px-4 py-2 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-wait rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all"
+                               disabled={sendingIds.has(entry.id) || isInSession}
+                               className="px-3 py-1.5 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-1.5 mx-auto group"
                              >
-                               {sendingIds.has(entry.id) ? 'Sending...' : 'Send to Doctor'}
+                               {sendingIds.has(entry.id) ? (
+                                 <>
+                                   <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                   Sending
+                                 </>
+                               ) : (
+                                 <>
+                                   Send <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-1 transition-transform" />
+                                 </>
+                               )}
                              </button>
                            ) : (
-                            <Link 
-                              href={`/opd/reception/patients/${entry.patient?.id}`} 
-                              onClick={(e) => e.stopPropagation()}
-                              className="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-orange-600 hover:border-orange-200 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all inline-block shadow-sm"
-                            >
-                              View Profile
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                             <Link 
+                               href={`/opd/reception/patients/${entry.patient?.id}`} 
+                               onClick={(e) => e.stopPropagation()}
+                               className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-orange-600 hover:border-orange-200 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all inline-block shadow-sm"
+                             >
+                               View
+                             </Link>
+                           )}
+                         </td>
+                       </tr>
+                     );
+                   })
+                 )}
+               </tbody>
+             </table>
+           </div>
 
           <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between mt-auto">
             <div className="flex items-center gap-4">
@@ -632,22 +654,23 @@ const OpdQueueView = () => {
             <div className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
               Total: {filteredQueue.length} appointments
             </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    {/* Check In Modal */}
-    <CheckInModal 
-      isOpen={isCheckInModalOpen}
-      onClose={() => {
-        setIsCheckInModalOpen(false);
-        setSelectedCheckInPatient(null);
-        setSelectedCheckInAppt(undefined);
-      }}
-      patient={selectedCheckInPatient}
-      appointmentId={selectedCheckInAppt}
-      onSuccess={() => fetchQueue()}
-    />
+      </div>
+
+      {/* Check In Modal */}
+      <CheckInModal 
+        isOpen={isCheckInModalOpen}
+        onClose={() => {
+          setIsCheckInModalOpen(false);
+          setSelectedCheckInPatient(null);
+          setSelectedCheckInAppt(undefined);
+        }}
+        patient={selectedCheckInPatient}
+        appointmentId={selectedCheckInAppt}
+        onSuccess={() => fetchQueue()}
+      />
 
     </ReceptionLayout>
   );

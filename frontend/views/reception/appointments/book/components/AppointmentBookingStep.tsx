@@ -91,7 +91,7 @@ const SlotGroup = ({
             key={i}
             disabled={slot.status === 'booked' || isSubmitting}
             onClick={() => onSelect(slot.time)}
-            className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all duration-150 ${slotClass(slot, selectedSlot)}`}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all duration-150 ${slotClass(slot, selectedSlot)}`}
           >
             {slot.time}
           </button>
@@ -138,7 +138,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
 
       {/* ─── PATIENT CONTEXT STRIP ─── */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-t-3xl border-b-0">
+      <div className="flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 border-b-slate-100 rounded-t-3xl">
         <div className="flex items-center gap-3.5">
           <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center">
             <User className="w-4 h-4 text-orange-600" />
@@ -162,13 +162,13 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
       </div>
 
       {/* ─── MAIN 3-COLUMN CARD ─── */}
-      <div className="bg-white border border-slate-200 rounded-b-3xl rounded-tr-3xl overflow-hidden shadow-sm">
+      <div className="bg-white border-x border-b border-slate-200 rounded-b-3xl overflow-hidden shadow-sm">
 
         {/* === COLUMN LAYOUT === */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
           {/* ── LEFT: Doctor, Purpose, Remarks ── */}
-          <div className="p-6 space-y-5">
+          <div className="p-5 space-y-4">
 
             {/* Section label */}
             <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
@@ -256,7 +256,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
           <div className="hidden lg:block w-px" />
 
           {/* ── RIGHT: Calendar + Slots ── */}
-          <div className="p-6 space-y-5">
+          <div className="p-5 space-y-4">
 
             {/* Section label + month nav */}
             <div className="flex items-center justify-between pb-1 border-b border-slate-100">
@@ -303,7 +303,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                     disabled={isPast}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      aspect-square flex items-center justify-center rounded-xl text-[11px] font-bold transition-all
+                      h-8 flex items-center justify-center rounded-lg text-[11px] font-bold transition-all
                       ${isPast ? 'text-slate-200 cursor-not-allowed' : 'hover:bg-orange-50 hover:text-orange-600'}
                       ${isSelected ? 'bg-slate-900 text-white shadow-sm font-black scale-105' : ''}
                       ${isTd && !isSelected ? 'text-orange-600 font-black ring-1 ring-orange-200' : ''}
@@ -317,7 +317,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
             </div>
 
             {/* Time Slots */}
-            <div className="pt-4 border-t border-slate-100 space-y-4">
+            <div className="pt-3 border-t border-slate-100 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
