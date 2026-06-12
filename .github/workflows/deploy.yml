@@ -3,12 +3,12 @@ name: Deploy OPD System
 on:
   push:
     branches:
-      - main # Or whichever branch is your production branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -17,27 +17,50 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            echo "Starting deployment..."
-            
-            # Go to the project directory
+            set -e  # Exit immediately on any error
+            echo "========================================="
+            echo "🚀 Starting OPD System Deployment..."
+            echo "========================================="
+
             cd /home/opd_deploy/opd-system
-            
-            # Pull the latest changes from GitHub
+
+            # Pull latest code
+            echo "📥 Pulling latest changes..."
             git pull origin main
-            
-            # Deploy Backend
-            echo "Deploying Backend..."
+
+            # ── BACKEND ────────────────────────────────────────────────────
+            echo "⚙️  Deploying Backend..."
             cd backend
+
+            echo "📦 Installing backend dependencies..."
             npm install
-            npx prisma db push
+
+            echo "🗄️  Running database migrations..."
+            # Use migrate deploy (NOT db push) so migration history is respected
+            npx prisma migrate deploy
+
+            echo "🔨 Building backend..."
             npm run build
-            pm2 restart opd-backend
-            
-            # Deploy Frontend
-            echo "Deploying Frontend..."
+
+            echo "♻️  Restarting backend service..."
+            pm2 restart opd-backend || pm2 start dist/main.js --name opd-backend
+
+            # ── FRONTEND ───────────────────────────────────────────────────
+            echo "🎨 Deploying Frontend..."
             cd ../frontend
+
+            echo "📦 Installing frontend dependencies..."
             npm install
+
+            echo "🔨 Building frontend..."
             npm run build
-            PORT=3005 pm2 restart opd-frontend --update-env
-            
-            echo "Deployment successful!"
+
+            echo "♻️  Restarting frontend service..."
+            PORT=3005 pm2 restart opd-frontend --update-env || PORT=3005 pm2 start npm --name opd-frontend -- start
+
+            # ── DONE ───────────────────────────────────────────────────────
+            echo "========================================="
+            echo "✅ Deployment successful!"
+            echo "   Backend : pm2 status opd-backend"
+            echo "   Frontend: pm2 status opd-frontend"
+            echo "========================================="
