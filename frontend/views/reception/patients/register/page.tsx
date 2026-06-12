@@ -241,7 +241,7 @@ const PatientRegistrationView = () => {
 
   return (
     <ReceptionLayout>
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-6xl mx-auto space-y-10 pb-24">
+      <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-10 pb-24">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
           <div>
@@ -272,110 +272,109 @@ const PatientRegistrationView = () => {
              </div>
              
              <div className="p-8 space-y-8">
-                {/* Name Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">First Name *</label>
+                {/* Combined Grid for 2 Rows (4 Columns) */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                   {/* ROW 1 */}
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">First Name *</label>
                       <input 
                         {...register('firstName')}
                         type="text" 
-                        className={`w-full px-5 py-3.5 bg-slate-50 border ${errors.firstName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all`} 
-                        placeholder="Enter First Name" 
+                        className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.firstName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all`} 
+                        placeholder="First Name" 
                       />
                       {errors.firstName && <p className="text-[10px] font-black text-rose-500 uppercase">{errors.firstName.message}</p>}
                    </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Middle Name</label>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Middle Name</label>
                       <input 
                         {...register('middleName')}
                         type="text" 
-                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
-                        placeholder="Enter Middle Name" 
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
+                        placeholder="Middle Name" 
                       />
                    </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Last Name *</label>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last Name *</label>
                       <input 
                         {...register('lastName')}
                         type="text" 
-                        className={`w-full px-5 py-3.5 bg-slate-50 border ${errors.lastName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all`} 
-                        placeholder="Enter Last Name" 
+                        className={`w-full px-4 py-2.5 bg-slate-50 border ${errors.lastName ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all`} 
+                        placeholder="Last Name" 
                       />
                       {errors.lastName && <p className="text-[10px] font-black text-rose-500 uppercase">{errors.lastName.message}</p>}
                    </div>
-                </div>
-
-                 {/* Contact & Gender Grid */}
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Date of Birth</label>
-                       <input 
-                         {...register('dob')}
-                         type="date" 
-                         max="9999-12-31"
-                         className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
-                       />
-                    </div>
-                    <div className="space-y-2">
-                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Age (Y / M / D)</label>
-                       <div className="flex gap-2">
-                         <input 
-                           {...register('age')}
-                           type="number" 
-                           min="0"
-                           className="w-1/3 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
-                           placeholder="Yrs"
-                         />
-                         <input 
-                           {...register('ageMonths')}
-                           type="number" 
-                           min="0"
-                           max="11"
-                           className="w-1/3 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
-                           placeholder="Mos"
-                         />
-                         <input 
-                           {...register('ageDays')}
-                           type="number" 
-                           min="0"
-                           max="31"
-                           className="w-1/3 px-3 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
-                           placeholder="Dys"
-                         />
-                       </div>
-                    </div>
-                    <div className="space-y-2 md:col-span-1">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Contact Number *</label>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact Number *</label>
                       <div className="relative">
-                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
                          <input 
                            {...register('mobile')}
                            type="text" 
                            maxLength={10}
-                           className={`w-full pl-12 pr-5 py-3.5 bg-slate-50 border ${errors.mobile ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 transition-all`} 
+                           className={`w-full pl-10 pr-4 py-2.5 bg-slate-50 border ${errors.mobile ? 'border-rose-500' : 'border-slate-200'} rounded-xl text-sm font-bold outline-none focus:border-orange-600 transition-all`} 
                            placeholder="10-digit Mobile" 
                          />
                       </div>
                       {errors.mobile && <p className="text-[10px] font-black text-rose-500 uppercase">{errors.mobile.message}</p>}
                    </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Gender *</label>
+
+                   {/* ROW 2 */}
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date of Birth</label>
+                      <input 
+                        {...register('dob')}
+                        type="date" 
+                        max="9999-12-31"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all" 
+                      />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Age (Y / M / D)</label>
                       <div className="flex gap-2">
+                        <input 
+                          {...register('age')}
+                          type="number" 
+                          min="0"
+                          className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
+                          placeholder="Yrs"
+                        />
+                        <input 
+                          {...register('ageMonths')}
+                          type="number" 
+                          min="0"
+                          max="11"
+                          className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
+                          placeholder="Mos"
+                        />
+                        <input 
+                          {...register('ageDays')}
+                          type="number" 
+                          min="0"
+                          max="31"
+                          className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-orange-600 focus:bg-white transition-all text-center" 
+                          placeholder="Dys"
+                        />
+                      </div>
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender *</label>
+                      <div className="flex gap-2 h-[42px]">
                          {['M', 'F', 'Other'].map(opt => (
                            <button 
                              key={opt} 
                              type="button"
                              onClick={() => setValue('gender', opt)}
-                             className={`flex-1 py-3.5 border rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedGender === opt ? 'bg-orange-600 text-white border-orange-600 shadow-md shadow-orange-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-white hover:border-orange-300'}`}
+                             className={`flex-1 border rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedGender === opt ? 'bg-orange-600 text-white border-orange-600 shadow-md shadow-orange-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-white hover:border-orange-300'}`}
                            >
                               {opt}
                            </button>
                          ))}
                       </div>
                    </div>
-                   <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Language (Optional)</label>
-                      <select className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none cursor-pointer">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Language (Optional)</label>
+                      <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none cursor-pointer">
                          <option>English</option>
                          <option>Gujarati</option>
                          <option>Hindi</option>

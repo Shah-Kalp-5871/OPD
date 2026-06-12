@@ -17,8 +17,8 @@ const ReceptionLayout: React.FC<ReceptionLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col transition-all duration-300">
         
         {/* Scrollable Page Content */}
-        <main className="flex-1 p-8 lg:p-10">
-          <div className="max-w-[1600px] mx-auto">
+        <main className="flex-1 p-4 md:px-6 lg:px-8 py-6">
+          <div className="w-full mx-auto">
              {children}
           </div>
         </main>

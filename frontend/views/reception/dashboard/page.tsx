@@ -355,41 +355,40 @@ const ReceptionDashboardView = () => {
 
   return (
     <ReceptionLayout>
-      <div className="space-y-10 pb-20 w-full mx-auto px-6">
+      <div className="space-y-6 pb-20 w-full mx-auto">
 
-
-        {/* 🔷 NOTIFICATION PANEL (LEFT ALERT BOX) */}
-        <div className={`rounded-2xl p-6 shadow-xl flex items-center justify-between border-2 overflow-hidden relative group transition-colors duration-500 ${
+        {/* 🔷 NOTIFICATION PANEL (LEFT ALERT BOX) - COMPACT */}
+        <div className={`rounded-xl p-4 shadow-md flex items-center justify-between border-2 overflow-hidden relative group transition-colors duration-500 ${
           lastEvent?.type === 'SESSION_STARTED' 
             ? 'bg-rose-600 border-rose-500 shadow-rose-200 animate-pulse' 
             : 'bg-orange-600 border-orange-500 shadow-orange-100'
         }`}>
-           <div className="absolute right-0 top-0 h-full w-32 bg-white/5 skew-x-[30deg] translate-x-16"></div>
-           <div className="flex items-center gap-6 relative z-10">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center animate-bounce">
-                 <BellRing className="w-6 h-6 text-white" />
+           <div className="absolute right-0 top-0 h-full w-24 bg-white/5 skew-x-[30deg] translate-x-12"></div>
+           <div className="flex items-center gap-4 relative z-10">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center animate-bounce">
+                 <BellRing className="w-5 h-5 text-white" />
               </div>
               <div>
-                 <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-100' : 'text-orange-100'}`}>Notification</span>
+                 <div className="flex items-center gap-2">
+                    <span className={`text-[9px] font-black uppercase tracking-widest leading-none ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-100' : 'text-orange-100'}`}>Notification</span>
                     <span className={`w-1 h-1 rounded-full ${lastEvent?.type === 'SESSION_STARTED' ? 'bg-rose-300' : 'bg-orange-300'}`}></span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-200' : 'text-orange-200'}`}>Clinical Signal</span>
+                    <span className={`text-[9px] font-black uppercase tracking-widest leading-none ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-200' : 'text-orange-200'}`}>Clinical Signal</span>
                  </div>
-                 <h3 className="text-lg font-black text-white mt-1 uppercase tracking-tight">
+                 <h3 className="text-base font-black text-white mt-0.5 uppercase tracking-tight">
                    {lastEvent?.type === 'SESSION_STARTED' ? (
-                     <span>NOW CALLING: <span className="underline decoration-white underline-offset-4 font-extrabold">{lastEvent.patientName} ({lastEvent.token})</span></span>
+                     <span>NOW CALLING: <span className="underline decoration-white underline-offset-2 font-extrabold">{lastEvent.patientName} ({lastEvent.token})</span></span>
                    ) : (
-                     <span>System Ready: <span className={`${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-200 decoration-rose-300' : 'text-orange-200 decoration-orange-300'} underline underline-offset-4`}>Waiting for next patient...</span></span>
+                     <span>System Ready: <span className={`${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-200 decoration-rose-300' : 'text-orange-200 decoration-orange-300'} underline underline-offset-2`}>Waiting for next patient...</span></span>
                    )}
                  </h3>
               </div>
            </div>
-           <div className="flex items-center gap-4 relative z-10">
-              <div className={`px-6 py-2 bg-white rounded-full text-[11px] font-black uppercase tracking-widest shadow-sm ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-700' : 'text-orange-700'}`}>
+           <div className="flex items-center gap-3 relative z-10">
+              <div className={`px-4 py-1.5 bg-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-700' : 'text-orange-700'}`}>
                  Queue Active: <span className={lastEvent?.type === 'SESSION_STARTED' ? 'text-rose-600' : 'text-emerald-600'}>{statsData.waiting} Patients</span>
               </div>
-              <button className={`p-3 text-white rounded-xl transition-colors ${lastEvent?.type === 'SESSION_STARTED' ? 'bg-rose-800 hover:bg-rose-900' : 'bg-orange-800 hover:bg-orange-900'}`}>
-                 <ArrowRight className="w-5 h-5" />
+              <button className={`p-2 text-white rounded-lg transition-colors ${lastEvent?.type === 'SESSION_STARTED' ? 'bg-rose-800 hover:bg-rose-900' : 'bg-orange-800 hover:bg-orange-900'}`}>
+                 <ArrowRight className="w-4 h-4" />
               </button>
            </div>
         </div>
@@ -398,44 +397,44 @@ const ReceptionDashboardView = () => {
         <div className="space-y-6 pt-4 border-t border-slate-200">
           
           {/* Filters Header */}
-          <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm gap-6">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
-                  <Activity className="w-6 h-6 text-white animate-pulse" />
+          <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-3 lg:p-4 rounded-[1.5rem] border border-slate-200 shadow-sm gap-4">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200">
+                  <Activity className="w-5 h-5 text-white animate-pulse" />
                </div>
                <div>
-                  <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none uppercase">OPD Queue</h1>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Live Hub</p>
+                  <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">OPD Queue</h1>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mt-0.5">Live Hub</p>
                </div>
             </div>
 
             {/* Top Row Filters */}
-            <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100 flex-1 justify-end">
-               <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 min-w-[200px]">
-                  <Search className="w-4 h-4 text-slate-400" />
+            <div className="flex flex-wrap items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100 flex-1 justify-end">
+               <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200 min-w-[150px]">
+                  <Search className="w-3.5 h-3.5 text-slate-400" />
                   <input 
                     type="text" 
                     placeholder="Search patient..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="text-[12px] font-bold text-slate-800 outline-none bg-transparent w-full"
+                    className="text-[11px] font-bold text-slate-800 outline-none bg-transparent w-full"
                   />
                </div>
-               <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                  <span className="text-[10px] font-black text-slate-500 uppercase">Date:</span>
+               <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                  <span className="text-[9px] font-black text-slate-500 uppercase">Date:</span>
                   <input 
                     type="date" 
                     value={dateFilter}
                     onChange={(e) => setDateFilter(e.target.value)}
-                    className="text-[12px] font-bold text-slate-800 outline-none bg-transparent"
+                    className="text-[11px] font-bold text-slate-800 outline-none bg-transparent"
                   />
                </div>
-               <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                  <span className="text-[10px] font-black text-slate-500 uppercase">Purpose:</span>
+               <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                  <span className="text-[9px] font-black text-slate-500 uppercase">Purpose:</span>
                   <select 
                     value={purposeFilter}
                     onChange={(e) => setPurposeFilter(e.target.value)}
-                    className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                    className="text-[11px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
                   >
                     <option value="All">All</option>
                     <option value="Consultation">Consultation</option>
@@ -443,12 +442,12 @@ const ReceptionDashboardView = () => {
                     <option value="Procedure">Procedure</option>
                   </select>
                </div>
-               <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200">
-                  <span className="text-[10px] font-black text-slate-500 uppercase">Status:</span>
+               <div className="flex items-center gap-2 px-2 py-1.5 bg-white rounded-lg border border-slate-200">
+                  <span className="text-[9px] font-black text-slate-500 uppercase">Status:</span>
                   <select 
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="text-[12px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
+                    className="text-[11px] font-bold text-slate-800 outline-none bg-transparent cursor-pointer"
                   >
                     <option value="All">All</option>
                     <option value="Waiting">Waiting</option>
@@ -511,28 +510,28 @@ const ReceptionDashboardView = () => {
              
              <div className="flex-1 relative overflow-auto bg-white">
                <table className="w-full text-sm text-center">
-                 <thead className="text-[11px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
+                 <thead className="text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                    <tr>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.caseNumber')}>Case No <SortIcon columnKey="case.caseNumber" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('createdAt')}>Appt Time <SortIcon columnKey="createdAt" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
-                     <th className="px-4 py-4 whitespace-nowrap border-r border-slate-100 last:border-0">Billing</th>
-                     <th className="px-4 py-4 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('status')}>Status <SortIcon columnKey="status" /></th>
-                     <th className="px-4 py-4 whitespace-nowrap">Action</th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.caseNumber')}>Case No <SortIcon columnKey="case.caseNumber" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('createdAt')}>Appt Time <SortIcon columnKey="createdAt" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
+                     <th className="px-2 lg:px-3 py-3 whitespace-nowrap border-r border-slate-100 last:border-0">Billing</th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('status')}>Status <SortIcon columnKey="status" /></th>
+                     <th className="px-2 lg:px-3 py-3 whitespace-nowrap">Action</th>
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-100">
                    {currentQueueData.length === 0 ? (
                      <tr>
-                       <td colSpan={11} className="py-20 text-center text-slate-400">
+                       <td colSpan={11} className="py-16 text-center text-slate-400">
                          <div className="flex flex-col items-center justify-center">
-                           <Search className="w-12 h-12 mb-4 text-slate-300" />
-                           <span className="text-sm font-bold uppercase tracking-widest">No patients found</span>
+                           <Search className="w-10 h-10 mb-3 text-slate-300" />
+                           <span className="text-xs font-bold uppercase tracking-widest">No patients found</span>
                          </div>
                        </td>
                      </tr>
@@ -549,17 +548,17 @@ const ReceptionDashboardView = () => {
                            onClick={() => entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
                            className={`${rowBg} hover:bg-slate-50 transition-colors cursor-pointer`}
                          >
-                           <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-800 border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-800 border-r border-slate-50">
                              {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-600 border-r border-slate-50">
                              {formatTime(entry.expectedTime || entry.case?.createdAt)}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-600 border-r border-slate-50">
                              {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
-                             <div className={`text-[13px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-2`}>
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
+                             <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
                                 {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
                                 {entry.mrId ? (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
@@ -567,38 +566,38 @@ const ReceptionDashboardView = () => {
                                   </span>
                                 ) : (
                                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
-                                    {isNew ? 'NEW PT' : 'OLD PT'}
+                                    {isNew ? 'NEW' : 'OLD'}
                                   </span>
                                 )}
                              </div>
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-[11px] font-bold text-slate-600 uppercase border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[10px] font-bold text-slate-600 uppercase border-r border-slate-50">
                              {getVisitType(entry)}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-700 border-r border-slate-50">
                              {entry.mrId ? '--' : entry.patient?.profile?.age || '--'}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-[12px] font-black text-slate-700 border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-700 border-r border-slate-50">
                              {entry.mrId ? '--' : (entry.patient?.gender ? entry.patient.gender.charAt(0).toUpperCase() : 'U')}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-[12px] font-bold text-slate-600 uppercase border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-600 uppercase border-r border-slate-50">
                              {entry.mrId ? (entry.mr?.companyName || '--') : (entry.patient?.address?.city || '--')}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
                              {entry.mrId ? (
-                               <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[10px] font-black uppercase tracking-widest border border-slate-200">N/A</span>
+                               <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">N/A</span>
                              ) : billing === 'FOC' ? (
-                               <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
+                               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
                              ) : billing === 'PAID' ? (
-                               <span className="text-[11px] font-black text-slate-600 uppercase">PAID</span>
+                               <span className="text-[10px] font-black text-slate-600 uppercase">PAID</span>
                              ) : (
-                               <span className="text-[11px] font-black text-rose-600 uppercase">PENDING</span>
+                               <span className="text-[10px] font-black text-rose-600 uppercase">PENDING</span>
                              )}
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap border-r border-slate-50">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
                              <div dangerouslySetInnerHTML={{ __html: getStatusBadgeString(entry.status) }} />
                            </td>
-                           <td className="px-4 py-3 whitespace-nowrap text-center">
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-center">
                              {entry.isAppointment ? (
                                <button 
                                  onClick={(e) => { 
@@ -607,26 +606,26 @@ const ReceptionDashboardView = () => {
                                     setSelectedCheckInAppt(entry.appointmentId);
                                     setIsCheckInModalOpen(true);
                                  }}
-                                 className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
+                                 className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
                                >
-                                 Mark Arrived
+                                 Arrived
                                </button>
                              ) : (
                                <button 
                                  onClick={(e) => { e.stopPropagation(); sendToDoctor(entry.id); }}
                                  disabled={sendingIds.has(entry.id) || isInSession}
-                                 className="px-4 py-2 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all flex items-center gap-2 mx-auto group"
+                                 className="px-3 py-1.5 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-1.5 mx-auto group"
                                >
                                  {sendingIds.has(entry.id) ? (
                                    <>
-                                     <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                     Sending...
+                                     <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                     Sending
                                    </>
                                  ) : isInSession ? (
                                    'In Session'
                                  ) : (
                                    <>
-                                     Send to Doctor <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                                     Send <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-1 transition-transform" />
                                    </>
                                  )}
                                </button>
