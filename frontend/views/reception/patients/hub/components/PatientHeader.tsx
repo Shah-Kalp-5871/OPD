@@ -7,13 +7,15 @@ interface PatientHeaderProps {
   completion: number;
   hasOpenCase: boolean;
   activeCase?: any;
+  onCheckIn?: () => void;
 }
 
 const PatientHeader: React.FC<PatientHeaderProps> = ({ 
   patient, 
   completion, 
   hasOpenCase,
-  activeCase
+  activeCase,
+  onCheckIn
 }) => {
   const regDate = patient.createdAt
     ? new Date(patient.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -79,11 +81,14 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
               <span className="text-[11px] font-bold text-orange-700/80">Case #{activeCase?.caseNumber}</span>
             </div>
           ) : (
-            <div className="bg-slate-50/80 border border-slate-200/60 px-6 py-4 rounded-2xl flex items-center justify-center">
-               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> No Active Consultation
+            <button 
+              onClick={onCheckIn}
+              className="bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/20 border border-orange-600 px-6 py-4 rounded-2xl flex items-center justify-center transition-all"
+            >
+               <span className="text-[12px] font-black uppercase tracking-widest flex items-center gap-2">
+                <Calendar className="w-4 h-4" /> New Consultation
               </span>
-            </div>
+            </button>
           )}
           <button 
             onClick={() => window.print()}

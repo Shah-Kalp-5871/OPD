@@ -19,6 +19,7 @@ import {
   ArrowRight,
   X
 } from 'lucide-react';
+import CheckInModal from '../components/CheckInModal';
 
 const OpdQueueView = () => {
   const router = useRouter();
@@ -37,6 +38,11 @@ const OpdQueueView = () => {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [ageRangeFilter, setAgeRangeFilter] = useState<string>('All');
   
+  // Check-In Modal
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [selectedCheckInPatient, setSelectedCheckInPatient] = useState<any>(null);
+  const [selectedCheckInAppt, setSelectedCheckInAppt] = useState<string | undefined>(undefined);
+
   // Legend Selection
   const [selectedLegends, setSelectedLegends] = useState<string[]>([]);
 
@@ -51,17 +57,7 @@ const OpdQueueView = () => {
     doctorId: selectedDoctor === 'all' ? undefined : selectedDoctor
   });
 
-  const [showCheckInModal, setShowCheckInModal] = useState(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-  const [vitals, setVitals] = useState({ temp: '', pulse: '', bpSys: '', bpDia: '', height: '', weight: '', spo2: '' });
   const [appointmentsQueue, setAppointmentsQueue] = useState<any[]>([]);
-
-  // Check-In Modal Additions
-  const [activeTab, setActiveTab] = useState<'check-in' | 'missed'>('check-in');
-  const [missedAction, setMissedAction] = useState<string>(''); // 'reschedule', 'no-answer', 'not-called'
-  const [newFuDate, setNewFuDate] = useState<string>('');
-  const [missedNote, setMissedNote] = useState<string>('');
-  const [isSubmittingMissed, setIsSubmittingMissed] = useState(false);
 
   const playBellSound = () => {
     try {
@@ -165,68 +161,6 @@ const OpdQueueView = () => {
       toast.error('Failed to refresh data');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const submitCheckIn = async (skipVitals: boolean) => {
-    if (!selectedAppointmentId) return;
-    try {
-      const payload: any = { appointmentId: selectedAppointmentId };
-      if (!skipVitals) {
-        payload.vitals = {};
-        if (vitals.height) payload.vitals.height = Number(vitals.height);
-        if (vitals.weight) payload.vitals.weight = Number(vitals.weight);
-        if (vitals.temp) payload.vitals.temperature = Number(vitals.temp);
-        if (vitals.pulse) payload.vitals.pulse = Number(vitals.pulse);
-        if (vitals.bpSys && vitals.bpDia) payload.vitals.bloodPressure = `${vitals.bpSys}/${vitals.bpDia}`;
-        if (vitals.spo2) payload.vitals.spo2 = Number(vitals.spo2);
-      }
-      
-      await api.post('/appointments/check-in', payload);
-      toast.success('Patient checked in successfully!');
-      setShowCheckInModal(false);
-      setSelectedAppointmentId(null);
-      setVitals({ temp: '', pulse: '', bpSys: '', bpDia: '', height: '', weight: '', spo2: '' });
-      fetchQueue();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to check in patient');
-    }
-  };
-
-  const handleMissedActionSubmit = async () => {
-    if (!selectedAppointmentId) {
-      toast.error('No appointment selected.');
-      return;
-    }
-    if (missedAction === 'reschedule' && !newFuDate) {
-      toast.error('Please select a new follow-up date for rescheduling.');
-      return;
-    }
-    
-    setIsSubmittingMissed(true);
-    try {
-      const entry = queue.find(e => e.appointmentId === selectedAppointmentId);
-      
-      await api.post('/appointments/missed-action', {
-        patientId: entry?.patient?.id,
-        appointmentId: selectedAppointmentId,
-        action: missedAction,
-        newFuDate: newFuDate || undefined,
-        note: missedNote || undefined
-      });
-
-      toast.success('Patient status updated successfully');
-      setMissedAction('');
-      setNewFuDate('');
-      setMissedNote('');
-      setShowCheckInModal(false);
-      setSelectedAppointmentId(null);
-      fetchQueue();
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Failed to update appointment status';
-      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
-    } finally {
-      setIsSubmittingMissed(false);
     }
   };
 
@@ -623,7 +557,12 @@ const OpdQueueView = () => {
                         <td className="px-4 py-3 whitespace-nowrap">
                            {entry.isAppointment ? (
                              <button 
-                               onClick={(e) => { e.stopPropagation(); setSelectedAppointmentId(entry.appointmentId); setShowCheckInModal(true); }}
+                               onClick={(e) => { 
+                                 e.stopPropagation(); 
+                                 setSelectedCheckInPatient(entry.patient);
+                                 setSelectedCheckInAppt(entry.appointmentId);
+                                 setIsCheckInModalOpen(true);
+                               }}
                                className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
                              >
                                Mark Arrived
@@ -697,142 +636,19 @@ const OpdQueueView = () => {
       </div>
     </div>
 
-      {showCheckInModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="text-xl font-black text-slate-800 tracking-tighter">Patient Status</h3>
-              <button onClick={() => setShowCheckInModal(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex border-b border-slate-200">
-              <button 
-                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'check-in' ? 'text-orange-600 border-b-2 border-orange-600 bg-orange-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
-                onClick={() => setActiveTab('check-in')}
-              >
-                Check-In (Vitals)
-              </button>
-              <button 
-                className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'missed' ? 'text-rose-600 border-b-2 border-rose-600 bg-rose-50/50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
-                onClick={() => setActiveTab('missed')}
-              >
-                Missed / No-Show
-              </button>
-            </div>
+    {/* Check In Modal */}
+    <CheckInModal 
+      isOpen={isCheckInModalOpen}
+      onClose={() => {
+        setIsCheckInModalOpen(false);
+        setSelectedCheckInPatient(null);
+        setSelectedCheckInAppt(undefined);
+      }}
+      patient={selectedCheckInPatient}
+      appointmentId={selectedCheckInAppt}
+      onSuccess={() => fetchQueue()}
+    />
 
-            {activeTab === 'check-in' && (
-              <>
-                <div className="p-6 overflow-y-auto space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Temperature (°F)</label>
-                      <input type="number" placeholder="98.6" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Pulse Rate (BPM)</label>
-                      <input type="number" placeholder="72" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">BP Systolic (mmHg)</label>
-                      <input type="number" placeholder="120" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">BP Diastolic (mmHg)</label>
-                      <input type="number" placeholder="80" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Height (cm)</label>
-                      <input type="number" placeholder="170" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Body Weight (Kg)</label>
-                      <input type="number" placeholder="70" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">SPO2 Oxygen (%)</label>
-                      <input type="number" placeholder="98" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl mt-1 focus:ring-2 focus:ring-orange-500 outline-none transition-all" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase">Auto-Calc BMI</label>
-                      <div className="w-full px-4 py-2 text-sm bg-slate-100 border border-slate-200 rounded-xl mt-1 font-black text-slate-700 flex items-center h-[38px]">
-                        {vitals.height && vitals.weight ? (Number(vitals.weight) / Math.pow(Number(vitals.height) / 100, 2)).toFixed(1) : '--'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-4">
-                  <button onClick={() => submitCheckIn(true)} className="px-6 py-3 bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
-                    Skip Vitals
-                  </button>
-                  <button onClick={() => submitCheckIn(false)} className="px-6 py-3 bg-orange-600 text-white shadow-xl shadow-orange-600/20 hover:bg-orange-700 rounded-xl text-sm font-black uppercase tracking-widest flex-1 transition-all">
-                    Save & Check In
-                  </button>
-                </div>
-              </>
-            )}
-
-            {activeTab === 'missed' && (
-              <>
-                <div className="p-6 overflow-y-auto space-y-5">
-                  <div className="grid grid-cols-1 gap-3">
-                     <button 
-                       onClick={() => setMissedAction('reschedule')}
-                       className={`border p-4 rounded-xl text-left text-sm transition-all ${missedAction === 'reschedule' ? 'bg-blue-50 border-blue-300 text-blue-800 font-bold ring-4 ring-blue-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-semibold'}`}
-                     >
-                        <div className="mb-1">Called - Rescheduled</div>
-                        <div className="text-[10px] font-normal opacity-70">Requires new date</div>
-                     </button>
-                     <button 
-                       onClick={() => setMissedAction('no-answer')}
-                       className={`border p-4 rounded-xl text-left text-sm transition-all ${missedAction === 'no-answer' ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold ring-4 ring-amber-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-semibold'}`}
-                     >
-                        <div className="mb-1">Called - No Answer</div>
-                        <div className="text-[10px] font-normal opacity-70">Auto-notes failure</div>
-                     </button>
-                     <button 
-                       onClick={() => setMissedAction('not-called')}
-                       className={`border p-4 rounded-xl text-left text-sm transition-all ${missedAction === 'not-called' ? 'bg-slate-100 border-slate-300 text-slate-800 font-bold ring-4 ring-slate-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-semibold'}`}
-                     >
-                        <div className="mb-1">Not Called / Cancelled</div>
-                        <div className="text-[10px] font-normal opacity-70">Patient cancelled or no action taken</div>
-                     </button>
-                  </div>
-                  
-                  {(missedAction === 'reschedule' || missedAction === 'no-answer' || missedAction === 'not-called') && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-5 p-5 bg-slate-50 rounded-xl border border-slate-100">
-                           {missedAction === 'reschedule' && (
-                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase">New F/U Date</label>
-                                <input type="date" value={newFuDate} onChange={(e) => setNewFuDate(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
-                             </div>
-                           )}
-                           <div className="space-y-1.5">
-                              <label className="text-xs font-bold text-slate-500 uppercase">Internal Note (Optional)</label>
-                              <input type="text" placeholder="Add details..." value={missedNote} onChange={(e) => setMissedNote(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm transition-all" />
-                           </div>
-                        </div>
-                      </div>
-                  )}
-                </div>
-                <div className="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-4">
-                   <button 
-                     onClick={handleMissedActionSubmit}
-                     disabled={isSubmittingMissed || !missedAction}
-                     className="bg-slate-900 text-white font-black uppercase tracking-widest py-3 px-8 text-sm rounded-xl hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
-                   >
-                     {isSubmittingMissed ? 'Saving...' : 'Save Update'}
-                   </button>
-                </div>
-              </>
-            )}
-
-          </div>
-        </div>
-      )}
     </ReceptionLayout>
   );
 };

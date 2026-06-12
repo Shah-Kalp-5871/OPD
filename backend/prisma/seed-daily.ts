@@ -36,9 +36,7 @@ async function main() {
   tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
 
   console.log('🧹 Cleaning up today\'s existing appointments and queue entries...');
-  await prisma.queueEntry.deleteMany({
-    where: { checkInTime: { gte: todayStart } }
-  });
+  await prisma.queueEntry.deleteMany({});
   await prisma.appointment.deleteMany({
     where: { appointmentDate: { gte: todayStart } }
   });

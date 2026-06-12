@@ -13,6 +13,7 @@ import TimelineTab from './components/tabs/TimelineTab';
 import ComplaintsTab from './components/tabs/ComplaintsTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
 import ConsentTab from './components/tabs/ConsentTab';
+import CheckInModal from '../../components/CheckInModal';
 
 const PatientHubView = () => {
   const params = useParams();
@@ -25,6 +26,7 @@ const PatientHubView = () => {
   const [doctors, setDoctors] = useState<any[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPatientData();
@@ -132,6 +134,7 @@ const PatientHubView = () => {
             completion={completion} 
             hasOpenCase={hasOpenCase} 
             activeCase={activeCase}
+            onCheckIn={() => setIsCheckInModalOpen(true)}
           />
 
           <div className="sticky top-16 z-40">
@@ -196,10 +199,15 @@ const PatientHubView = () => {
             </div>
           </div>
         </div>
+        
+        {/* Check In Modal */}
+        <CheckInModal 
+          isOpen={isCheckInModalOpen}
+          onClose={() => setIsCheckInModalOpen(false)}
+          patient={patient}
+          onSuccess={() => fetchPatientData()}
+        />
       </div>
-
-
-
     </ReceptionLayout>
   );
 };
