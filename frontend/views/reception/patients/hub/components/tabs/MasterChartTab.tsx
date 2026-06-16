@@ -1,14 +1,12 @@
 import React from 'react';
 import { Patient, Vital } from '../../types';
 import VitalsCard from '../VitalsCard';
-import ProfileSection from '../ProfileSection';
 
 interface MasterChartTabProps {
   patient: Patient;
   latestVitals?: Vital;
   hasOpenCase: boolean;
   onSaveVitals: (vitals: any) => Promise<void>;
-  onSaveProfile: (profile: any) => Promise<void>;
   onViewCases: () => void;
 }
 
@@ -17,7 +15,6 @@ const MasterChartTab: React.FC<MasterChartTabProps> = ({
   latestVitals,
   hasOpenCase,
   onSaveVitals,
-  onSaveProfile,
   onViewCases
 }) => {
   const activeCase = patient.cases?.find((c: any) => c.status === 'OPEN');
@@ -33,8 +30,6 @@ const MasterChartTab: React.FC<MasterChartTabProps> = ({
           />
         </div>
       </div>
-
-      <ProfileSection patient={patient} onSaveProfile={onSaveProfile} />
     </div>
   );
 };

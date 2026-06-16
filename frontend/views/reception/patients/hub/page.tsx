@@ -14,6 +14,7 @@ import ComplaintsTab from './components/tabs/ComplaintsTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
 import ConsentTab from './components/tabs/ConsentTab';
 import CheckInModal from '../../components/CheckInModal';
+import ProfileSection from './components/ProfileSection';
 
 const PatientHubView = () => {
   const params = useParams();
@@ -127,7 +128,7 @@ const PatientHubView = () => {
     <ReceptionLayout>
       {/* Clinical Workspace Container */}
       <div className="min-h-screen bg-slate-50">
-        <div className="max-w-7xl mx-auto min-h-screen pb-24 px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="w-full mx-auto min-h-screen pb-24 px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           
           <PatientHeader 
             patient={patient} 
@@ -143,13 +144,13 @@ const PatientHubView = () => {
 
           <div className="space-y-16">
             <div className="space-y-16">
-               <div id="master_chart" className="scroll-mt-48">
+               <div id="master_chart" className="scroll-mt-48 space-y-8">
+                 <ProfileSection patient={patient} onSaveProfile={handleProfileSubmit} />
                  <MasterChartTab 
                    patient={patient}
                    latestVitals={latestVitals}
                    hasOpenCase={hasOpenCase}
                    onSaveVitals={handleVitalsSubmit}
-                   onSaveProfile={handleProfileSubmit}
                    onViewCases={() => {
                      const el = document.getElementById('cases');
                      if (el) {

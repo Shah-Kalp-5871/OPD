@@ -66,42 +66,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ patient, onSaveProfile 
       </div>
 
       <div className="p-8">
-        <div className="mb-8">
-          <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-            Registration Data
-          </h4>
-          <div className="p-6 bg-slate-50/80 border border-slate-100 rounded-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">First Name</label>
-              <input type="text" value={patient.firstName} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Last Name</label>
-              <input type="text" value={patient.lastName} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Date of Birth</label>
-              <input type="date" value={patient.profile?.dob?.split('T')[0] || ''} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Age</label>
-              <input type="number" value={patient.profile?.age || ''} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Contact Number</label>
-              <input type="text" value={patient.mobile} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gender</label>
-              <input type="text" value={patient.gender === 'M' ? 'Male' : patient.gender === 'F' ? 'Female' : 'Other'} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Language</label>
-              <input type="text" value={patient.language || 'English'} disabled className="w-full px-4 py-2.5 text-sm font-medium bg-slate-100/50 border border-slate-200/50 rounded-xl cursor-not-allowed text-slate-600" />
-            </div>
-          </div>
-        </div>
+
 
         <div>
           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
