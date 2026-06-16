@@ -537,16 +537,23 @@ const ReceptionDashboardView = () => {
                      </tr>
                    ) : (
                      currentQueueData.map((entry, idx) => {
-                       const isNew = isNewPatient(entry);
                        const isInSession = entry.status === 'IN_SESSION';
-                       const rowBg = isInSession ? 'bg-orange-50/50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30');
+                       let rowBg = '';
+                       switch (entry.status) {
+                         case 'WAITING': rowBg = 'bg-amber-50/40 hover:bg-amber-100/50'; break;
+                         case 'IN_SESSION': rowBg = 'bg-orange-50/60 hover:bg-orange-100/60'; break;
+                         case 'COMPLETED': rowBg = 'bg-emerald-50/40 hover:bg-emerald-100/50'; break;
+                         case 'CANCELLED': rowBg = 'bg-rose-50/40 hover:bg-rose-100/50'; break;
+                         case 'SCHEDULED_APPOINTMENT': rowBg = 'bg-indigo-50/40 hover:bg-indigo-100/50'; break;
+                         default: rowBg = idx % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/30 hover:bg-slate-50';
+                       }
                        const billing = getBillingStatus(entry);
 
                        return (
                          <tr 
                            key={entry.id || idx} 
                            onClick={() => entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
-                           className={`${rowBg} hover:bg-slate-50 transition-colors cursor-pointer`}
+                           className={`${rowBg} transition-colors cursor-pointer`}
                          >
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-800 border-r border-slate-50">
                              {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
@@ -560,13 +567,9 @@ const ReceptionDashboardView = () => {
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
                              <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
                                 {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
-                                {entry.mrId ? (
+                                {entry.mrId && (
                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
                                     MR
-                                  </span>
-                                ) : (
-                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border ${isNew ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200'}`}>
-                                    {isNew ? 'NEW' : 'OLD'}
                                   </span>
                                 )}
                              </div>

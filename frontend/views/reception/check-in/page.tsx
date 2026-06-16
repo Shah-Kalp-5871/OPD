@@ -19,20 +19,7 @@ const CheckInView = () => {
   const [priority, setPriority] = useState('NORMAL');
   const [complaint, setComplaint] = useState('');
   
-  // Tab State
-  const [activeTab, setActiveTab] = useState<'PATIENT' | 'MR'>('PATIENT');
-
-  // MR State
-  const [mrFirstName, setMrFirstName] = useState('');
-  const [mrLastName, setMrLastName] = useState('');
-  const [mrMobile, setMrMobile] = useState('');
-  const [mrCompanyName, setMrCompanyName] = useState('');
-  const [mrDoctorId, setMrDoctorId] = useState('');
-  const [mrSelectedSlot, setMrSelectedSlot] = useState<string>('');
-  const [isMrSlotsLoading, setIsMrSlotsLoading] = useState(false);
-  const [mrAvailableSlots, setMrAvailableSlots] = useState<any[]>([]);
-  const [isMrSubmitting, setIsMrSubmitting] = useState(false);
-  const [mrError, setMrError] = useState<string | null>(null);
+  // New State for Missed/No-Show Management
   const [vitals, setVitals] = useState({
     height: '',
     weight: '',
@@ -170,32 +157,6 @@ const CheckInView = () => {
       fetchSlots();
     }
   }, [selectedDoctorId, selectedAppointment]);
-
-  useEffect(() => {
-    if (mrDoctorId) {
-      fetchMrSlots(mrDoctorId);
-    } else {
-      setMrAvailableSlots([]);
-      setMrSelectedSlot('');
-    }
-  }, [mrDoctorId]);
-
-  const fetchMrSlots = async (docId: string) => {
-    setIsMrSlotsLoading(true);
-    try {
-      const today = new Date();
-      const dateString = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-      const res = await api.get(`/appointments/slots`, {
-        params: { doctorId: docId, date: dateString }
-      });
-      setMrAvailableSlots(res.data);
-      setMrSelectedSlot('');
-    } catch (error) {
-      console.error('Failed to load slots', error);
-    } finally {
-      setIsMrSlotsLoading(false);
-    }
-  };
 
   const fetchSlots = async () => {
     setIsSlotsLoading(true);
@@ -380,30 +341,11 @@ const CheckInView = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-800">Walk-In Management</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Manage arriving patients and medical representatives</p>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-max shrink-0">
-            <button
-              onClick={() => setActiveTab('PATIENT')}
-              className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${activeTab === 'PATIENT' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-            >
-              Patient Check-In
-            </button>
-            <button
-              onClick={() => setActiveTab('MR')}
-              className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${activeTab === 'MR' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
-            >
-              <Briefcase className="w-4 h-4" />
-              MR Check-In
-            </button>
+            <p className="text-xs text-slate-500 mt-0.5">Manage arriving patients</p>
           </div>
         </div>
 
-        {activeTab === 'PATIENT' ? (
-          <>
-            {/* Search Bar */}
+
         <div className="flex gap-3 mb-5">
            <input 
              type="text" 
@@ -822,213 +764,11 @@ const CheckInView = () => {
                  )}
               </div>
             </div>
-            )}
-
-          </div>
-        )}
-        </>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 w-full">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-orange-500" />
-                Medical Representative Form
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">Add an MR to the doctor's queue</p>
-            </div>
-
-            {mrError && (
-              <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-semibold border border-red-100">
-                {mrError}
-              </div>
-            )}
-
-            <div className="space-y-6">
-              {/* Row 1: MR Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">First Name *</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input 
-                      type="text" 
-                      value={mrFirstName}
-                      onChange={e => setMrFirstName(e.target.value)}
-                      placeholder="John"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Last Name *</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input 
-                      type="text" 
-                      value={mrLastName}
-                      onChange={e => setMrLastName(e.target.value)}
-                      placeholder="Doe"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Mobile Number *</label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input 
-                      type="text" 
-                      value={mrMobile}
-                      onChange={e => setMrMobile(e.target.value.replace(/\D/g, ''))}
-                      placeholder="9876543210"
-                      maxLength={10}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Company Name</label>
-                  <div className="relative">
-                    <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input 
-                      type="text" 
-                      value={mrCompanyName}
-                      onChange={e => setMrCompanyName(e.target.value)}
-                      placeholder="Pharma Inc."
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Doctor and Slot Selection side-by-side on large screens */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4 border-t border-slate-100">
-                {/* Doctor Selection */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Select Doctor *</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {doctors.map(doc => {
-                      const profileId = doc.doctorProfile?.id || doc.id;
-                      const name = doc.name || doc.user?.name || '';
-                      const spec = doc.doctorProfile?.specialization || doc.specialization || 'General';
-                      const isActive = mrDoctorId === profileId;
-                      return (
-                        <button
-                          key={doc.id}
-                          onClick={() => setMrDoctorId(profileId)}
-                          className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
-                            isActive ? 'bg-orange-50 border-orange-300 ring-1 ring-orange-500/20' : 'bg-white border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isActive ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                            {name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className={`text-sm font-bold ${isActive ? 'text-orange-700' : 'text-slate-700'}`}>Dr. {name}</div>
-                            <div className="text-xs text-slate-500">{spec}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Slot Selection */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center justify-between">
-                    <span>Available Time Slots *</span>
-                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">{mrAvailableSlots.length} slots</span>
-                  </label>
-                  
-                  {isMrSlotsLoading ? (
-                    <div className="text-xs text-slate-400 py-4 flex items-center gap-2">
-                       <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin"></div>
-                       Loading slots...
-                    </div>
-                  ) : mrAvailableSlots.length === 0 ? (
-                    <div className="text-xs text-slate-400 py-4 italic border border-dashed border-slate-200 rounded-lg text-center bg-slate-50">
-                      No slots available for this doctor today.
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {mrAvailableSlots.map((slot, i) => {
-                        const isBooked = slot.status === 'booked';
-                        const isSel = mrSelectedSlot === slot.time;
-                        return (
-                          <button
-                            key={i}
-                            disabled={isBooked}
-                            onClick={() => setMrSelectedSlot(slot.time)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' :
-                              isSel ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20 scale-105' :
-                              'bg-white text-slate-600 border border-slate-200 hover:border-orange-400 hover:text-orange-600'
-                            }`}
-                          >
-                            {slot.time}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4 mt-4 border-t border-slate-100">
-                <button
-                  onClick={async () => {
-                    if (!mrFirstName || !mrLastName || !mrMobile || !mrDoctorId || !mrSelectedSlot) {
-                      setMrError('Please fill in all required fields and select a slot');
-                      return;
-                    }
-                    if (mrMobile.length !== 10) {
-                      setMrError('Mobile number must be exactly 10 digits');
-                      return;
-                    }
-                    setIsMrSubmitting(true);
-                    setMrError(null);
-                    try {
-                      await api.post('/medical-representatives/checkin', {
-                        firstName: mrFirstName,
-                        lastName: mrLastName,
-                        mobile: mrMobile,
-                        companyName: mrCompanyName,
-                        doctorId: mrDoctorId,
-                        appointmentTime: mrSelectedSlot
-                      });
-                      toast.success('MR checked in successfully!');
-                      setMrFirstName('');
-                      setMrLastName('');
-                      setMrMobile('');
-                      setMrCompanyName('');
-                      setMrDoctorId('');
-                      setMrSelectedSlot('');
-                      setActiveTab('PATIENT');
-                    } catch (err: any) {
-                      setMrError(err.response?.data?.message || err.message || 'Failed to check in MR');
-                    } finally {
-                      setIsMrSubmitting(false);
-                    }
-                  }}
-                  disabled={isMrSubmitting}
-                  className="w-full md:w-auto py-3 px-8 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isMrSubmitting ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5" />
-                      Add MR to Queue
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-    </ReceptionLayout>
+          )}
+        </div>
+      )}
+    </div>
+  </ReceptionLayout>
   );
 };
 
