@@ -5,12 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { Lock } from 'lucide-react';
 
 import PatientHeader from './components/PatientHeader';
 import TopNavBar from './components/TopNavBar';
-import MasterChartTab from './components/tabs/MasterChartTab';
+import ClinicalDataTab from './components/tabs/ClinicalDataTab';
 import TimelineTab from './components/tabs/TimelineTab';
-import ComplaintsTab from './components/tabs/ComplaintsTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
 import ConsentTab from './components/tabs/ConsentTab';
 import CheckInModal from '../../components/CheckInModal';
@@ -23,7 +23,7 @@ const PatientHubView = () => {
   
   const [patient, setPatient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<'master_chart' | 'complaints' | 'cases' | 'documents' | 'consent' | 'billing'>('master_chart');
+  const [activeSection, setActiveSection] = useState<'clinical_data' | 'cases' | 'documents' | 'consent' | 'billing'>('clinical_data');
   const [doctors, setDoctors] = useState<any[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,7 +43,7 @@ const PatientHubView = () => {
       });
     }, { rootMargin: '-20% 0px -80% 0px' });
 
-    const sections = ['master_chart', 'complaints', 'cases', 'documents', 'consent'].map(id => document.getElementById(id));
+    const sections = ['clinical_data', 'cases', 'documents', 'consent'].map(id => document.getElementById(id));
     sections.forEach(s => s && observer.observe(s));
     
     return () => observer.disconnect();
@@ -71,10 +71,24 @@ const PatientHubView = () => {
     }
   };
 
+  const handleClinicalDataSubmit = async (payload: any) => {
+    setIsSubmitting(true);
+    try {
+      await api.post(`/patients/${patientId}/cases/${payload.caseId}/clinical-data`, payload);
+      toast.success('Clinical data saved successfully');
+      fetchPatientData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to save clinical data');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleVitalsSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
       await api.post(`/patients/${patientId}/vitals`, {
+        caseId: data.caseId,
         temperature: parseFloat(data.temp),
         pulse: parseInt(data.pulse),
         bloodPressure: `${data.bpSys}/${data.bpDia}`,
@@ -93,6 +107,19 @@ const PatientHubView = () => {
 
 
 
+  const handleComplaintSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    try {
+      await api.post(`/patients/${patientId}/complaints`, data);
+      toast.success('Complaint recorded successfully');
+      fetchPatientData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to record complaint');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleProfileSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
@@ -108,7 +135,7 @@ const PatientHubView = () => {
 
 
 
-  if (isLoading || !patient) {
+  if (isLoading) {
     return (
       <ReceptionLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -119,7 +146,42 @@ const PatientHubView = () => {
     );
   }
 
-  const latestVitals = patient.vitals?.[0];
+  if (!patient) {
+    return (
+      <ReceptionLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <p className="text-slate-500 font-medium">Patient not found</p>
+        </div>
+      </ReceptionLayout>
+    );
+  }
+
+  const isInSession = patient?.cases?.some((c: any) => 
+    c.queueEntry && (Array.isArray(c.queueEntry) ? c.queueEntry.some((q: any) => q.status === 'IN_SESSION') : c.queueEntry.status === 'IN_SESSION')
+  );
+
+  if (isInSession) {
+    return (
+      <ReceptionLayout>
+        <div className="flex flex-col items-center justify-center h-[60vh] gap-4 animate-in fade-in zoom-in duration-500">
+           <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center animate-pulse">
+              <Lock className="w-10 h-10 text-orange-600" />
+           </div>
+           <h2 className="text-2xl font-black text-slate-800">File Locked</h2>
+           <p className="text-slate-500 font-medium max-w-md text-center">
+             This patient is currently in session with a doctor. The file is temporarily locked to prevent any data conflicts.
+           </p>
+           <button 
+             onClick={() => router.push('/reception/dashboard')} 
+             className="px-6 py-2.5 mt-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition-colors shadow-sm"
+           >
+             Back to Dashboard
+           </button>
+        </div>
+      </ReceptionLayout>
+    );
+  }
+
   const completion = patient.profileCompletionStatus || 20;
   const activeCase = patient.cases?.find((c: any) => c.status === 'OPEN');
   const hasOpenCase = !!activeCase;
@@ -144,28 +206,16 @@ const PatientHubView = () => {
 
           <div className="space-y-16">
             <div className="space-y-16">
-               <div id="master_chart" className="scroll-mt-48 space-y-8">
-                 <ProfileSection patient={patient} onSaveProfile={handleProfileSubmit} />
-                 <MasterChartTab 
-                   patient={patient}
-                   latestVitals={latestVitals}
-                   hasOpenCase={hasOpenCase}
-                   onSaveVitals={handleVitalsSubmit}
-                   onViewCases={() => {
-                     const el = document.getElementById('cases');
-                     if (el) {
-                       const yOffset = -100;
-                       const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                       window.scrollTo({ top: y, behavior: 'smooth' });
-                     }
-                   }}
-                 />
-               </div>
+                 <div id="profile" className="scroll-mt-48">
+                   <ProfileSection patient={patient} onSaveProfile={handleProfileSubmit} />
+                 </div>
 
-               <div id="complaints" className="scroll-mt-48 pt-12 border-t border-slate-200">
-                 <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Complaints & History</h2>
-                 <ComplaintsTab patient={patient} />
-               </div>
+                 <div id="clinical_data" className="scroll-mt-48 space-y-8">
+                   <ClinicalDataTab 
+                     patient={patient}
+                     onSaveClinicalData={handleClinicalDataSubmit}
+                   />
+                 </div>
 
                <div id="cases" className="scroll-mt-48 pt-12 border-t border-slate-200">
                  <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight">Clinical History</h2>

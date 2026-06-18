@@ -103,6 +103,7 @@ export class AppointmentsController {
       req.user.id,
       dto.remarks,
       branchId,
+      dto.newDoctorId,
     );
   }
 

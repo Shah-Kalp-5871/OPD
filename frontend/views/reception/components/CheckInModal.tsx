@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Stethoscope, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import ComplaintsForm, { VisitComplaintData } from '../check-in/components/ComplaintsForm';
 
 interface CheckInModalProps {
   isOpen: boolean;
@@ -30,16 +29,6 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   const [complaint, setComplaint] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [vitals, setVitals] = useState({
-    height: '', weight: '', bmi: '0.0', temp: '', pulse: '', bpSys: '', bpDia: '', spo2: ''
-  });
-
-  const [visitComplaint, setVisitComplaint] = useState<VisitComplaintData>({
-    presentComplaint: '', durationDays: '', durationMonths: '', durationYears: '',
-    severity: 'MODERATE', onset: '', aggravatingFactors: '', relievingFactors: '',
-    pastMedical: '', personalHistory: '', pastSurgical: '', currentMedications: '',
-    obstetricHistory: '', allergies: '', nursingNotes: '', patientFeedback: ''
-  });
 
   useEffect(() => {
     if (isOpen && patient) {
@@ -48,15 +37,6 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     }
   }, [isOpen, patient, appointmentId]);
 
-  useEffect(() => {
-    if (vitals.height && vitals.weight) {
-      const h = parseFloat(vitals.height) / 100;
-      const w = parseFloat(vitals.weight);
-      if (h > 0) {
-        setVitals(prev => ({ ...prev, bmi: (w / (h * h)).toFixed(1) }));
-      }
-    }
-  }, [vitals.height, vitals.weight]);
 
   useEffect(() => {
     if (selectedDoctorId && !selectedAppointment) {
@@ -117,7 +97,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
     }
   };
 
-  const handleCheckIn = async (skipVitals: boolean = false) => {
+  const handleCheckIn = async () => {
     if (isSubmitting) return;
     if (!selectedDoctorId && doctors.length > 0) {
       toast.error('Please select a doctor.');
@@ -126,35 +106,11 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const bpString = vitals.bpSys && vitals.bpDia
-        ? `${vitals.bpSys}/${vitals.bpDia}`
-        : vitals.bpSys ? vitals.bpSys : null;
-
-      const vData = (vitals.height || vitals.weight || vitals.temp || vitals.pulse || vitals.bpSys || vitals.spo2) && !skipVitals
-        ? {
-            height: parseFloat(vitals.height) || null,
-            weight: parseFloat(vitals.weight) || null,
-            bmi: parseFloat(vitals.bmi) || null,
-            temperature: parseFloat(vitals.temp) || null,
-            pulse: parseInt(vitals.pulse) || null,
-            bloodPressure: bpString,
-            spo2: parseInt(vitals.spo2) || null
-          } : undefined;
-
-      const vcData = visitComplaint.presentComplaint || visitComplaint.pastMedical || visitComplaint.allergies ? {
-          ...visitComplaint,
-          durationDays: parseInt(visitComplaint.durationDays) || null,
-          durationMonths: parseInt(visitComplaint.durationMonths) || null,
-          durationYears: parseInt(visitComplaint.durationYears) || null,
-      } : undefined;
-
       const checkInData = {
         appointmentId: selectedAppointment?.id,
         visitType: selectedAppointment?.purpose || visitType,
         priority,
         complaint,
-        vitals: vData,
-        visitComplaint: vcData
       };
 
       let res;
@@ -178,9 +134,6 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
             remarks: complaint
           });
 
-          if (checkInData.vitals) {
-             await api.post(`/patients/${patient.id}/vitals`, checkInData.vitals);
-          }
           res = await api.post('/appointments/check-in', {
             ...checkInData,
             appointmentId: apptRes.data.id
@@ -206,7 +159,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/80">
           <div>
             <h2 className="text-lg font-bold text-slate-800">Check-In Patient</h2>
-            <p className="text-xs text-slate-500">Record complaints & history, vitals, and mark as arrived.</p>
+            <p className="text-xs text-slate-500">Add the patient to the queue.</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
             <X className="w-5 h-5" />
@@ -258,60 +211,15 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               </div>
             </div>
           )}
-
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Complaints & History</h3>
-            <ComplaintsForm data={visitComplaint} onChange={setVisitComplaint} />
+          {/* Action Buttons */}
+          <div className="pt-6 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white p-6 -mx-6 -mb-6 mt-6 shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.1)]">
+            <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+              Cancel
+            </button>
+            <button onClick={() => handleCheckIn()} disabled={isSubmitting} className="px-6 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center gap-2">
+              {isSubmitting ? 'Processing...' : 'Complete Check-In'}
+            </button>
           </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Vitals (Optional)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">Height (cm)</label>
-                  <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all" />
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">Weight (kg)</label>
-                  <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all" />
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">BMI</label>
-                  <div className="w-full border border-slate-200 bg-slate-100 rounded-lg p-2 text-sm text-slate-500 font-medium h-[38px] flex items-center">
-                    {vitals.bmi}
-                  </div>
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">Temp (°F)</label>
-                  <input type="number" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all" />
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">Pulse (BPM)</label>
-                  <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all" />
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">BP Systolic</label>
-                  <input type="number" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all" />
-               </div>
-               <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-slate-600">BP Diastolic</label>
-                  <input type="number" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all" />
-               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-            Cancel
-          </button>
-          <button 
-            onClick={() => handleCheckIn(false)}
-            disabled={isSubmitting}
-            className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-70 transition-colors shadow-sm"
-          >
-            {isSubmitting ? 'Saving...' : 'Save & Check In'}
-          </button>
         </div>
       </div>
     </div>

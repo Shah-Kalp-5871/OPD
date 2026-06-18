@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsString, Matches, IsOptional } from 'class-validator';
 
 export class RescheduleAppointmentDto {
   @IsNotEmpty()
@@ -11,8 +11,11 @@ export class RescheduleAppointmentDto {
     message: 'newTime must be in HH:mm format',
   })
   newTime: string;
-
   @IsString()
   @IsNotEmpty()
   remarks: string;
+
+  @IsString()
+  @IsOptional()
+  newDoctorId?: string;
 }

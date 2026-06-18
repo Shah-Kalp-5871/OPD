@@ -15,7 +15,35 @@ export const useConsultation = (caseId: string) => {
     try {
       setLoading(true);
       const res = await api.get(`/consultation/${caseId}`);
-      setData(res.data);
+      const fetchedData = res.data;
+      
+      // Merge Reception Complaint into Doctor's Complaint if Doctor hasn't written anything
+      if (fetchedData?.case?.visitComplaint && !fetchedData.complaint?.chiefComplaint) {
+        fetchedData.complaint = {
+          ...fetchedData.complaint,
+          chiefComplaint: fetchedData.case.visitComplaint.presentComplaint || '',
+          duration: fetchedData.case.visitComplaint.durationDays || fetchedData.case.visitComplaint.durationMonths || fetchedData.case.visitComplaint.durationYears || '',
+          durationType: fetchedData.case.visitComplaint.durationDays ? 'DAYS' : fetchedData.case.visitComplaint.durationMonths ? 'MONTHS' : fetchedData.case.visitComplaint.durationYears ? 'YEARS' : 'DAYS',
+          severity: fetchedData.case.visitComplaint.severity || 'MODERATE',
+          onset: fetchedData.case.visitComplaint.onset?.toUpperCase() || 'GRADUAL',
+          aggravatingFactors: fetchedData.case.visitComplaint.aggravatingFactors || '',
+          relievingFactors: fetchedData.case.visitComplaint.relievingFactors || '',
+        };
+      }
+      
+      // Also merge history
+      if (fetchedData?.case?.visitComplaint && !fetchedData.history?.pastHistory && !fetchedData.history?.allergies) {
+         fetchedData.history = {
+           ...fetchedData.history,
+           pastHistory: fetchedData.case.visitComplaint.pastMedical || '',
+           personalHistory: fetchedData.case.visitComplaint.personalHistory || '',
+           surgicalHistory: fetchedData.case.visitComplaint.pastSurgical || '',
+           obstetricHistory: fetchedData.case.visitComplaint.obstetricHistory || '',
+           allergies: fetchedData.case.visitComplaint.allergies || '',
+         };
+      }
+
+      setData(fetchedData);
     } catch (error) {
       console.error('Failed to fetch consultation', error);
       toast.error('Failed to load clinical workspace');

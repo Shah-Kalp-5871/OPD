@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../common/events.service';
@@ -10,6 +11,7 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { UpdatePatientProfileDto } from './dto/update-patient-profile.dto';
 import { AddVitalsDto } from './dto/add-vitals.dto';
 import { CreateCaseDto } from './dto/create-case.dto';
+import { AddComplaintDto } from './dto/add-complaint.dto';
 import { PatientQueryDto } from './dto/patient-query.dto';
 import { AddPatientDocumentDto } from './dto/add-document.dto';
 
@@ -229,6 +231,19 @@ export class PatientsService {
             visitComplaint: true,
           },
         },
+        appointments: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            doctor: {
+              include: {
+                user: { select: { name: true } }
+              }
+            },
+            statusHistory: {
+              orderBy: { createdAt: 'desc' }
+            }
+          }
+        }
       },
     });
 
@@ -393,6 +408,142 @@ export class PatientsService {
       }
 
       return vitals;
+    });
+  }
+
+  async addComplaint(
+    id: string,
+    complaintDto: AddComplaintDto,
+    userId: string,
+    branchId: string,
+  ) {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    const { caseId, severity, ...complaintData } = complaintDto;
+    if (!caseId) throw new BadRequestException('caseId is required for complaint');
+    
+    // ensure case belongs to patient
+    const patientCase = await this.prisma.patientCase.findUnique({
+      where: { id: caseId },
+    });
+    if (!patientCase || patientCase.patientId !== id) {
+      throw new NotFoundException('Case not found for this patient');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Upsert VisitComplaint
+      const complaint = await tx.visitComplaint.upsert({
+        where: { caseId: caseId },
+        update: {
+          ...complaintData,
+          severity: severity as any,
+        },
+        create: {
+          caseId: caseId as string,
+          ...complaintData,
+          severity: severity as any,
+        },
+      });
+
+      // Also update queue entry if exists
+      const queueEntry = await tx.queueEntry.findUnique({
+        where: { caseId: caseId },
+        include: { patient: true },
+      });
+
+      if (queueEntry) {
+        // Notify via SSE
+        this.events.emitClinicalUpdate({
+          type: 'COMPLAINT_SAVED',
+          patientId: id,
+          caseId: caseId,
+          patientName: queueEntry.patient ? `${queueEntry.patient.firstName} ${queueEntry.patient.lastName}` : 'Unknown Patient',
+        });
+      }
+
+      return complaint;
+    });
+  }
+
+  async addClinicalData(
+    id: string,
+    caseId: string,
+    clinicalDto: any,
+    userId: string,
+    branchId: string,
+  ) {
+    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    if (!patient) throw new NotFoundException('Patient not found');
+
+    const patientCase = await this.prisma.patientCase.findUnique({
+      where: { id: caseId },
+    });
+    if (!patientCase || patientCase.patientId !== id) {
+      throw new NotFoundException('Case not found for this patient');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      let vitalsRecord: any = null;
+      let complaintRecord: any = null;
+
+      // Upsert Vitals if provided
+      if (clinicalDto.vitals) {
+        let calculatedBmi: number | undefined = undefined;
+        if (clinicalDto.vitals.height && clinicalDto.vitals.weight) {
+          const heightInMeters = clinicalDto.vitals.height / 100;
+          calculatedBmi = parseFloat(
+            (clinicalDto.vitals.weight / (heightInMeters * heightInMeters)).toFixed(2),
+          );
+        }
+
+        const { id: vId, caseId: vCaseId, patientId: vPatientId, createdAt: vCreatedAt, updatedAt: vUpdatedAt, bmi, ...vitalsData } = clinicalDto.vitals;
+
+        vitalsRecord = await tx.patientVitals.create({
+          data: {
+            ...vitalsData,
+            bmi: calculatedBmi || clinicalDto.vitals.bmi,
+            patientId: id,
+            caseId: caseId,
+            takenById: userId,
+            branchId,
+          },
+        });
+      }
+
+      // Upsert Complaint if provided
+      if (clinicalDto.complaint) {
+        const { severity, caseId: dtoCaseId, id: dtoId, createdAt, updatedAt, ...complaintData } = clinicalDto.complaint;
+        complaintRecord = await tx.visitComplaint.upsert({
+          where: { caseId: caseId },
+          update: {
+            ...complaintData,
+            severity: severity as any,
+          },
+          create: {
+            ...complaintData,
+            severity: severity as any,
+            caseId: caseId,
+          },
+        });
+      }
+
+      // Notify via SSE
+      const queueEntry = await tx.queueEntry.findUnique({
+        where: { caseId: caseId },
+        include: { patient: true },
+      });
+
+      if (queueEntry) {
+        this.events.emitClinicalUpdate({
+          type: 'CLINICAL_DATA_SAVED',
+          patientId: id,
+          caseId: caseId,
+          patientName: queueEntry.patient ? `${queueEntry.patient.firstName} ${queueEntry.patient.lastName}` : 'Unknown Patient',
+        });
+      }
+
+      return { vitals: vitalsRecord, complaint: complaintRecord };
     });
   }
 

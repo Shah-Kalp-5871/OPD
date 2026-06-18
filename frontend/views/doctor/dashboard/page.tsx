@@ -79,6 +79,19 @@ const DoctorDashboardView = () => {
     }
   };
 
+  const handleCallPatient = async (queueId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsSubmitting(true);
+    try {
+      await api.patch(`/queue/${queueId}/status`, { status: 'CALLING' });
+      toast.success('Patient called. Waiting for arrival...');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to call patient');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const activeSessionEntry = queue.find(q => q.status === 'IN_SESSION');
   const nextPatientEntry = queue.find(q => q.status === 'WAITING' || q.status === 'CALLING');
 
@@ -224,8 +237,14 @@ const DoctorDashboardView = () => {
                           ) : queue.map((entry) => (
                              <tr 
                                key={entry.id} 
-                               onClick={() => entry.status === 'IN_SESSION' ? router.push(`/doctor/consultation/${entry.caseId}`) : handleStartConsultation(entry.caseId, entry.patientId)}
-                               className={`group cursor-pointer transition-all duration-200 border-l-4 ${entry.status === 'IN_SESSION' ? 'bg-emerald-50/40 border-emerald-500 hover:bg-emerald-50' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
+                               onClick={() => {
+                                 if (entry.status === 'IN_SESSION') {
+                                   router.push(`/doctor/consultation/${entry.caseId}`);
+                                 } else if (entry.status === 'CALLING') {
+                                   handleStartConsultation(entry.caseId, entry.patientId);
+                                 }
+                               }}
+                               className={`group transition-all duration-200 border-l-4 ${entry.status === 'IN_SESSION' ? 'cursor-pointer bg-emerald-50/40 border-emerald-500 hover:bg-emerald-50' : entry.status === 'CALLING' ? 'cursor-pointer bg-blue-50/40 border-blue-500 hover:bg-blue-50' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
                              >
                                 <td className="px-10 py-6">
                                    <div className={`w-fit text-[12px] font-black tracking-widest px-3 py-1.5 rounded-xl border-2 transition-all group-hover:scale-105 ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700 shadow-[4px_4px_0px_rgba(16,185,129,0.2)]' : 'bg-white text-slate-900 border-slate-900 shadow-[4px_4px_0px_rgba(0,0,0,0.05)]'}`}>
@@ -275,12 +294,26 @@ const DoctorDashboardView = () => {
                                           <Activity className="w-3 h-3 animate-pulse" /> ACTIVE
                                        </span>
                                      </div>
+                                   ) : entry.status === 'CALLING' ? (
+                                     <div className="flex items-center justify-end gap-2.5">
+                                       <span className="px-4 py-1.5 bg-blue-500 text-white rounded-full text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-blue-500/20 animate-pulse">
+                                          CALLING...
+                                       </span>
+                                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Start</span>
+                                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                             <ChevronRight className="w-4 h-4 text-white" />
+                                          </div>
+                                       </div>
+                                     </div>
                                    ) : (
                                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Consult</span>
-                                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                           <ChevronRight className="w-4 h-4 text-white" />
-                                        </div>
+                                        <button 
+                                          onClick={(e) => handleCallPatient(entry.id, e)}
+                                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-full transition-colors border border-blue-200 hover:border-blue-600 shadow-sm"
+                                        >
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Call Patient</span>
+                                        </button>
                                      </div>
                                    )}
                                 </td>

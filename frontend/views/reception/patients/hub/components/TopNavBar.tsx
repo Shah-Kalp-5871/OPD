@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FolderOpen, History, FileText, CreditCard, FileSignature } from 'lucide-react';
+import { FolderOpen, History, FileText, CreditCard, FileSignature, User, Activity } from 'lucide-react';
 
 interface TopNavBarProps {
   activeSection: string;
@@ -8,8 +8,8 @@ interface TopNavBarProps {
 
 const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }) => {
   const sections = [
-    { id: 'master_chart', label: 'Master Chart', icon: FolderOpen },
-    { id: 'complaints', label: 'Complaints', icon: History },
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'clinical_data', label: 'Clinical Data', icon: Activity },
     { id: 'cases', label: 'Clinical History', icon: History },
     { id: 'documents', label: 'Reports & Files', icon: FileText },
     { id: 'consent', label: 'Consent Forms', icon: FileSignature },

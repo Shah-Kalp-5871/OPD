@@ -94,6 +94,17 @@ export class AppointmentsService {
         if (existing)
           throw new ConflictException('This slot is already booked');
 
+        const patientExistingToday = await tx.appointment.findFirst({
+          where: {
+            patientId,
+            appointmentDate: appointmentDateOnly,
+            status: { notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.RESCHEDULED] }
+          }
+        });
+        if (patientExistingToday) {
+          throw new ConflictException('Patient already has an active appointment or queue entry for today');
+        }
+
         // Check if there is already a case for this patient on this date to avoid duplicates if required.
         // The business logic dictates we create a PatientCase right at booking time.
         const caseNumber = await this.generateCaseNumber(tx, branchId, appointmentDateOnly, patientId);
@@ -781,6 +792,7 @@ export class AppointmentsService {
     userId: string,
     remarks: string,
     branchId: string,
+    newDoctorId?: string,
   ) {
     const dateObj = this.parseDateOnly(newDate);
     const appointmentDateOnly = this.toDateOnlyUtc(dateObj);
@@ -805,10 +817,12 @@ export class AppointmentsService {
           AppointmentStatus.RESCHEDULED,
         );
 
+        const targetDoctorId = newDoctorId || appointment.doctorId;
+
         // Check slot availability
         const existing = await tx.appointment.findFirst({
           where: {
-            doctorId: appointment.doctorId,
+            doctorId: targetDoctorId,
             appointmentDate: appointmentDateOnly,
             appointmentTime: fullAppointmentDateTime,
             status: { notIn: [AppointmentStatus.CANCELLED] },
@@ -823,6 +837,7 @@ export class AppointmentsService {
           data: {
             appointmentDate: appointmentDateOnly,
             appointmentTime: fullAppointmentDateTime,
+            doctorId: targetDoctorId,
             status: AppointmentStatus.SCHEDULED, // Reset to scheduled after reschedule
             rescheduledById: userId,
             remarks: remarks || appointment.remarks,

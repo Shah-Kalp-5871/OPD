@@ -71,6 +71,7 @@ export class ConsultationService {
           history: true,
           case: {
             include: {
+              visitComplaint: true,
               patient: {
                 include: {
                   profile: true,
@@ -119,6 +120,7 @@ export class ConsultationService {
             history: true,
             case: {
               include: {
+                visitComplaint: true,
                 patient: {
                   include: {
                     profile: true,

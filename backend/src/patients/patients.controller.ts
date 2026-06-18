@@ -16,6 +16,8 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { UpdatePatientProfileDto } from './dto/update-patient-profile.dto';
 import { AddVitalsDto } from './dto/add-vitals.dto';
 import { CreateCaseDto } from './dto/create-case.dto';
+import { AddComplaintDto } from './dto/add-complaint.dto';
+import { AddClinicalDataDto } from './dto/add-clinical-data.dto';
 import { PatientQueryDto } from './dto/patient-query.dto';
 import { AddPatientDocumentDto } from './dto/add-document.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -103,6 +105,38 @@ export class PatientsController {
     return this.patientsService.addVitals(
       id,
       vitalsDto,
+      req.user.id,
+      req.user.branchId,
+    );
+  }
+
+  @Post(':id/complaints')
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.NURSING, Role.DOCTOR)
+  addComplaint(
+    @Param('id') id: string,
+    @Body() complaintDto: AddComplaintDto,
+    @Request() req,
+  ) {
+    return this.patientsService.addComplaint(
+      id,
+      complaintDto,
+      req.user.id,
+      req.user.branchId,
+    );
+  }
+
+  @Post(':id/cases/:caseId/clinical-data')
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.NURSING, Role.DOCTOR)
+  addClinicalData(
+    @Param('id') id: string,
+    @Param('caseId') caseId: string,
+    @Body() clinicalDto: AddClinicalDataDto,
+    @Request() req,
+  ) {
+    return this.patientsService.addClinicalData(
+      id,
+      caseId,
+      clinicalDto,
       req.user.id,
       req.user.branchId,
     );

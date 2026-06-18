@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useQueueSSE } from '@/hooks/useQueueSSE';
 import CheckInModal from '../components/CheckInModal';
+import { QueueStatusBadge } from '../components/QueueStatusBadge';
 
 import { 
   UserPlus, 
@@ -23,7 +24,8 @@ import {
   ChevronRight,
   BarChart3,
   RotateCcw,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 
 const ReceptionDashboardView = () => {
@@ -41,11 +43,9 @@ const ReceptionDashboardView = () => {
   const [queue, setQueue] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
-  const [selectedCheckInPatient, setSelectedCheckInPatient] = useState<any>(null);
-  const [selectedCheckInAppt, setSelectedCheckInAppt] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
-  const [sendingIds, setSendingIds] = useState<Set<string>>(new Set());
+  const [checkingInApptId, setCheckingInApptId] = useState<string | null>(null);
+
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
   
@@ -70,6 +70,27 @@ const ReceptionDashboardView = () => {
   });
 
   const [appointmentsQueue, setAppointmentsQueue] = useState<any[]>([]);
+
+  // Cancel Appointment Modal State
+  const [cancelApptId, setCancelApptId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelAppointment = async () => {
+    if (!cancelApptId || !cancelReason.trim()) return;
+    setIsCancelling(true);
+    try {
+      await api.patch(`/appointments/${cancelApptId}/cancel`, { reason: cancelReason });
+      toast.success('Appointment cancelled successfully');
+      setCancelApptId(null);
+      setCancelReason('');
+      fetchQueue();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to cancel appointment');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const playBellSound = () => {
     try {
@@ -176,16 +197,17 @@ const ReceptionDashboardView = () => {
     }
   };
 
-  const sendToDoctor = async (entryId: string) => {
-    setSendingIds(prev => new Set(prev).add(entryId));
+  const handleDirectCheckIn = async (appointmentId: string) => {
     try {
-      await api.patch(`/queue/${entryId}/status`, { status: 'IN_SESSION' });
-      toast.success(`Patient sent to doctor!`);
-      await fetchQueue();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to send patient');
+      setCheckingInApptId(appointmentId);
+      await api.post('/appointments/check-in', { appointmentId });
+      toast.success('Patient checked in successfully');
+      fetchStats();
+      fetchQueue();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to check in patient');
     } finally {
-      setSendingIds(prev => { const s = new Set(prev); s.delete(entryId); return s; });
+      setCheckingInApptId(null);
     }
   };
 
@@ -538,9 +560,11 @@ const ReceptionDashboardView = () => {
                    ) : (
                      currentQueueData.map((entry, idx) => {
                        const isInSession = entry.status === 'IN_SESSION';
+                       const isCalling = entry.status === 'CALLING';
                        let rowBg = '';
                        switch (entry.status) {
                          case 'WAITING': rowBg = 'bg-amber-50/40 hover:bg-amber-100/50'; break;
+                         case 'CALLING': rowBg = 'bg-blue-50/60 hover:bg-blue-100/60 shadow-[inset_0_0_0_2px_rgba(59,130,246,0.5)]'; break;
                          case 'IN_SESSION': rowBg = 'bg-orange-50/60 hover:bg-orange-100/60'; break;
                          case 'COMPLETED': rowBg = 'bg-emerald-50/40 hover:bg-emerald-100/50'; break;
                          case 'CANCELLED': rowBg = 'bg-rose-50/40 hover:bg-rose-100/50'; break;
@@ -552,8 +576,8 @@ const ReceptionDashboardView = () => {
                        return (
                          <tr 
                            key={entry.id || idx} 
-                           onClick={() => entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
-                           className={`${rowBg} transition-colors cursor-pointer`}
+                           onClick={() => !isInSession && entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
+                           className={`${rowBg} transition-colors ${isInSession ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
                          >
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-800 border-r border-slate-50">
                              {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
@@ -565,13 +589,15 @@ const ReceptionDashboardView = () => {
                              {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
                            </td>
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
-                             <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
-                                {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
-                                {entry.mrId && (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
-                                    MR
-                                  </span>
-                                )}
+                             <div className="flex flex-col items-center gap-1">
+                               <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : isCalling ? 'text-blue-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
+                                 {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
+                                 {entry.mrId && (
+                                   <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
+                                     MR
+                                   </span>
+                                 )}
+                               </div>
                              </div>
                            </td>
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[10px] font-bold text-slate-600 uppercase border-r border-slate-50">
@@ -598,40 +624,47 @@ const ReceptionDashboardView = () => {
                              )}
                            </td>
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
-                             <div dangerouslySetInnerHTML={{ __html: getStatusBadgeString(entry.status) }} />
+                             <QueueStatusBadge entry={entry} onCancel={setCancelApptId} />
                            </td>
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-center">
                              {entry.isAppointment ? (
                                <button 
                                  onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    setSelectedCheckInPatient(entry.patient);
-                                    setSelectedCheckInAppt(entry.appointmentId);
-                                    setIsCheckInModalOpen(true);
+                                    handleDirectCheckIn(entry.appointmentId);
                                  }}
-                                 className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
+                                 disabled={checkingInApptId === entry.appointmentId}
+                                 className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200 flex items-center justify-center min-w-[70px] mx-auto"
                                >
-                                 Arrived
-                               </button>
-                             ) : (
-                               <button 
-                                 onClick={(e) => { e.stopPropagation(); sendToDoctor(entry.id); }}
-                                 disabled={sendingIds.has(entry.id) || isInSession}
-                                 className="px-3 py-1.5 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-1.5 mx-auto group"
-                               >
-                                 {sendingIds.has(entry.id) ? (
-                                   <>
-                                     <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                     Sending
-                                   </>
-                                 ) : isInSession ? (
-                                   'In Session'
+                                 {checkingInApptId === entry.appointmentId ? (
+                                   <div className="w-2.5 h-2.5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
                                  ) : (
-                                   <>
-                                     Send <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-1 transition-transform" />
-                                   </>
+                                   'Arrived'
                                  )}
                                </button>
+                              ) : (
+                                <div className="flex items-center justify-center gap-1">
+                                 {!entry.mrId && entry.status === 'WAITING' && (
+                                   <>
+                                     <span className={`px-2 py-1 rounded-[4px] text-[9px] font-bold tracking-widest uppercase border ${entry.case?.vitalsList?.length > 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-500 border-rose-200'}`}>
+                                       Vit {entry.case?.vitalsList?.length > 0 ? '✓' : '✗'}
+                                     </span>
+                                     <span className={`px-2 py-1 rounded-[4px] text-[9px] font-bold tracking-widest uppercase border ${entry.case?.visitComplaint ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-500 border-rose-200'}`}>
+                                       Cmp {entry.case?.visitComplaint ? '✓' : '✗'}
+                                     </span>
+                                   </>
+                                 )}
+                                 {entry.status === 'IN_SESSION' && (
+                                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                                     <Lock className="w-3 h-3" /> Locked
+                                   </span>
+                                 )}
+                                 {entry.status === 'CALLING' && (
+                                   <span className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-1 animate-pulse">
+                                     <Activity className="w-3 h-3" /> Calling
+                                   </span>
+                                 )}
+                                </div>
                              )}
                            </td>
                          </tr>
@@ -675,18 +708,47 @@ const ReceptionDashboardView = () => {
 
       </div>
 
-      {/* Check In Modal */}
-      <CheckInModal 
-        isOpen={isCheckInModalOpen}
-        onClose={() => {
-          setIsCheckInModalOpen(false);
-          setSelectedCheckInPatient(null);
-          setSelectedCheckInAppt(undefined);
-        }}
-        patient={selectedCheckInPatient}
-        appointmentId={selectedCheckInAppt}
-        onSuccess={() => fetchQueue()}
-      />
+      {cancelApptId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <X className="w-4 h-4 text-rose-500" /> Cancel Appointment
+              </h2>
+              <button onClick={() => setCancelApptId(null)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors text-slate-500">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 block mb-2">Reason for Cancellation</label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Enter reason..."
+                  rows={3}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+              <button 
+                onClick={() => setCancelApptId(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={handleCancelAppointment}
+                disabled={!cancelReason.trim() || isCancelling}
+                className="px-6 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-widest rounded-lg shadow-sm transition-all flex items-center gap-2"
+              >
+                {isCancelling ? 'Cancelling...' : 'Confirm Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </ReceptionLayout>
   );

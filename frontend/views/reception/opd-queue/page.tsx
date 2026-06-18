@@ -17,16 +17,18 @@ import {
   Square,
   RotateCcw,
   ArrowRight,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import CheckInModal from '../components/CheckInModal';
+import { QueueStatusBadge } from '../components/QueueStatusBadge';
 
 const OpdQueueView = () => {
   const router = useRouter();
   const [queue, setQueue] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({ total: 0, checkedIn: 0, waiting: 0, completed: 0, cancelled: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [sendingIds, setSendingIds] = useState<Set<string>>(new Set());
+
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
   
@@ -38,13 +40,9 @@ const OpdQueueView = () => {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [ageRangeFilter, setAgeRangeFilter] = useState<string>('All');
   
-  // Check-In Modal
-  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
-  const [selectedCheckInPatient, setSelectedCheckInPatient] = useState<any>(null);
-  const [selectedCheckInAppt, setSelectedCheckInAppt] = useState<string | undefined>(undefined);
-
   // Legend Selection
   const [selectedLegends, setSelectedLegends] = useState<string[]>([]);
+  const [checkingInApptId, setCheckingInApptId] = useState<string | null>(null);
 
   // Sorting
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'createdAt', direction: 'asc' });
@@ -58,6 +56,27 @@ const OpdQueueView = () => {
   });
 
   const [appointmentsQueue, setAppointmentsQueue] = useState<any[]>([]);
+
+  // Cancel Appointment Modal State
+  const [cancelApptId, setCancelApptId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelAppointment = async () => {
+    if (!cancelApptId || !cancelReason.trim()) return;
+    setIsCancelling(true);
+    try {
+      await api.patch(`/appointments/${cancelApptId}/cancel`, { reason: cancelReason });
+      toast.success('Appointment cancelled successfully');
+      setCancelApptId(null);
+      setCancelReason('');
+      fetchQueue();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to cancel appointment');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const playBellSound = () => {
     try {
@@ -96,12 +115,47 @@ const OpdQueueView = () => {
     }
   };
 
+  const playCallingBellSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+
+      // Play 5 chimes over 10 seconds (every 2 seconds)
+      for (let i = 0; i < 5; i++) {
+        const startTime = ctx.currentTime + (i * 2);
+        
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880.00, startTime); 
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.8, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 1.0);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 1.0);
+      }
+    } catch (e) {
+      console.error('Audio playback failed', e);
+    }
+  };
+
   useEffect(() => {
     if (lastEvent) {
       if (lastEvent.type === 'SESSION_ENDED') {
         playBellSound();
         toast.success(`Session ended for ${lastEvent.patientName}. Ready for next patient!`, {
           duration: 5000,
+          position: 'top-center'
+        });
+        fetchQueue();
+      } else if (lastEvent.type === 'STATUS_CHANGED' && lastEvent.status === 'CALLING') {
+        playCallingBellSound();
+        toast.info(`Doctor is calling patient: ${lastEvent.patientName || 'Next Patient'}!`, {
+          duration: 10000,
           position: 'top-center'
         });
         fetchQueue();
@@ -170,6 +224,19 @@ const OpdQueueView = () => {
       setStats(response.data);
     } catch (error) {
       console.error('Failed to fetch stats', error);
+    }
+  };
+
+  const handleDirectCheckIn = async (appointmentId: string) => {
+    try {
+      setCheckingInApptId(appointmentId);
+      await api.post('/appointments/check-in', { appointmentId });
+      toast.success('Patient checked in successfully');
+      fetchQueue();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to check in patient');
+    } finally {
+      setCheckingInApptId(null);
     }
   };
 
@@ -509,9 +576,11 @@ const OpdQueueView = () => {
                  ) : (
                    currentQueueData.map((entry, idx) => {
                       const isInSession = entry.status === 'IN_SESSION';
+                      const isCalling = entry.status === 'CALLING';
                       let rowBg = '';
                       switch (entry.status) {
                         case 'WAITING': rowBg = 'bg-amber-50/40 hover:bg-amber-100/50'; break;
+                        case 'CALLING': rowBg = 'bg-blue-50/60 hover:bg-blue-100/60 shadow-[inset_0_0_0_2px_rgba(59,130,246,0.5)]'; break;
                         case 'IN_SESSION': rowBg = 'bg-orange-50/60 hover:bg-orange-100/60'; break;
                         case 'COMPLETED': rowBg = 'bg-emerald-50/40 hover:bg-emerald-100/50'; break;
                         case 'CANCELLED': rowBg = 'bg-rose-50/40 hover:bg-rose-100/50'; break;
@@ -520,12 +589,12 @@ const OpdQueueView = () => {
                       }
                       const billing = getBillingStatus(entry);
 
-                     return (
-                       <tr 
-                         key={entry.id || idx} 
-                         onClick={() => entry.patient?.id && router.push(`/opd/reception/patients/${entry.patient.id}`)}
-                         className={`${rowBg} transition-colors cursor-pointer`}
-                       >
+                      return (
+                        <tr 
+                          key={entry.id || idx} 
+                          onClick={() => !isInSession && entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
+                          className={`${rowBg} transition-colors ${isInSession ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                        >
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-800 border-r border-slate-50">
                            {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
                          </td>
@@ -536,14 +605,16 @@ const OpdQueueView = () => {
                            {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
                          </td>
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
-                           <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
-                              {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
-                              {entry.mrId && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
-                                  MR
-                                </span>
-                              )}
-                           </div>
+                            <div className="flex flex-col items-center gap-1">
+                              <div className={`text-[12px] font-black uppercase tracking-wider ${isInSession ? 'text-orange-600 animate-pulse' : isCalling ? 'text-blue-600 animate-pulse' : 'text-slate-900'} flex items-center justify-center gap-1.5`}>
+                                {entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`} 
+                                {entry.mrId && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
+                                    MR
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                          </td>
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[10px] font-bold text-slate-600 uppercase border-r border-slate-50">
                            {getVisitType(entry)}
@@ -569,59 +640,48 @@ const OpdQueueView = () => {
                            )}
                          </td>
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">
-                           <div dangerouslySetInnerHTML={{ __html: getStatusBadgeString(entry.status) }} />
+                           <QueueStatusBadge entry={entry} onCancel={setCancelApptId} />
                          </td>
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-center">
-                           {entry.isAppointment ? (
-                             <button 
-                               onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  setSelectedCheckInPatient(entry.patient);
-                                  setSelectedCheckInAppt(entry.appointmentId);
-                                  setIsCheckInModalOpen(true);
-                               }}
-                               className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200"
-                             >
-                               Arrived
-                             </button>
-                           ) : entry.status === 'WAITING' ? (
-                             <button 
-                               onClick={(e) => { 
-                                 e.stopPropagation(); 
-                                 const entryId = entry.id;
-                                 setSendingIds(prev => new Set(prev).add(entryId));
-                                 api.patch(`/queue/${entryId}/status`, { status: 'IN_SESSION' }).then(() => {
-                                   toast.success(`${entry.patient?.firstName || ''} sent to doctor!`);
-                                   fetchQueue();
-                                 }).catch(err => {
-                                   toast.error(err?.response?.data?.message || 'Failed to send patient');
-                                 }).finally(() => {
-                                   setSendingIds(prev => { const s = new Set(prev); s.delete(entryId); return s; });
-                                 });
-                               }}
-                               disabled={sendingIds.has(entry.id) || isInSession}
-                               className="px-3 py-1.5 bg-slate-900 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all flex items-center justify-center gap-1.5 mx-auto group"
-                             >
-                               {sendingIds.has(entry.id) ? (
-                                 <>
-                                   <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                   Sending
-                                 </>
-                               ) : (
-                                 <>
-                                   Send <ArrowRight className="w-2.5 h-2.5 group-hover:translate-x-1 transition-transform" />
-                                 </>
-                               )}
-                             </button>
-                           ) : (
-                             <Link 
-                               href={`/opd/reception/patients/${entry.patient?.id}`} 
-                               onClick={(e) => e.stopPropagation()}
-                               className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-orange-600 hover:border-orange-200 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all inline-block shadow-sm"
-                             >
-                               View
-                             </Link>
-                           )}
+                            {entry.isAppointment ? (
+                              <button 
+                                onClick={(e) => { 
+                                   e.stopPropagation(); 
+                                   handleDirectCheckIn(entry.appointmentId);
+                                }}
+                                disabled={checkingInApptId === entry.appointmentId}
+                                className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200 flex items-center justify-center min-w-[70px] mx-auto"
+                              >
+                                {checkingInApptId === entry.appointmentId ? (
+                                  <div className="w-2.5 h-2.5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+                                ) : (
+                                  'Arrived'
+                                )}
+                              </button>
+                            ) : (
+                              <div className="flex items-center justify-center gap-2">
+                                {!entry.mrId && entry.status === 'WAITING' && (
+                                  <>
+                                    <span className={`px-2 py-1 rounded-[4px] text-[9px] font-bold tracking-widest uppercase border ${entry.case?.vitalsList?.length > 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-500 border-rose-200'}`}>
+                                      Vit {entry.case?.vitalsList?.length > 0 ? '✓' : '✗'}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-[4px] text-[9px] font-bold tracking-widest uppercase border ${entry.case?.visitComplaint ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-rose-50 text-rose-500 border-rose-200'}`}>
+                                      Cmp {entry.case?.visitComplaint ? '✓' : '✗'}
+                                    </span>
+                                  </>
+                                )}
+                                {entry.status === 'IN_SESSION' && (
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
+                                    <Lock className="w-3 h-3" /> Locked
+                                  </span>
+                                )}
+                                {entry.status === 'CALLING' && (
+                                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-500 flex items-center gap-1 animate-pulse">
+                                    <Activity className="w-3 h-3" /> Calling
+                                  </span>
+                                )}
+                              </div>
+                            )}
                          </td>
                        </tr>
                      );
@@ -662,18 +722,47 @@ const OpdQueueView = () => {
 
       </div>
 
-      {/* Check In Modal */}
-      <CheckInModal 
-        isOpen={isCheckInModalOpen}
-        onClose={() => {
-          setIsCheckInModalOpen(false);
-          setSelectedCheckInPatient(null);
-          setSelectedCheckInAppt(undefined);
-        }}
-        patient={selectedCheckInPatient}
-        appointmentId={selectedCheckInAppt}
-        onSuccess={() => fetchQueue()}
-      />
+      {cancelApptId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <X className="w-4 h-4 text-rose-500" /> Cancel Appointment
+              </h2>
+              <button onClick={() => setCancelApptId(null)} className="p-1 hover:bg-slate-200 rounded-lg transition-colors text-slate-500">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-500 block mb-2">Reason for Cancellation</label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Enter reason..."
+                  rows={3}
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+              <button 
+                onClick={() => setCancelApptId(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={handleCancelAppointment}
+                disabled={!cancelReason.trim() || isCancelling}
+                className="px-6 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-widest rounded-lg shadow-sm transition-all flex items-center gap-2"
+              >
+                {isCancelling ? 'Cancelling...' : 'Confirm Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </ReceptionLayout>
   );

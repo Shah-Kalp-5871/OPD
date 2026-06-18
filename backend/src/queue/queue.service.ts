@@ -228,11 +228,14 @@ export class QueueService {
     branchId: string,
   ) {
     return this.prisma.$transaction(async (tx) => {
-      // End any other active sessions for this doctor
-      await tx.visitSession.updateMany({
+      // Check if there's already an active session for this doctor
+      const activeSession = await tx.visitSession.findFirst({
         where: { doctorId, status: 'ACTIVE', branchId },
-        data: { status: 'COMPLETED', endTime: new Date() },
       });
+
+      if (activeSession) {
+        throw new BadRequestException('You already have an active consultation in progress. Please end it before starting a new one.');
+      }
 
       const session = await tx.visitSession.create({
         data: { caseId, doctorId, branchId },
@@ -379,6 +382,11 @@ export class QueueService {
                 paymentStatus: true,
               },
             },
+            vitalsList: {
+              take: 1,
+              orderBy: { takenAt: 'desc' },
+            },
+            visitComplaint: true,
           },
         },
         mr: {

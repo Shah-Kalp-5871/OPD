@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Clock, Sunrise, Sun, Sunset, Stethoscope, Briefcase, User, Phone, CheckCircle, Loader2 } from 'lucide-react';
-import ComplaintsForm, { VisitComplaintData } from './components/ComplaintsForm';
 
 const CheckInView = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -19,45 +19,8 @@ const CheckInView = () => {
   const [priority, setPriority] = useState('NORMAL');
   const [complaint, setComplaint] = useState('');
   
-  // New State for Missed/No-Show Management
-  const [vitals, setVitals] = useState({
-    height: '',
-    weight: '',
-    bmi: '0.0',
-    temp: '',
-    pulse: '',
-    bpSys: '',
-    bpDia: '',
-    spo2: ''
-  });
-
-  const [visitComplaint, setVisitComplaint] = useState<VisitComplaintData>({
-    presentComplaint: '',
-    durationDays: '',
-    durationMonths: '',
-    durationYears: '',
-    severity: 'MODERATE',
-    onset: '',
-    aggravatingFactors: '',
-    relievingFactors: '',
-    pastMedical: '',
-    personalHistory: '',
-    pastSurgical: '',
-    currentMedications: '',
-    obstetricHistory: '',
-    allergies: '',
-    nursingNotes: '',
-    patientFeedback: ''
-  });
-  
-  // New State for Missed/No-Show Management
-  const [missedAction, setMissedAction] = useState<string>(''); // 'reschedule', 'no-answer', 'not-called'
-  const [newFuDate, setNewFuDate] = useState<string>('');
-  const [missedNote, setMissedNote] = useState<string>('');
-
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmittingMissed, setIsSubmittingMissed] = useState(false);
   const [checkInResult, setCheckInResult] = useState<any>(null);
   const [patientAppointments, setPatientAppointments] = useState<any[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
@@ -65,57 +28,6 @@ const CheckInView = () => {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const checkInSubmittingRef = useRef(false);
-
-  const handleMissedActionSubmit = async () => {
-    if (!selectedPatient) {
-      toast.error('No patient selected.');
-      return;
-    }
-    if (missedAction === 'reschedule' && !newFuDate) {
-      toast.error('Please select a new follow-up date for rescheduling.');
-      return;
-    }
-    
-    setIsSubmittingMissed(true);
-    try {
-      await api.post('/appointments/missed-action', {
-        patientId: selectedPatient.id,
-        appointmentId: selectedAppointment?.id,
-        action: missedAction,
-        newFuDate: newFuDate || undefined,
-        note: missedNote || undefined
-      });
-
-      toast.success('Patient status updated successfully');
-      setMissedAction('');
-      setNewFuDate('');
-      setMissedNote('');
-      
-      // Auto clear to check in the next patient
-      setTimeout(() => {
-        setSelectedPatient(null);
-        setSearchQuery('');
-        setSearchResults([]);
-      }, 2000);
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'Failed to update appointment status';
-      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
-    } finally {
-      setIsSubmittingMissed(false);
-    }
-  };
-
-  // Auto-calculate BMI
-  useEffect(() => {
-    if (vitals.height && vitals.weight) {
-      const h = parseFloat(vitals.height) / 100;
-      const w = parseFloat(vitals.weight);
-      if (h > 0) {
-        setVitals(prev => ({ ...prev, bmi: (w / (h * h)).toFixed(1) }));
-      }
-    }
-  }, [vitals.height, vitals.weight]);
-
   useEffect(() => {
     fetchDoctors();
     // Auto-load if coming from schedule
@@ -170,7 +82,14 @@ const CheckInView = () => {
           date: dateString
         }
       });
-      setAvailableSlots(res.data);
+
+      // Filter out slots that have already passed today
+      const currentHours = today.getHours();
+      const currentMinutes = today.getMinutes();
+      const formattedCurrentTime = `${currentHours.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
+      const filteredSlots = res.data.filter((slot: any) => slot.time > formattedCurrentTime);
+
+      setAvailableSlots(filteredSlots);
       setSelectedSlot(null);
     } catch (error) {
       toast.error('Failed to load available slots');
@@ -245,32 +164,11 @@ const CheckInView = () => {
     checkInSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      const bpString = vitals.bpSys && vitals.bpDia
-        ? `${vitals.bpSys}/${vitals.bpDia}`
-        : vitals.bpSys
-          ? vitals.bpSys
-          : null;
-
       const checkInData = {
         appointmentId: selectedAppointment?.id,
         visitType: selectedAppointment?.purpose || visitType,
         priority,
-        complaint,
-        vitals: (vitals.height || vitals.weight || vitals.temp || vitals.pulse || vitals.bpSys || vitals.spo2) ? {
-          height: parseFloat(vitals.height) || null,
-          weight: parseFloat(vitals.weight) || null,
-          bmi: parseFloat(vitals.bmi) || null,
-          temperature: parseFloat(vitals.temp) || null,
-          pulse: parseInt(vitals.pulse) || null,
-          bloodPressure: bpString,
-          spo2: parseInt(vitals.spo2) || null
-        } : undefined,
-        visitComplaint: visitComplaint.presentComplaint || visitComplaint.pastMedical || visitComplaint.allergies ? {
-          ...visitComplaint,
-          durationDays: parseInt(visitComplaint.durationDays) || null,
-          durationMonths: parseInt(visitComplaint.durationMonths) || null,
-          durationYears: parseInt(visitComplaint.durationYears) || null,
-        } : undefined
+        complaint
       };
 
       let res;
@@ -297,10 +195,6 @@ const CheckInView = () => {
             remarks: complaint
           });
 
-          if (checkInData.vitals) {
-             await api.post(`/patients/${selectedPatient.id}/vitals`, checkInData.vitals);
-          }
-
           res = await api.post('/appointments/check-in', {
             ...checkInData,
             appointmentId: apptRes.data.id
@@ -311,19 +205,10 @@ const CheckInView = () => {
       setCheckInResult(res.data?.queueEntry || res.data);
       toast.success('Patient checked in successfully!');
       
-      // Reset form state to check-in the next patient
+      // Redirect to patient hub
       setTimeout(() => {
-        setSelectedPatient(null);
-        setCheckInResult(null);
-        setSearchQuery('');
-        setVitals({ height: '', weight: '', bmi: '0.0', temp: '', pulse: '', bpSys: '', bpDia: '', spo2: '' });
-        setVisitComplaint({
-          presentComplaint: '', durationDays: '', durationMonths: '', durationYears: '',
-          severity: 'MODERATE', onset: '', aggravatingFactors: '', relievingFactors: '',
-          pastMedical: '', personalHistory: '', pastSurgical: '', currentMedications: '',
-          obstetricHistory: '', allergies: '', nursingNotes: '', patientFeedback: ''
-        });
-      }, 3000);
+        router.push(`/reception/patients/${selectedPatient.id}`);
+      }, 1500);
       
     } catch (error: any) {
       const message = error?.response?.data?.message;
@@ -507,7 +392,7 @@ const CheckInView = () => {
               </div>
 
               {/* RIGHT: Walk-In Clinical Details (only if no scheduled appointment) */}
-              {!selectedAppointment ? (
+              {!selectedAppointment && (
                 <div className="xl:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                   <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100 flex items-center gap-2">
                     <Stethoscope className="w-4 h-4 text-slate-500" />
@@ -588,105 +473,7 @@ const CheckInView = () => {
 
                   </div>
                 </div>
-              ) : (
-                /* When appointment exists - show vitals on the right */
-                <div className="xl:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                     <h2 className="font-semibold text-slate-700 text-sm">Vitals Entry</h2>
-                     <span className="text-xs text-slate-400">Optional</span>
-                  </div>
-                  <div className="p-4">
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">Height (cm)</label>
-                        <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">Weight (kg)</label>
-                        <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">BMI</label>
-                        <input type="text" readOnly value={vitals.bmi} className="w-full border border-slate-200 bg-slate-100/70 text-slate-400 rounded-lg p-2 outline-none text-xs" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">Temp (°F)</label>
-                        <input type="number" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">Pulse (bpm)</label>
-                        <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">BP (mmHg)</label>
-                        <div className="flex border border-slate-200 rounded-lg overflow-hidden focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all">
-                           <input type="number" placeholder="Sys" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-1/2 bg-slate-50 p-2 outline-none text-xs text-center border-r border-slate-200" />
-                           <input type="number" placeholder="Dia" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-1/2 bg-slate-50 p-2 outline-none text-xs text-center" />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium text-slate-500">SpO2 (%)</label>
-                        <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
               )}
-            </div>
-
-            {/* Vitals Section (only shown for walk-in patients below the top row) */}
-            {!selectedAppointment && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                   <h2 className="font-semibold text-slate-700 text-sm">Vitals Entry</h2>
-                   <span className="text-xs text-slate-400">Optional</span>
-                </div>
-                <div className="p-4">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">Height (cm)</label>
-                      <input type="number" value={vitals.height} onChange={e => setVitals({...vitals, height: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">Weight (kg)</label>
-                      <input type="number" value={vitals.weight} onChange={e => setVitals({...vitals, weight: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">BMI</label>
-                      <input type="text" readOnly value={vitals.bmi} className="w-full border border-slate-200 bg-slate-100/70 text-slate-400 rounded-lg p-2 outline-none text-xs" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">Temp (°F)</label>
-                      <input type="number" value={vitals.temp} onChange={e => setVitals({...vitals, temp: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">Pulse (bpm)</label>
-                      <input type="number" value={vitals.pulse} onChange={e => setVitals({...vitals, pulse: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">BP (mmHg)</label>
-                      <div className="flex border border-slate-200 rounded-lg overflow-hidden focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all">
-                         <input type="number" placeholder="Sys" value={vitals.bpSys} onChange={e => setVitals({...vitals, bpSys: e.target.value})} className="w-1/2 bg-slate-50 p-2 outline-none text-xs text-center border-r border-slate-200" />
-                         <input type="number" placeholder="Dia" value={vitals.bpDia} onChange={e => setVitals({...vitals, bpDia: e.target.value})} className="w-1/2 bg-slate-50 p-2 outline-none text-xs text-center" />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-slate-500">SpO2 (%)</label>
-                      <input type="number" value={vitals.spo2} onChange={e => setVitals({...vitals, spo2: e.target.value})} className="w-full border border-slate-200 bg-slate-50 rounded-lg p-2 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-xs transition-all" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Complaints Form */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                 <h2 className="font-semibold text-slate-700 text-sm">Complaints & History</h2>
-              </div>
-              <div className="p-4">
-                <ComplaintsForm data={visitComplaint} onChange={setVisitComplaint} />
-              </div>
             </div>
 
             {/* Check-In Action */}
@@ -701,70 +488,7 @@ const CheckInView = () => {
                </button>
             </div>
 
-            {/* Missed / No-Show Management Section */}
-            {selectedAppointment && (
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100">
-                 <h2 className="font-semibold text-slate-700 text-sm">Missed / No-Show Management</h2>
-                 <p className="text-xs text-slate-500 mt-0.5">Update status if patient did not arrive on scheduled follow-up date</p>
-              </div>
-              
-              <div className="p-4">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                    <button 
-                      onClick={() => setMissedAction('reschedule')}
-                      className={`border p-3 rounded-xl text-left transition-all ${missedAction === 'reschedule' ? 'bg-blue-50 border-blue-300 text-blue-800 font-semibold ring-4 ring-blue-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-                    >
-                       <div className="mb-0.5 text-xs font-semibold">Called - Rescheduled</div>
-                       <div className="text-[10px] font-normal opacity-70">Requires new date</div>
-                    </button>
-                    <button 
-                      onClick={() => setMissedAction('no-answer')}
-                      className={`border p-3 rounded-xl text-left transition-all ${missedAction === 'no-answer' ? 'bg-amber-50 border-amber-300 text-amber-800 font-semibold ring-4 ring-amber-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-                    >
-                       <div className="mb-0.5 text-xs font-semibold">Called - No Answer</div>
-                       <div className="text-[10px] font-normal opacity-70">Auto-notes failure</div>
-                    </button>
-                    <button 
-                      onClick={() => setMissedAction('not-called')}
-                      className={`border p-3 rounded-xl text-left transition-all ${missedAction === 'not-called' ? 'bg-slate-100 border-slate-300 text-slate-800 font-semibold ring-4 ring-slate-500/10' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-                    >
-                       <div className="mb-0.5 text-xs font-semibold">Not Called</div>
-                       <div className="text-[10px] font-normal opacity-70">No action taken</div>
-                    </button>
-                 </div>
-                 
-                 {(missedAction === 'reschedule' || missedAction === 'no-answer' || missedAction === 'not-called') && (
-                     <div className="space-y-3">
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                          {missedAction === 'reschedule' && (
-                            <div className="space-y-1">
-                               <label className="text-xs font-medium text-slate-600">New F/U Date</label>
-                               <input type="date" value={newFuDate} onChange={(e) => setNewFuDate(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-xs transition-all" />
-                            </div>
-                          )}
-                          <div className={`space-y-1 ${missedAction !== 'reschedule' ? 'md:col-span-2' : ''}`}>
-                             <label className="text-xs font-medium text-slate-600">Internal Note</label>
-                             <input type="text" placeholder="Add optional details..." value={missedNote} onChange={(e) => setMissedNote(e.target.value)} className="w-full border border-slate-200 bg-white rounded-lg p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-xs transition-all" />
-                          </div>
-                       </div>
-                       
-                       <div className="flex justify-end">
-                         <button 
-                           onClick={handleMissedActionSubmit}
-                           disabled={isSubmittingMissed}
-                           className="bg-slate-900 text-white font-bold py-2.5 px-7 text-sm rounded-xl hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-70 flex items-center gap-2 cursor-pointer"
-                         >
-                           {isSubmittingMissed ? (
-                             <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Saving...</>
-                           ) : 'Save Update'}
-                         </button>
-                       </div>
-                     </div>
-                 )}
-              </div>
-            </div>
-          )}
+
         </div>
       )}
     </div>
