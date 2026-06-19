@@ -33,6 +33,8 @@ const DoctorDashboardView = () => {
   const [queue, setQueue] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { entries: sseEntries } = useQueueSSE();
   const { lastEvent: clinicalEvent } = useClinicalSSE();
@@ -120,56 +122,59 @@ const DoctorDashboardView = () => {
     }
   };
 
+  const totalPages = Math.ceil(queue.length / itemsPerPage);
+  const paginatedQueue = queue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <DoctorLayout>
-      <div className="max-w-[1600px] mx-auto space-y-8 pb-20 px-6">
+      <div className="max-w-[1600px] mx-auto space-y-4 pb-10 px-4 pt-0">
         
         {/* 🔷 SECTION 1: ACTIVE / NEXT PATIENT ALERT */}
-        <div className="bg-[#036d92] rounded-[2.5rem] p-2 pr-2 overflow-hidden shadow-2xl flex items-center justify-between border-4 border-[#025674]">
-           <div className="flex items-center gap-8 px-10 py-8">
-              <div className="w-14 h-14 bg-white shadow-black/10 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
-                 {activeSessionEntry ? <Activity className="w-7 h-7 text-[#036d92]" /> : <Zap className="w-7 h-7 text-[#036d92]" />}
+        <div className="bg-[#107ca3] rounded-2xl p-2 overflow-hidden shadow-lg flex items-center justify-between border border-[#0d6282] mt-0">
+           <div className="flex items-center gap-5 px-6 py-3">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center animate-pulse border border-white/30 backdrop-blur-sm">
+                 {activeSessionEntry ? <Activity className="w-5 h-5 text-white" /> : <Zap className="w-5 h-5 text-white" />}
               </div>
               <div>
-                 <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">
+                 <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black text-white/90 uppercase tracking-[0.2em]">
                        {activeSessionEntry ? 'Currently In Session' : 'Next Patient Prepared'}
                     </span>
-                    <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></span>
                  </div>
-                 <h2 className="text-2xl font-black text-white tracking-tight mt-2 flex items-center gap-4">
+                 <h2 className="text-xl font-bold text-white tracking-tight mt-1 flex items-center gap-3">
                     {activeSessionEntry ? (
                       <>
                         {activeSessionEntry.patient.firstName} {activeSessionEntry.patient.lastName}
-                        <span className="text-white/50">/</span>
-                        <span className="text-white text-lg uppercase tracking-widest">{activeSessionEntry.tokenDisplay}</span>
+                        <span className="text-white/40">/</span>
+                        <span className="text-white/90 text-[16px] uppercase tracking-widest">{activeSessionEntry.tokenDisplay}</span>
                       </>
                     ) : nextPatientEntry ? (
                       <>
                         {nextPatientEntry.patient.firstName} {nextPatientEntry.patient.lastName}
-                        <span className="text-white/50">/</span>
-                        <span className="text-white text-lg uppercase tracking-widest">{nextPatientEntry.tokenDisplay}</span>
+                        <span className="text-white/40">/</span>
+                        <span className="text-white/90 text-[16px] uppercase tracking-widest">{nextPatientEntry.tokenDisplay}</span>
                       </>
                     ) : (
                       'NO PATIENTS WAITING'
                     )}
                  </h2>
-                 <p className="text-[11px] font-bold text-white/70 uppercase tracking-[0.2em] mt-1 italic">
+                 <p className="text-[10px] font-semibold text-white/70 uppercase tracking-[0.1em] mt-0.5">
                     {activeSessionEntry ? `Case ID: ${activeSessionEntry.case.caseNumber}` : nextPatientEntry ? `Awaiting Room Entry | ${nextPatientEntry.case.visitType}` : 'Ready for next check-in'}
                  </p>
               </div>
            </div>
 
            {(activeSessionEntry || nextPatientEntry) && (
-             <div className="flex items-center gap-2 px-6">
+             <div className="flex items-center gap-2 px-4">
                 <button 
                   onClick={() => {
                     const target = activeSessionEntry || nextPatientEntry;
                     router.push(`/reception/patients/${target.patientId}`);
                   }}
-                  className="bg-[#025674] hover:bg-[#01425a] text-white p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border border-[#01425a] min-w-[120px]"
+                  className="bg-[#025674] hover:bg-[#01425a] text-white px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all border border-[#01425a] min-w-[120px] shadow-sm"
                 >
-                   <User className="w-6 h-6 text-white/80" />
+                   <User className="w-5 h-5 text-white/80" />
                    <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Profile</span>
                 </button>
 
@@ -177,9 +182,9 @@ const DoctorDashboardView = () => {
                   <button 
                     onClick={() => handleCallPatient(nextPatientEntry.id)}
                     disabled={isSubmitting}
-                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all min-w-[160px] shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all min-w-[140px] shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                     <Zap className="w-6 h-6 animate-bounce" />
+                     <Zap className="w-5 h-5 animate-bounce" />
                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">
                         Call Patient
                      </span>
@@ -191,10 +196,10 @@ const DoctorDashboardView = () => {
                       handleStartConsultation(target.caseId, target.patientId);
                     }}
                     disabled={isSubmitting}
-                    className="bg-white hover:bg-gray-50 text-[#036d92] p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all min-w-[160px]"
+                    className="bg-white hover:bg-gray-50 text-[#107ca3] px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all min-w-[140px] shadow-sm border border-white/40"
                   >
-                     <ClipboardList className="w-6 h-6" />
-                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                     <ClipboardList className="w-5 h-5" />
+                     <span className="text-[10px] font-black uppercase tracking-[0.1em]">
                         {activeSessionEntry ? 'Resume Chart' : 'Start Chart'}
                      </span>
                   </button>
@@ -202,30 +207,30 @@ const DoctorDashboardView = () => {
              </div>
            )}
         </div>
-        <div className="grid grid-cols-1 gap-10 items-start">
+        <div className="grid grid-cols-1 items-start">
            
            {/* LEFT COLUMN: LIVE DOCTOR QUEUE */}
-           <div className="space-y-8">
-              <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden min-h-[600px]">
-                 <div className="p-8 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-slate-200">
-                          <Stethoscope className="w-6 h-6" />
+           <div className="space-y-4">
+              <div className="bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden flex flex-col">
+                 <div className="px-4 py-3 bg-[#f0f7fa] border-b border-[#107ca3]/20 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#107ca3] shadow-sm border border-[#107ca3]/20">
+                          <Stethoscope className="w-4 h-4" />
                        </div>
                        <div>
-                          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em]">Operational Flow</h3>
-                          <h4 className="text-lg font-black text-slate-800 tracking-tight">Today's Active Queue</h4>
+                          <h3 className="text-[9px] font-bold text-[#107ca3]/80 uppercase tracking-[0.2em]">Operational Flow</h3>
+                          <h4 className="text-[14px] font-black text-[#0d6282] tracking-tight">Today's Active Queue</h4>
                        </div>
                     </div>
-                    <div className="flex items-center gap-3 px-5 py-2.5 bg-blue-50 text-blue-700 rounded-2xl border border-blue-100">
-                       <span className="text-[10px] font-black uppercase tracking-widest">Live Sync Active</span>
-                       <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.5)]"></div>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white text-[#107ca3] rounded-lg border border-[#107ca3]/30 shadow-sm">
+                       <span className="text-[9px] font-black uppercase tracking-widest">Live Sync Active</span>
+                       <div className="w-2 h-2 bg-[#107ca3] rounded-full animate-pulse"></div>
                     </div>
                  </div>
                  
-                  <div className="table-scroll-container rounded-b-[3rem] max-h-[620px] overflow-y-auto scrollbar-hover-only">
+                  <div className="w-full">
                      <table className="w-full text-left border-collapse border border-slate-200">
-                       <thead className="sticky top-0 z-20 shadow-md">
+                       <thead>
                           <tr className="bg-[#107ca3] text-white">
                               <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Case No</th>
                               <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Time</th>
@@ -249,7 +254,7 @@ const DoctorDashboardView = () => {
                                  </div>
                               </td>
                             </tr>
-                          ) : queue.length === 0 ? (
+                          ) : paginatedQueue.length === 0 ? (
                             <tr>
                               <td colSpan={10} className="py-20 text-center border border-slate-200">
                                  <div className="flex flex-col items-center gap-4 opacity-30">
@@ -258,7 +263,7 @@ const DoctorDashboardView = () => {
                                  </div>
                               </td>
                             </tr>
-                          ) : queue.map((entry, index) => {
+                          ) : paginatedQueue.map((entry, index) => {
                              const hasActiveOrCalling = queue.some(q => q.status === 'IN_SESSION' || q.status === 'CALLING');
                              
                              return (
@@ -354,6 +359,34 @@ const DoctorDashboardView = () => {
                           )})}
                        </tbody>
                     </table>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200 shrink-0">
+                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                           Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, queue.length)} of {queue.length} Entries
+                         </span>
+                         <div className="flex items-center gap-2">
+                            <button
+                               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                               disabled={currentPage === 1}
+                               className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 uppercase tracking-widest hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                               Prev
+                            </button>
+                            <span className="text-sm font-black text-[#107ca3] px-3">
+                               {currentPage} / {totalPages}
+                            </span>
+                            <button
+                               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                               disabled={currentPage === totalPages}
+                               className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 uppercase tracking-widest hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                               Next
+                            </button>
+                         </div>
+                      </div>
+                    )}
                   </div>
                </div>
            </div>
