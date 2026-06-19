@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useQueueSSE } from '@/hooks/useQueueSSE';
 import { useClinicalSSE } from '@/hooks/useClinicalSSE';
+import { useAuthStore } from '@/store/authStore';
 
 
 import { 
@@ -36,7 +37,10 @@ const DoctorDashboardView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const { entries: sseEntries } = useQueueSSE();
+  const user = useAuthStore(state => state.user);
+  const doctorId = user?.id;
+
+  const { entries: sseEntries } = useQueueSSE({ doctorId });
   const { lastEvent: clinicalEvent } = useClinicalSSE();
 
   useEffect(() => {
@@ -61,7 +65,8 @@ const DoctorDashboardView = () => {
     try {
       // Backend automatically filters by current user (doctor) if we use /queue/live without doctorId,
       // but let's assume we want to be explicit or the backend handles it via JWT.
-      const response = await api.get('/queue/live');
+      const url = doctorId ? `/queue/live?doctorId=${doctorId}` : '/queue/live';
+      const response = await api.get(url);
       setQueue(response.data);
     } catch (error) {
       console.error('Failed to fetch queue', error);

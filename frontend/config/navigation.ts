@@ -30,19 +30,13 @@ export const roleNavigation: Record<string, NavigationConfig> = {
   doctor: {
     directItems: [
       { title: 'Dashboard', href: ROUTES.doctor.dashboard, icon: LayoutDashboard },
-      { title: 'Search', href: '/reception/search', icon: Search },
-      { title: 'Register', href: '/reception/register', icon: UserPlus },
-      { title: 'Check-In', href: '/reception/checkin', icon: CheckSquare },
-      { title: 'Book', href: '/reception/appointments', icon: CalendarDays },
+      { title: 'Register Patient', href: '/doctor/register', icon: UserPlus },
+      { title: 'Search Patient', href: '/doctor/search', icon: Search },
+      { title: 'Check-In (Walk-in)', href: '/doctor/checkin', icon: CheckSquare },
+      { title: 'OPD Queue', href: ROUTES.doctor.queue, icon: Users },
+      { title: 'Book Appointment', href: '/doctor/appointments', icon: CalendarDays },
     ],
-    groups: [
-      {
-        title: 'Clinical Workflow',
-        items: [
-          { title: 'OPD Queue', href: ROUTES.doctor.queue, icon: Users },
-        ]
-      }
-    ]
+    groups: []
   },
   admin: {
     directItems: [
