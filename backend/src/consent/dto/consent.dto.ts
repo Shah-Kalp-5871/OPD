@@ -7,4 +7,12 @@ export class CreateConsentDto {
   @IsString()
   @IsOptional()
   signatureUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  customRisks?: string;
+
+  @IsString()
+  @IsOptional()
+  doctorNotes?: string;
 }

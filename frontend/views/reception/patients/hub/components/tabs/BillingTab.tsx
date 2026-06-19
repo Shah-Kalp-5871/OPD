@@ -338,7 +338,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
               </div>
            </div>
            <div className="flex items-center gap-4">
-              {bill.isFinalized && (
+              {(bill.isFinalized || bill.paymentStatus === 'REFUND_DUE') && (
                 <button 
                   onClick={() => setIsRefundModalOpen(true)}
                   className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all border border-rose-100 flex items-center gap-2"

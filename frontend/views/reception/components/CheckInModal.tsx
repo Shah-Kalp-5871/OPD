@@ -28,6 +28,9 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   const [priority, setPriority] = useState('NORMAL');
   const [complaint, setComplaint] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [paymentOption, setPaymentOption] = useState<'NOW' | 'LATER'>('NOW');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'UPI'>('CASH');
 
 
   useEffect(() => {
@@ -140,6 +143,31 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           });
       }
 
+      // Create Initial Consultation Bill
+      const caseId = res.data?.caseId || res.data?.id;
+      if (caseId) {
+        const billRes = await api.post('/billing', {
+          caseId: caseId,
+          patientId: patient.id,
+          items: [{
+            serviceName: 'Initial Consultation Fee',
+            description: 'Standard Consultation',
+            unitPrice: 500,
+            quantity: 1,
+            discount: 0
+          }]
+        });
+
+        // If Pay Now, record payment
+        if (paymentOption === 'NOW' && billRes.data?.id) {
+          await api.post(`/billing/${billRes.data.id}/pay`, {
+            amount: 500,
+            paymentMethod: paymentMethod,
+            notes: 'Paid at check-in'
+          });
+        }
+      }
+
       toast.success('Patient checked in successfully!');
       if (onSuccess) onSuccess();
       onClose();
@@ -211,6 +239,68 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
               </div>
             </div>
           )}
+          {/* Billing Section */}
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">₹</span>
+              Initial Consultation Fee
+            </h3>
+            
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-800">Standard Consultation</p>
+                <p className="text-xs text-slate-500 mt-1">Due at check-in</p>
+              </div>
+              <div className="text-right">
+                <span className="text-lg font-black text-slate-900">₹500</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+               <div className="flex-1 border border-slate-200 rounded-xl p-3 flex flex-col gap-3 bg-white">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                     <input 
+                       type="radio" 
+                       name="paymentOption" 
+                       value="NOW" 
+                       checked={paymentOption === 'NOW'} 
+                       onChange={() => setPaymentOption('NOW')}
+                       className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-gray-300" 
+                     />
+                     <span className="text-sm font-bold text-slate-800">Pay Now</span>
+                  </label>
+                  {paymentOption === 'NOW' && (
+                     <select 
+                       value={paymentMethod} 
+                       onChange={(e) => setPaymentMethod(e.target.value as any)} 
+                       className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ml-7 w-[calc(100%-28px)]"
+                     >
+                       <option value="CASH">Cash</option>
+                       <option value="CARD">Card / POS</option>
+                       <option value="UPI">UPI / QR</option>
+                     </select>
+                  )}
+               </div>
+               
+               <div className="flex-1 border border-slate-200 rounded-xl p-3 flex flex-col gap-3 bg-white">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                     <input 
+                       type="radio" 
+                       name="paymentOption" 
+                       value="LATER" 
+                       checked={paymentOption === 'LATER'} 
+                       onChange={() => setPaymentOption('LATER')}
+                       className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-gray-300" 
+                     />
+                     <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-800">Pay Later</span>
+                        <span className="text-[10px] text-slate-500 leading-tight mt-0.5">Will remain as pending balance on file</span>
+                     </div>
+                  </label>
+               </div>
+            </div>
+          </div>
+
           {/* Action Buttons */}
           <div className="pt-6 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0 bg-white p-6 -mx-6 -mb-6 mt-6 shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.1)]">
             <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">

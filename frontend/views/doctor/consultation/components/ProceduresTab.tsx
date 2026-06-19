@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Scissors, Search, X, Clock, Calendar, Loader2, CheckCircle2,
-  Info, Layers, Activity, AlertTriangle, Package,
+  Info, Layers, Activity, AlertTriangle, Package, FileSignature, Save
 } from 'lucide-react';
 import api from '@/lib/api';
 import { procedureApi, Procedure } from '@/lib/api/procedures';
@@ -24,6 +24,12 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
   const [scheduledDate, setScheduledDate] = useState<string>('');
   const [scheduledTime, setScheduledTime] = useState<string>('');
   const [sessionsCount, setSessionsCount] = useState<number>(1);
+  
+  // Consent Modal State
+  const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [activeConsentOrder, setActiveConsentOrder] = useState<any>(null);
+  const [consentNotes, setConsentNotes] = useState('');
+  const [consentRisks, setConsentRisks] = useState('');
 
   useEffect(() => {
     procedureApi.getCategories()
@@ -360,62 +366,209 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
             </p>
           </div>
         </div>
-      </div>
-      {/* Ordered Procedures Section */}
+            {/* Multi-Session Tracking Table Section */}
       <div className="col-span-12 space-y-6 mt-8">
         <SectionHeader 
-          title="Scheduled Procedures" 
-          subtitle="Procedures requested for this case"
+          title="Procedure Multi-Session Tracking" 
+          subtitle="Track and execute clinical procedures across multiple sessions"
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
           {data?.procedureOrders?.length > 0 ? (
-            data.procedureOrders.map((order: any) => (
-              <div key={order.id} className="bg-white border border-slate-200 rounded-[2rem] p-6 flex flex-col gap-6 hover:shadow-xl hover:shadow-slate-100 transition-all group">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-600">
-                      <Scissors className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{order.procedure?.name || 'Procedure'}</h4>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                        Scheduled: {order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'} {order.scheduledTime}
-                        {order.sessions > 1 && ` • ${order.sessions} Sessions`}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant={order.status === 'APPROVAL_PENDING' ? 'rose' : 'blue'} className="text-[8px] uppercase tracking-[0.15em] px-3">
-                    {order.status || 'SCHEDULED'}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      {order.procedure?.requiresConsent ? 'CONSENT REQUIRED' : 'NO CONSENT'}
-                    </span>
-                  </div>
-                  {order.procedure?.requiresConsent && (
-                    <button 
-                      onClick={() => window.open(`/print/consent/${order.id}`, '_blank')}
-                      className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2"
-                    >
-                      Generate Consent
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+            <table className="w-full text-left border-collapse min-w-[1200px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                  <th className="py-4 px-6 whitespace-nowrap">Date / Therapist</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Procedure / Body Part</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Session</th>
+                  <th className="py-4 px-6 whitespace-nowrap">F/U Date</th>
+                  <th className="py-4 px-6 min-w-[300px]">Performance Details</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Status</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Action</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm divide-y divide-slate-100">
+                {data.procedureOrders.map((order: any) => (
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="py-4 px-6">
+                      <div className="font-bold text-slate-900">{order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'}</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Dr. Valaki (Auto)</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                        {order.procedure?.name || 'Procedure'}
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-400 mt-0.5">BODY PART: FACE</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-fit text-[11px]">
+                        1/{order.sessions || 1}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="text-slate-600 font-medium text-xs">
+                        {new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                      </div>
+                      <div className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">20 Days</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-slate-500">
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Skin Type</span> II</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Unit</span> 10</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Power</span> 100 Hz</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Wave Length</span> 10</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Pulse Dur.</span> 2.2</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Spot Size</span> 25</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Density</span> 10</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Dot Density</span> 0.5</div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-1.5">
+                        <Badge variant={order.status === 'APPROVAL_PENDING' ? 'rose' : 'emerald'} className="text-[9px] uppercase tracking-[0.1em] w-fit">
+                          {order.status === 'APPROVAL_PENDING' ? 'Pending Approval' : 'Done'}
+                        </Badge>
+                        <Badge variant="blue" className="text-[8px] uppercase tracking-[0.1em] w-fit opacity-80">
+                          Payment: {order.status === 'APPROVAL_PENDING' ? 'Pending' : 'Paid'}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-2">
+                        {order.procedure?.requiresConsent && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button 
+                              onClick={() => {
+                                setActiveConsentOrder(order);
+                                setConsentNotes('');
+                                setConsentRisks('');
+                                setIsConsentModalOpen(true);
+                              }}
+                              className="px-2 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center justify-center gap-1 w-full whitespace-nowrap"
+                            >
+                              <FileSignature className="w-3 h-3" /> Fill
+                            </button>
+                            <button 
+                              onClick={() => {
+                                window.open(`/opd/print/consent/${caseId}`, '_blank');
+                              }}
+                              className="px-2 py-1.5 bg-slate-800 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all flex items-center justify-center gap-1 w-full whitespace-nowrap"
+                            >
+                              Print
+                            </button>
+                          </div>
+                        )}
+                        {!order.procedure?.requiresConsent && (
+                          <button className="px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all w-full border border-slate-200">
+                            Edit Stats
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="col-span-full py-12 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+            <div className="py-16 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center m-6 rounded-3xl">
               <Calendar className="w-10 h-10 text-slate-200 mb-4" />
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No Scheduled Procedures</p>
-              <p className="text-xs text-slate-300 mt-2">Pick a procedure and schedule to see it here.</p>
+              <p className="text-xs text-slate-300 mt-2">Pick a procedure from the catalog to start tracking sessions.</p>
             </div>
           )}
         </div>
-      </div>
+      </div>   </div>
+
+      {/* Consent Modal */}
+      {isConsentModalOpen && activeConsentOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
+                  <FileSignature className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-slate-900 font-black text-lg leading-none mb-1">Generate Consent Form</h2>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    {activeConsentOrder.procedure?.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsConsentModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-100 hover:bg-rose-50 transition-all flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-8 space-y-6 overflow-y-auto max-h-[60vh] bg-white">
+              <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 flex gap-4">
+                 <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                 <div>
+                    <h5 className="text-[11px] font-black uppercase tracking-widest text-indigo-800 mb-1">Auto-Populated Data</h5>
+                    <p className="text-[11px] font-medium text-indigo-700/80 leading-relaxed">
+                      Patient details, MRD, Case number, and the standard terms for this procedure will be populated automatically by the system.
+                    </p>
+                 </div>
+              </div>
+
+              <TextArea
+                label="Specific Risks & Complications (Optional)"
+                value={consentRisks}
+                onChange={(e) => setConsentRisks(e.target.value)}
+                placeholder="List any patient-specific risks (e.g. History of keloids, hyperpigmentation) that the patient must acknowledge..."
+                className="min-h-[120px]"
+              />
+
+              <TextArea
+                label="Doctor's Special Notes (Optional)"
+                value={consentNotes}
+                onChange={(e) => setConsentNotes(e.target.value)}
+                placeholder="Any other terms or notes specific to this patient..."
+                className="min-h-[120px]"
+              />
+            </div>
+
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                onClick={() => setIsConsentModalOpen(false)}
+                className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    // Get first available template (or dummy if none)
+                    const templatesResponse = await api.get('/consent/templates');
+                    const templates = templatesResponse.data || [];
+                    const templateId = templates.length > 0 ? templates[0].id : '00000000-0000-0000-0000-000000000000';
+                    
+                    await api.post(`/consent/case/${caseId}`, {
+                      templateId,
+                      customRisks: consentRisks,
+                      doctorNotes: consentNotes
+                    });
+                    
+                    toast.success('Consent Form successfully generated and saved to Patient File!');
+                    setIsConsentModalOpen(false);
+                  } catch (error) {
+                    console.error('Failed to generate consent form:', error);
+                    toast.error('Failed to generate consent form. Please try again.');
+                  }
+                }}
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all"
+              >
+                <Save className="w-4 h-4" />
+                Generate & Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

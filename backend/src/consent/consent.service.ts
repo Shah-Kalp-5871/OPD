@@ -27,6 +27,8 @@ export class ConsentService {
     templateId: string,
     signedById: string,
     signatureFile?: Express.Multer.File,
+    customRisks?: string,
+    doctorNotes?: string,
   ) {
     const data: any = {
       caseId,
@@ -34,6 +36,8 @@ export class ConsentService {
       signedById,
       status: 'SIGNED',
       signedAt: new Date(),
+      customRisks,
+      doctorNotes,
     };
 
     if (signatureFile) {

@@ -197,18 +197,14 @@ const ReceptionDashboardView = () => {
     }
   };
 
-  const handleDirectCheckIn = async (appointmentId: string) => {
-    try {
-      setCheckingInApptId(appointmentId);
-      await api.post('/appointments/check-in', { appointmentId });
-      toast.success('Patient checked in successfully');
-      fetchStats();
-      fetchQueue();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to check in patient');
-    } finally {
-      setCheckingInApptId(null);
-    }
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [selectedPatientForCheckIn, setSelectedPatientForCheckIn] = useState<any>(null);
+  const [selectedAppointmentForCheckIn, setSelectedAppointmentForCheckIn] = useState<string | undefined>();
+
+  const handleDirectCheckIn = (appointmentId: string, patient: any) => {
+    setSelectedPatientForCheckIn(patient);
+    setSelectedAppointmentForCheckIn(appointmentId);
+    setIsCheckInModalOpen(true);
   };
 
   const fetchStats = async () => {
@@ -351,23 +347,6 @@ const ReceptionDashboardView = () => {
   const formatTime = (dateString: string) => {
     if (!dateString) return '--:--';
     return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getStatusBadgeString = (status: string) => {
-    switch (status) {
-      case 'WAITING':
-        return `<div class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-black uppercase tracking-widest border border-amber-200 inline-block">WAITING</div>`;
-      case 'IN_SESSION':
-        return `<div class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-[10px] font-black uppercase tracking-widest border border-orange-200 inline-block animate-pulse">IN PROGRESS</div>`;
-      case 'COMPLETED':
-        return `<div class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-[10px] font-black uppercase tracking-widest border border-emerald-200 inline-block">COMPLETED</div>`;
-      case 'CANCELLED':
-        return `<div class="px-2 py-1 bg-rose-100 text-rose-700 rounded text-[10px] font-black uppercase tracking-widest border border-rose-200 inline-block">CANCELLED</div>`;
-      case 'SCHEDULED_APPOINTMENT':
-        return `<div class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-[10px] font-black uppercase tracking-widest border border-indigo-200 inline-block">SCHEDULED APPT</div>`;
-      default:
-        return `<div class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-[10px] font-black uppercase tracking-widest border border-slate-200 inline-block">${status}</div>`;
-    }
   };
 
   const SortIcon = ({ columnKey }: { columnKey: string }) => {
@@ -631,7 +610,7 @@ const ReceptionDashboardView = () => {
                                <button 
                                  onClick={(e) => { 
                                     e.stopPropagation(); 
-                                    handleDirectCheckIn(entry.appointmentId);
+                                    handleDirectCheckIn(entry.appointmentId, entry.patient);
                                  }}
                                  disabled={checkingInApptId === entry.appointmentId}
                                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200 flex items-center justify-center min-w-[70px] mx-auto"

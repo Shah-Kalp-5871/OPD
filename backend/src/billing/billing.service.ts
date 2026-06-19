@@ -764,15 +764,15 @@ export class BillingService {
         });
 
         if (newPaymentStatus === 'PAID') {
-          await tx.patientCase.update({
-            where: { id: updatedBill.caseId },
-            data: { stage: CaseStage.COMPLETED, status: 'CLOSED' },
-          });
-
           const entry = await tx.queueEntry.findUnique({
             where: { caseId: updatedBill.caseId },
           });
-          if (entry) {
+          
+          if (entry && entry.status === QueueStatus.BILLING_PENDING) {
+            await tx.patientCase.update({
+              where: { id: updatedBill.caseId },
+              data: { stage: CaseStage.COMPLETED, status: 'CLOSED' },
+            });
             await tx.queueEntry.update({
               where: { id: entry.id },
               data: { status: QueueStatus.COMPLETED },

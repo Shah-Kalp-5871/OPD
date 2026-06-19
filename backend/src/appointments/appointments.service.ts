@@ -16,6 +16,7 @@ import { MissedActionDto } from './dto/missed-action.dto';
 import { SmsWhatsappService } from '../communications/sms-whatsapp.service';
 import { ReminderScheduleService } from '../notifications/reminder-schedule.service';
 import { Logger } from '@nestjs/common';
+import { EventsService } from '../common/events.service';
 
 @Injectable()
 export class AppointmentsService {
@@ -26,6 +27,7 @@ export class AppointmentsService {
     private patientsService: PatientsService,
     private smsWhatsappService: SmsWhatsappService,
     private reminderScheduleService: ReminderScheduleService,
+    private events: EventsService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto, branchId: string) {
@@ -612,7 +614,7 @@ export class AppointmentsService {
   async checkIn(dto: CheckInAppointmentDto, userId: string, branchId: string) {
     const { appointmentId, vitals, visitComplaint, visitType, priority, complaint } = dto;
 
-    return this.prisma.$transaction(
+    const result = await this.prisma.$transaction(
       async (tx) => {
         await this.lockTransactionKey(
           tx,
@@ -624,11 +626,13 @@ export class AppointmentsService {
           where: { id: appointmentId, branchId },
           include: {
             patient: true,
-            doctor: true,
+            doctor: { include: { user: true } },
             patientCase: { include: { queueEntry: true } },
           },
         });
         if (!appointment) throw new NotFoundException('Appointment not found');
+
+        const patientName = `${appointment.patient?.firstName} ${appointment.patient?.lastName}`;
 
         if (
           appointment.status === AppointmentStatus.CHECKED_IN &&
@@ -638,6 +642,8 @@ export class AppointmentsService {
             caseId: appointment.patientCase.id,
             queueEntry: appointment.patientCase.queueEntry,
             appointmentId,
+            patientName,
+            doctorName: appointment.doctor?.user?.name,
           };
         }
 
@@ -754,10 +760,25 @@ export class AppointmentsService {
           caseId: patientCase!.id,
           queueEntry,
           appointmentId,
+          patientName,
+          doctorName: appointment.doctor?.user?.name,
         };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+
+    if (result.queueEntry) {
+      this.events.emitQueueUpdate({
+        type: 'STATUS_CHANGED',
+        id: result.queueEntry.id,
+        status: result.queueEntry.status,
+        token: result.queueEntry.tokenDisplay,
+        patientName: result.patientName,
+        room: result.doctorName ? result.doctorName : 'TBD',
+      });
+    }
+
+    return result;
   }
 
   async getAdminStats(branchId: string, dateStr?: string) {

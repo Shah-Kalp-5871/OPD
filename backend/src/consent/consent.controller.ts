@@ -48,6 +48,8 @@ export class ConsentController {
       dto.templateId,
       req.user.id,
       signature,
+      dto.customRisks,
+      dto.doctorNotes,
     );
   }
 }

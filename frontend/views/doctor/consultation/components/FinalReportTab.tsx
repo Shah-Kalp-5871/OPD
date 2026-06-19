@@ -31,7 +31,36 @@ interface FinalReportTabProps {
 const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinalized }) => {
   const router = useRouter();
   const [finalizing, setFinalizing] = useState(false);
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
+  const [billData, setBillData] = useState<any>(null);
+  const [refunding, setRefunding] = useState(false);
   const isCompleted = data?.status === 'COMPLETED';
+
+  React.useEffect(() => {
+    if (caseId) {
+      api.get(`/billing/${caseId}`).then(res => setBillData(res.data)).catch(() => {});
+    }
+  }, [caseId]);
+
+  const handleRefund = async () => {
+    if (!billData) return;
+    const amountToRefund = Math.abs(billData.balanceAmount);
+    if (!window.confirm(`Issue physical refund of ₹${amountToRefund}?`)) return;
+    try {
+      setRefunding(true);
+      await api.post(`/billing/${billData.id}/refund`, {
+        amount: amountToRefund,
+        reason: 'Discount applied post-payment',
+      });
+      toast.success('Refund processed successfully');
+      const updatedBill = await api.get(`/billing/${caseId}`);
+      setBillData(updatedBill.data);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to process refund');
+    } finally {
+      setRefunding(false);
+    }
+  };
 
   const handleFinalize = async () => {
     // Clinical validation
@@ -48,8 +77,12 @@ const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinaliz
 
     try {
       setFinalizing(true);
-      await api.post(`/consultation/${caseId}/finalize`, { nextStage: 'BILLING' });
+      await api.post(`/consultation/${caseId}/finalize`, { nextStage: 'BILLING', discountPercentage });
       toast.success('Consultation finalized and signed successfully');
+      
+      const updatedBill = await api.get(`/billing/${caseId}`).catch(() => null);
+      if (updatedBill?.data) setBillData(updatedBill.data);
+
       if (onFinalized) onFinalized();
       router.push('/doctor/dashboard');
     } catch (error: any) {
@@ -233,9 +266,22 @@ const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinaliz
            </div>
         </Card>
 
-        <Card className="bg-slate-900 border-none shadow-2xl shadow-slate-200">
+         <Card className="bg-slate-900 border-none shadow-2xl shadow-slate-200">
            <h3 className="text-white font-black text-xs uppercase tracking-widest mb-6">Record Actions</h3>
            <div className="space-y-4">
+             {!isCompleted && (
+               <div className="bg-slate-800 p-4 rounded-xl mb-4">
+                 <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Discount (%)</label>
+                 <input 
+                   type="number" 
+                   min="0" max="100"
+                   value={discountPercentage} 
+                   onChange={(e) => setDiscountPercentage(Number(e.target.value))}
+                   className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg p-3 font-bold focus:outline-none focus:border-blue-500 transition-colors"
+                   placeholder="Enter discount %"
+                 />
+               </div>
+             )}
              <Button 
                 onClick={handleFinalize}
                 disabled={finalizing || isCompleted}
@@ -246,6 +292,19 @@ const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinaliz
              >
                 {finalizing ? 'Signing Record...' : isCompleted ? 'Legally Signed' : 'SIGN & FINALIZE CASE'}
              </Button>
+
+             {billData?.paymentStatusEnum === 'REFUND_DUE' && (
+               <Button 
+                 onClick={handleRefund}
+                 disabled={refunding}
+                 loading={refunding}
+                 variant="outline"
+                 className="w-full h-14 rounded-2xl text-[10px] tracking-[0.2em] font-black uppercase shadow-xl bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
+                 icon={<AlertTriangle className="w-5 h-5" />}
+               >
+                 {refunding ? 'Processing...' : `Issue Refund: ₹${Math.abs(billData.balanceAmount)}`}
+               </Button>
+             )}
              
              <button className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all text-white group">
                 <div className="flex items-center gap-3">

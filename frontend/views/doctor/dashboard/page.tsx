@@ -293,7 +293,12 @@ const DoctorDashboardView = () => {
                                 </td>
                                 <td className="px-4 py-4 border border-slate-200">
                                    <div className="flex items-center gap-2">
-                                      <span className="text-[14px] font-bold text-slate-900 tracking-tight uppercase">{entry.patient.firstName} {entry.patient.lastName}</span>
+                                      <span 
+                                        className="text-[14px] font-bold text-[#107ca3] hover:text-[#0d6282] tracking-tight uppercase cursor-pointer hover:underline transition-all"
+                                        onClick={() => router.push(`/doctor/patients/hub/${entry.patientId}`)}
+                                      >
+                                        {entry.patient.firstName} {entry.patient.lastName}
+                                      </span>
                                       {getPriorityBadge(entry.priority)}
                                    </div>
                                 </td>

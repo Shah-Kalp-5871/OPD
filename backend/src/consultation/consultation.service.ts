@@ -465,6 +465,7 @@ export class ConsultationService {
     doctorId: string,
     nextStage: CaseStage,
     branchId: string,
+    discountPercentage?: number,
   ) {
     const currentConsultation = await this.prisma.consultationRecord.findFirst({
       where: { caseId, case: { branchId } },
@@ -530,6 +531,39 @@ export class ConsultationService {
             performedById: doctorId,
           },
         });
+      }
+
+      if (discountPercentage !== undefined && discountPercentage > 0) {
+        const bill = await tx.bill.findFirst({
+          where: { caseId },
+          include: { items: true },
+        });
+        
+        if (bill) {
+          const grossAmount = bill.grossAmount.toNumber();
+          const paidAmount = bill.paidAmount.toNumber();
+          const discountTotal = (grossAmount * discountPercentage) / 100;
+          const netAmount = grossAmount - discountTotal;
+          const balanceAmount = netAmount - paidAmount;
+          
+          let paymentStatusEnum = bill.paymentStatusEnum;
+          if (balanceAmount < 0) {
+            paymentStatusEnum = 'REFUND_DUE' as any;
+          } else if (balanceAmount === 0 && netAmount > 0) {
+            paymentStatusEnum = 'PAID';
+          }
+
+          await tx.bill.update({
+            where: { id: bill.id },
+            data: {
+              discountTotal,
+              netAmount,
+              balanceAmount,
+              paymentStatusEnum,
+              paymentStatus: paymentStatusEnum,
+            },
+          });
+        }
       }
 
       await tx.auditLog.create({

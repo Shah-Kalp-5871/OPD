@@ -169,7 +169,7 @@ export class ConsultationController {
   @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   async finalizeConsultation(
     @Param('caseId') caseId: string,
-    @Body() dto: FinalizeConsultationDto,
+    @Body() dto: FinalizeConsultationDto & { discountPercentage?: number },
     @Request() req,
     @BranchId() branchId: string,
   ) {
@@ -178,6 +178,7 @@ export class ConsultationController {
       req.user.id,
       dto.nextStage as any,
       branchId,
+      dto.discountPercentage,
     );
   }
 
