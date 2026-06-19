@@ -1,8 +1,10 @@
-export default function DoctorAppointmentsPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Appointment Management</h1>
-      <p className="text-slate-500">This module is currently under development.</p>
-    </div>
-  );
+import BookAppointmentView from '@/views/doctor/appointments/book/page';
+
+export const metadata = {
+  title: 'Book Appointment | Doctor Panel',
+  description: 'Schedule outpatient appointments for your OPD queue.',
+};
+
+export default function BookAppointmentPage() {
+  return <BookAppointmentView />;
 }
