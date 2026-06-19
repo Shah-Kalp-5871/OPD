@@ -23,6 +23,7 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
   const [notes, setNotes] = useState('');
   const [scheduledDate, setScheduledDate] = useState<string>('');
   const [scheduledTime, setScheduledTime] = useState<string>('');
+  const [sessionsCount, setSessionsCount] = useState<number>(1);
 
   useEffect(() => {
     procedureApi.getCategories()
@@ -38,13 +39,15 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
         procedureId: selectedProcedure.id,
         notes,
         scheduledDate,
-        scheduledTime
+        scheduledTime,
+        sessions: sessionsCount
       });
       toast.success(`Procedure "${selectedProcedure.name}" scheduled successfully`);
       setSelectedProcedure(null);
       setNotes('');
       setScheduledDate('');
       setScheduledTime('');
+      setSessionsCount(1);
       if (onProcedureAdded) onProcedureAdded(true);
     } catch (error) {
       console.error('Failed to schedule procedure', error);
@@ -295,14 +298,36 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
                       />
                     </div>
                   </div>
+
+                  <div className="mt-5 space-y-1.5">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1 flex justify-between">
+                      <span>Total Sessions</span>
+                      <span className="text-blue-600">{sessionsCount} Sessions</span>
+                    </label>
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="20" 
+                      value={sessionsCount}
+                      onChange={(e) => setSessionsCount(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-blue-600 cursor-pointer"
+                    />
+                  </div>
                 </div>
 
-                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex gap-4">
-                  <Info className="w-5 h-5 text-amber-500 shrink-0" />
+                <div className={`${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'} border rounded-2xl p-5 flex gap-4 transition-colors`}>
+                  { (selectedProcedure.basePrice * sessionsCount) > 5000 ? (
+                    <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                  ) : (
+                    <Info className="w-5 h-5 text-amber-500 shrink-0" />
+                  )}
                   <div>
-                    <h5 className="text-[11px] font-black text-amber-800 uppercase tracking-widest mb-1">Billing Notice</h5>
-                    <p className="text-[11px] text-amber-700/80 leading-relaxed font-medium italic">
-                      Scheduling adds ₹{selectedProcedure.basePrice} to the patient's bill immediately and notifies the nursing station.
+                    <h5 className={`text-[11px] font-black uppercase tracking-widest mb-1 ${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'text-rose-800' : 'text-amber-800'}`}>
+                      {(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'Financial Approval Required' : 'Billing Notice'}
+                    </h5>
+                    <p className={`text-[11px] leading-relaxed font-medium italic ${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'text-rose-700/80' : 'text-amber-700/80'}`}>
+                      Scheduling adds ₹{(selectedProcedure.basePrice * sessionsCount).toLocaleString()} to the patient's bill. 
+                      {(selectedProcedure.basePrice * sessionsCount) > 5000 && " Due to high value, this procedure will be marked 'Approval Pending' until cleared by reception."}
                     </p>
                   </div>
                 </div>
@@ -356,10 +381,13 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
                       <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{order.procedure?.name || 'Procedure'}</h4>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                         Scheduled: {order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'} {order.scheduledTime}
+                        {order.sessions > 1 && ` • ${order.sessions} Sessions`}
                       </p>
                     </div>
                   </div>
-                  <Badge variant="blue" className="text-[8px] uppercase tracking-[0.15em] px-3">{order.status || 'SCHEDULED'}</Badge>
+                  <Badge variant={order.status === 'APPROVAL_PENDING' ? 'rose' : 'blue'} className="text-[8px] uppercase tracking-[0.15em] px-3">
+                    {order.status || 'SCHEDULED'}
+                  </Badge>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100">

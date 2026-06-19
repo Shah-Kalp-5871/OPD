@@ -10,6 +10,9 @@ import ProceduresTab from './components/ProceduresTab';
 import ImagesTab from './components/ImagesTab';
 import DiagnosisTab from './components/DiagnosisTab';
 import FinalReportTab from './components/FinalReportTab';
+import SpecialNote, { NoteItem } from './components/SpecialNote';
+import BillingSummaryPanel from './components/BillingSummaryPanel';
+import NotificationBar from './components/NotificationBar';
 import { useConsultation } from './hooks/useConsultation';
 import { 
   FileText, 
@@ -48,6 +51,13 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
   } = useConsultation(caseId);
   
   const [activeTab, setActiveTab] = useState('complaints');
+  const [isBillingOpen, setIsBillingOpen] = useState(false);
+
+  // Mock Special Notes for demonstration
+  const specialNotes: NoteItem[] = [
+    { id: '1', type: 'appointment', message: 'Delayed Appointment, 10 days delay period (Fever)', timestamp: new Date() },
+    { id: '2', type: 'drug', message: '(S) Tab Levocip advised but patient did not take', timestamp: new Date() }
+  ];
 
   if (loading) {
     return (
@@ -156,8 +166,17 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         visitType="OPD Consultation"
       />
 
+      {/* SPECIAL NOTE BANNER */}
+      <SpecialNote notes={specialNotes} />
+
       {/* BODY: Sidebar + Main */}
-      <div className="clinical-workspace-body">
+      <div className="clinical-workspace-body relative">
+        
+        {/* BILLING DRAWER */}
+        <BillingSummaryPanel 
+          isOpen={isBillingOpen} 
+          onClose={() => setIsBillingOpen(false)} 
+        />
         
         {/* LEFT: Patient Side Panel — clinical-sidebar hides its scrollbar */}
         <PatientSidePanel patient={patient} vitals={vitals} />
@@ -197,6 +216,12 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
 
         </main>
       </div>
+
+      {/* NOTIFICATION BOTTOM BAR */}
+      <NotificationBar 
+        onOpenChat={() => console.log('Open Chat')}
+        onOpenPayments={() => setIsBillingOpen(true)}
+      />
     </div>
   );
 };

@@ -198,7 +198,7 @@ const BookAppointmentView = () => {
               </div>
 
               <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-amber-400 border border-slate-100">
+                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-sky-500 border border-slate-100">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
                 <div>

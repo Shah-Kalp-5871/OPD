@@ -31,6 +31,7 @@ interface PrescriptionTabProps {
 
 const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPrescriptionAdded }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchMode, setSearchMode] = useState<'BRAND' | 'GENERIC'>('BRAND');
   const { results: filteredDrugs, isLoading: searchLoading } = useDrugSearch(searchQuery);
   const [submitting, setSubmitting] = useState(false);
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
@@ -175,13 +176,27 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
         {!currentDrug ? (
           <div className="space-y-6">
             <Card className="p-0 border-none shadow-none bg-transparent">
+              <div className="flex items-center gap-2 mb-2 bg-slate-100 p-1 rounded-xl w-fit">
+                <button 
+                  onClick={() => setSearchMode('BRAND')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${searchMode === 'BRAND' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  By Brand Name
+                </button>
+                <button 
+                  onClick={() => setSearchMode('GENERIC')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${searchMode === 'GENERIC' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  By Content / Generic
+                </button>
+              </div>
               <div className="relative group">
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
                   <Search className="w-5 h-5" />
                 </div>
                 <input 
                   type="text" 
-                  placeholder="Search medication name or generic molecule..."
+                  placeholder={searchMode === 'BRAND' ? "Search by Brand Name (e.g. Crocin, Dolo)..." : "Search by Molecule/Generic (e.g. Paracetamol)..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-16 pr-12 py-5 bg-white border border-slate-200 rounded-3xl text-lg font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 transition-all shadow-xl shadow-slate-100 placeholder:text-slate-300"

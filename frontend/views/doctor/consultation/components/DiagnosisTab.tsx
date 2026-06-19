@@ -14,7 +14,8 @@ import {
   Target,
   Zap,
   Check,
-  ThumbsDown
+  ThumbsDown,
+  Calendar
 } from 'lucide-react';
 import api from '@/lib/api';
 import { aiApi } from '@/lib/api/ai';
@@ -233,6 +234,28 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
                   placeholder="Instructions for patient: Diet, lifestyle, warning signs..."
                   className="min-h-[100px] italic bg-slate-50 border-dashed pt-8"
                 />
+              </div>
+
+              {/* Follow-up Toggle */}
+              <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-black text-slate-800 uppercase tracking-tight">Auto-Schedule Follow-up</h5>
+                    <p className="text-[10px] text-slate-500 font-medium">Add to Reception's follow-up queue</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select className="bg-white border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 outline-none focus:border-blue-500 font-bold">
+                    <option value="none">No Follow-up</option>
+                    <option value="3">In 3 Days</option>
+                    <option value="7">In 1 Week</option>
+                    <option value="14">In 2 Weeks</option>
+                    <option value="30">In 1 Month</option>
+                  </select>
+                </div>
               </div>
             </div>
           </Card>

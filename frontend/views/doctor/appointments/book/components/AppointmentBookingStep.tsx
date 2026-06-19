@@ -165,53 +165,49 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
       <div className="bg-white border-x border-b border-slate-200 rounded-b-3xl overflow-hidden shadow-sm">
 
         {/* === COLUMN LAYOUT === */}
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_auto_1fr] divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+        <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
-          {/* ── LEFT: Doctor, Purpose, Remarks ── */}
-          <div className="p-5 space-y-4">
+          {/* ── LEFT: Clinical Details ── */}
+          <div className="p-5 flex flex-col h-full">
+            <div className="space-y-6 flex-1">
+              <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
+                <Stethoscope className="w-3.5 h-3.5 text-slate-400" />
+                <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">Clinical Details</h3>
+              </div>
 
-            {/* Section label */}
-            <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-              <Stethoscope className="w-3.5 h-3.5 text-slate-400" />
-              <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">Clinical Details</h3>
-            </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Purpose of Visit *</label>
+                <input
+                  type="text"
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-[#107ca3] focus:bg-white transition-all placeholder:text-slate-300"
+                  placeholder="e.g. Follow-up, Chest Pain…"
+                />
+              </div>
 
-
-
-            {/* Purpose */}
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Purpose of Visit *</label>
-              <input
-                type="text"
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-[#107ca3] focus:bg-white transition-all placeholder:text-slate-300"
-                placeholder="e.g. Follow-up, Chest Pain…"
-              />
-            </div>
-
-            {/* Remarks */}
-            <div className="space-y-2">
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Remarks</label>
-              <textarea
-                rows={2}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-[#107ca3] focus:bg-white transition-all resize-none placeholder:text-slate-300"
-                placeholder="Any special notes for the doctor…"
-              />
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Remarks</label>
+                <textarea
+                  rows={4}
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 outline-none focus:border-[#107ca3] focus:bg-white transition-all resize-none placeholder:text-slate-300"
+                  placeholder="Any special notes for the doctor…"
+                />
+              </div>
             </div>
 
             {/* Booking summary chip */}
-            <div className="mt-auto pt-4">
-              <div className="flex flex-col gap-2 p-3 bg-sky-50/50 rounded-2xl border border-sky-100">
+            <div className="mt-6">
+              <div className="flex flex-col gap-2 p-4 bg-sky-50/50 rounded-2xl border border-sky-100">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4 text-[#107ca3] shrink-0" />
-                  <span className="text-[11px] font-bold text-[#0d6282]">{format(selectedDate, 'dd MMM yyyy')}</span>
+                  <span className="text-xs font-bold text-[#0d6282]">{format(selectedDate, 'dd MMM yyyy')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#107ca3] shrink-0" />
-                  <span className={`text-[11px] font-black ${selectedSlot ? 'text-[#0d6282]' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-black ${selectedSlot ? 'text-[#0d6282]' : 'text-slate-400'}`}>
                     {selectedSlot || 'No slot selected'}
                   </span>
                 </div>
@@ -219,14 +215,9 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
             </div>
           </div>
 
-          {/* ── CENTER DIVIDER (visible on lg) ── */}
-          <div className="hidden lg:block w-px" />
-
-          {/* ── RIGHT: Calendar + Slots ── */}
-          <div className="p-5 space-y-4">
-
-            {/* Section label + month nav */}
-            <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+          {/* ── CENTER: Calendar ── */}
+          <div className="p-5 flex flex-col">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
                 <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">
@@ -249,17 +240,13 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
               </div>
             </div>
 
-            {/* Calendar grid */}
             <div className="grid grid-cols-7 gap-1 text-center">
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
                 <div key={i} className="text-[9px] font-black text-slate-300 py-1 uppercase">{d}</div>
               ))}
-
-              {/* Empty offset cells */}
               {Array.from({ length: startOffset }).map((_, i) => (
                 <div key={`e-${i}`} />
               ))}
-
               {daysInMonth.map((day, idx) => {
                 const isPast = isBefore(day, startOfDay(new Date()));
                 const isSelected = isSameDay(selectedDate, day);
@@ -270,7 +257,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                     disabled={isPast}
                     onClick={() => setSelectedDate(day)}
                     className={`
-                      h-8 flex items-center justify-center rounded-lg text-[11px] font-bold transition-all
+                      h-10 flex items-center justify-center rounded-lg text-[12px] font-bold transition-all
                       ${isPast ? 'text-slate-200 cursor-not-allowed' : 'hover:bg-sky-50 hover:text-[#0d6282]'}
                       ${isSelected ? 'bg-slate-900 text-white shadow-sm font-black scale-105' : ''}
                       ${isTd && !isSelected ? 'text-[#0d6282] font-black ring-1 ring-sky-200' : ''}
@@ -282,21 +269,23 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                 );
               })}
             </div>
+          </div>
 
-            {/* Time Slots */}
-            <div className="pt-3 border-t border-slate-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    Available Slots
-                  </span>
-                </div>
-                <span className="text-[9px] font-bold text-[#0d6282]">
-                  {availableSlots.length} total
+          {/* ── RIGHT: Time Slots ── */}
+          <div className="p-5 flex flex-col bg-slate-50/30">
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                  Available Slots
                 </span>
               </div>
+              <span className="text-[9px] font-bold text-[#0d6282]">
+                {availableSlots.length} total
+              </span>
+            </div>
 
+            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar" style={{ maxHeight: '320px' }}>
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="w-6 h-6 border-2 border-[#107ca3]/20 border-t-[#107ca3] rounded-full animate-spin" />
@@ -309,7 +298,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                 <div className="space-y-4">
                   <SlotGroup
                     label="Morning"
-                    icon={<Sunrise className="w-3.5 h-3.5 text-amber-400" />}
+                    icon={<Sunrise className="w-3.5 h-3.5 text-sky-400" />}
                     slots={morningSlots}
                     selectedSlot={selectedSlot}
                     onSelect={setSelectedSlot}
@@ -317,7 +306,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                   />
                   <SlotGroup
                     label="Afternoon"
-                    icon={<Sun className="w-3.5 h-3.5 text-sky-400" />}
+                    icon={<Sun className="w-3.5 h-3.5 text-sky-500" />}
                     slots={afternoonSlots}
                     selectedSlot={selectedSlot}
                     onSelect={setSelectedSlot}
@@ -325,7 +314,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                   />
                   <SlotGroup
                     label="Evening"
-                    icon={<Sunset className="w-3.5 h-3.5 text-indigo-400" />}
+                    icon={<Sunset className="w-3.5 h-3.5 text-sky-600" />}
                     slots={eveningSlots}
                     selectedSlot={selectedSlot}
                     onSelect={setSelectedSlot}

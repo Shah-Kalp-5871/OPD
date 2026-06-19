@@ -18,7 +18,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { BranchGuard } from '../auth/branch.guard';
+import { BranchGuard } from '../common/guards/branch.guard';
 import { BranchId } from '../auth/branch-id.decorator';
 
 @Controller('queue')

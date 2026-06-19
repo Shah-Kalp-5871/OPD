@@ -70,6 +70,18 @@ const SessionTopBar: React.FC<SessionTopBarProps> = ({
               <span className="flex items-center gap-1.5 text-blue-600/70"><Calendar className="w-3 h-3" /> Case: {caseNumber}</span>
             </div>
           </div>
+
+          {/* NEXT PATIENT INDICATOR */}
+          <div className="pl-6 border-l border-slate-100 hidden lg:block group cursor-pointer">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Next Patient</p>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">Vikram Singh</p>
+              <Badge variant="amber" className="scale-90 opacity-80">Waiting</Badge>
+            </div>
+          </div>
         </div>
       </div>
 

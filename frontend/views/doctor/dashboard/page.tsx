@@ -56,16 +56,15 @@ const DoctorDashboardView = () => {
   }, [clinicalEvent]);
 
   useEffect(() => {
-    fetchMyQueue();
-  }, []);
-
-
+    if (doctorId) {
+      fetchMyQueue();
+    }
+  }, [doctorId]);
 
   const fetchMyQueue = async () => {
     try {
-      // Backend automatically filters by current user (doctor) if we use /queue/live without doctorId,
-      // but let's assume we want to be explicit or the backend handles it via JWT.
-      const url = doctorId ? `/queue/live?doctorId=${doctorId}` : '/queue/live';
+      if (!doctorId) return;
+      const url = `/queue/live?doctorId=${doctorId}`;
       const response = await api.get(url);
       setQueue(response.data);
     } catch (error) {
@@ -127,7 +126,7 @@ const DoctorDashboardView = () => {
     }
   };
 
-  const activeQueue = queue.filter(q => q.status !== 'COMPLETED' && q.status !== 'CANCELLED');
+  const activeQueue = queue.filter(q => !['COMPLETED', 'CANCELLED', 'BILLING_PENDING', 'PHARMACY_PENDING'].includes(q.status));
   const totalPages = Math.ceil(activeQueue.length / itemsPerPage);
   const paginatedQueue = activeQueue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 

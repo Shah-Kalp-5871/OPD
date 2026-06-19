@@ -284,7 +284,7 @@ const OpdQueueView = () => {
     let match = true;
 
     // Filter by Tab (Current vs Completed)
-    const isCompleted = entry.status === 'COMPLETED' || entry.status === 'SESSION_ENDED';
+    const isCompleted = ['COMPLETED', 'SESSION_ENDED', 'BILLING_PENDING', 'PHARMACY_PENDING'].includes(entry.status);
     if (queueTab === 'current' && isCompleted) match = false;
     if (queueTab === 'completed' && !isCompleted) match = false;
 
@@ -544,16 +544,16 @@ const OpdQueueView = () => {
              <table className="w-full text-left border-collapse border border-slate-200">
                <thead className="bg-[#107ca3] text-white sticky top-0 z-10">
                  <tr>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('case.caseNumber')}>Case No <SortIcon columnKey="case.caseNumber" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('createdAt')}>Appt Time <SortIcon columnKey="createdAt" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('case.caseNumber')}><div className="flex items-center justify-center gap-1">Case No <SortIcon columnKey="case.caseNumber" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('createdAt')}><div className="flex items-center justify-center gap-1">Appt Time <SortIcon columnKey="createdAt" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('checkInTime')}><div className="flex items-center justify-center gap-1">Check In <SortIcon columnKey="checkInTime" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('patientName')}><div className="flex items-center gap-1">Patient Name <SortIcon columnKey="patientName" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('case.visitType')}><div className="flex items-center justify-center gap-1">Visit For <SortIcon columnKey="case.visitType" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('age')}><div className="flex items-center justify-center gap-1">Age <SortIcon columnKey="age" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('patient.gender')}><div className="flex items-center justify-center gap-1">Sex <SortIcon columnKey="patient.gender" /></div></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('patient.address.city')}><div className="flex items-center gap-1">Address <SortIcon columnKey="patient.address.city" /></div></th>
                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Billing</th>
-                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('status')}>Status <SortIcon columnKey="status" /></th>
+                   <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] cursor-pointer hover:bg-[#0d6282] transition-colors" onClick={() => handleSort('status')}><div className="flex items-center justify-center gap-1">Status <SortIcon columnKey="status" /></div></th>
                    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Action</th>
                  </tr>
                </thead>
@@ -590,25 +590,25 @@ const OpdQueueView = () => {
                            className={`${rowBg} transition-all duration-300 ${isInSession ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
                          >
                           <td className="px-4 py-4 border border-slate-200 text-center">
-                            <span className={`inline-block whitespace-nowrap mx-auto text-[12px] font-black tracking-widest px-3 py-1.5 rounded-xl border transition-all ${entry.status === 'IN_SESSION' ? 'bg-[#0d6282] text-white border-[#0a4b63] shadow-sm' : 'bg-white text-slate-900 border-slate-300 shadow-sm'}`}>
+                            <span className={`w-fit mx-auto text-xs font-black tracking-wider px-3 py-1.5 rounded-xl border transition-all ${entry.status === 'IN_SESSION' ? 'bg-[#0d6282] text-white border-[#0a4b63] shadow-sm' : 'bg-white text-slate-900 border-slate-300 shadow-sm'}`}>
                                {entry.isAppointment ? '--' : (entry.case?.caseNumber || entry.tokenDisplay)}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-center border border-slate-200">
-                             <span className="text-[12px] font-bold text-slate-700 flex items-center justify-center gap-2">
+                             <span className="text-xs font-bold text-slate-700 flex items-center justify-center gap-2">
                                 {formatTime(entry.expectedTime || entry.case?.createdAt)}
                              </span>
                           </td>
                           <td className="px-4 py-4 text-center border border-slate-200">
-                             <span className="text-[12px] font-bold text-slate-700 flex items-center justify-center gap-2">
+                             <span className="text-xs font-bold text-slate-700 flex items-center justify-center gap-2">
                                 {entry.checkInTime ? formatTime(entry.checkInTime) : '--'}
                              </span>
                           </td>
                           <td className="px-4 py-4 border border-slate-200">
                              <div className="flex items-center gap-2">
-                                <span className="text-[12px] font-black text-slate-800 tracking-widest uppercase">{entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`}</span>
+                                <span className="text-sm font-bold text-slate-900 capitalize">{entry.mrId ? `${entry.mr?.firstName} ${entry.mr?.lastName}` : `${entry.patient?.firstName} ${entry.patient?.lastName}`}</span>
                                 {entry.mrId && (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200">
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest border bg-amber-100 text-amber-700 border-amber-200 uppercase">
                                     MR
                                   </span>
                                 )}
