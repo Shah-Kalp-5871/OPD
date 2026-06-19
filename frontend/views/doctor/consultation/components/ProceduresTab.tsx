@@ -360,62 +360,101 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
             </p>
           </div>
         </div>
-      </div>
-      {/* Ordered Procedures Section */}
+            {/* Multi-Session Tracking Table Section */}
       <div className="col-span-12 space-y-6 mt-8">
         <SectionHeader 
-          title="Scheduled Procedures" 
-          subtitle="Procedures requested for this case"
+          title="Procedure Multi-Session Tracking" 
+          subtitle="Track and execute clinical procedures across multiple sessions"
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
           {data?.procedureOrders?.length > 0 ? (
-            data.procedureOrders.map((order: any) => (
-              <div key={order.id} className="bg-white border border-slate-200 rounded-[2rem] p-6 flex flex-col gap-6 hover:shadow-xl hover:shadow-slate-100 transition-all group">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-600">
-                      <Scissors className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{order.procedure?.name || 'Procedure'}</h4>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                        Scheduled: {order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'} {order.scheduledTime}
-                        {order.sessions > 1 && ` • ${order.sessions} Sessions`}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant={order.status === 'APPROVAL_PENDING' ? 'rose' : 'blue'} className="text-[8px] uppercase tracking-[0.15em] px-3">
-                    {order.status || 'SCHEDULED'}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      {order.procedure?.requiresConsent ? 'CONSENT REQUIRED' : 'NO CONSENT'}
-                    </span>
-                  </div>
-                  {order.procedure?.requiresConsent && (
-                    <button 
-                      onClick={() => window.open(`/print/consent/${order.id}`, '_blank')}
-                      className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2"
-                    >
-                      Generate Consent
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+            <table className="w-full text-left border-collapse min-w-[1200px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                  <th className="py-4 px-6 whitespace-nowrap">Date / Therapist</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Procedure / Body Part</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Session</th>
+                  <th className="py-4 px-6 whitespace-nowrap">F/U Date</th>
+                  <th className="py-4 px-6 min-w-[300px]">Performance Details</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Status</th>
+                  <th className="py-4 px-6 whitespace-nowrap">Action</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm divide-y divide-slate-100">
+                {data.procedureOrders.map((order: any) => (
+                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="py-4 px-6">
+                      <div className="font-bold text-slate-900">{order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'}</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Dr. Valaki (Auto)</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                        {order.procedure?.name || 'Procedure'}
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-400 mt-0.5">BODY PART: FACE</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-fit text-[11px]">
+                        1/{order.sessions || 1}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="text-slate-600 font-medium text-xs">
+                        {new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                      </div>
+                      <div className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">20 Days</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-slate-500">
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Skin Type</span> II</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Unit</span> 10</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Power</span> 100 Hz</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Wave Length</span> 10</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Pulse Dur.</span> 2.2</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Spot Size</span> 25</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Density</span> 10</div>
+                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Dot Density</span> 0.5</div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-1.5">
+                        <Badge variant={order.status === 'APPROVAL_PENDING' ? 'rose' : 'emerald'} className="text-[9px] uppercase tracking-[0.1em] w-fit">
+                          {order.status === 'APPROVAL_PENDING' ? 'Pending Approval' : 'Done'}
+                        </Badge>
+                        <Badge variant="blue" className="text-[8px] uppercase tracking-[0.1em] w-fit opacity-80">
+                          Payment: {order.status === 'APPROVAL_PENDING' ? 'Pending' : 'Paid'}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-2">
+                        {order.procedure?.requiresConsent && (
+                          <button 
+                            onClick={() => window.open(`/print/consent/${order.id}`, '_blank')}
+                            className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center justify-center gap-1.5 w-full whitespace-nowrap"
+                          >
+                            <AlertTriangle className="w-3 h-3" /> Consent
+                          </button>
+                        )}
+                        <button className="px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all w-full border border-slate-200">
+                          Edit Stats
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="col-span-full py-12 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+            <div className="py-16 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center m-6 rounded-3xl">
               <Calendar className="w-10 h-10 text-slate-200 mb-4" />
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No Scheduled Procedures</p>
-              <p className="text-xs text-slate-300 mt-2">Pick a procedure and schedule to see it here.</p>
+              <p className="text-xs text-slate-300 mt-2">Pick a procedure from the catalog to start tracking sessions.</p>
             </div>
           )}
         </div>
-      </div>
+      </div>   </div>
     </div>
   );
 };
