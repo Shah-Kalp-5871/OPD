@@ -38,6 +38,7 @@ const ImagesTab: React.FC<ImagesTabProps> = ({ caseId, data, onImageAdded }) => 
   const [compareMode, setCompareMode] = useState(false);
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
   const [viewingImage, setViewingImage] = useState<any | null>(null);
+  const [selectedUploadTag, setSelectedUploadTag] = useState<string>('BEFORE');
 
   useEffect(() => {
     fetchImages();
@@ -73,7 +74,7 @@ const ImagesTab: React.FC<ImagesTabProps> = ({ caseId, data, onImageAdded }) => 
       setUploadError(null);
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('tag', 'GENERAL');
+      formData.append('tag', selectedUploadTag);
       formData.append('notes', '');
 
       const res = await api.post(
@@ -139,27 +140,40 @@ const ImagesTab: React.FC<ImagesTabProps> = ({ caseId, data, onImageAdded }) => 
           subtitle="Visual progress, attachments, and comparative analysis."
         />
 
-        <div className="flex items-center gap-4">
-          <Button 
-            variant={compareMode ? 'primary' : 'outline'}
-            onClick={() => {
-              setCompareMode(!compareMode);
-              if (compareMode) setSelectedForCompare([]);
-            }}
-            icon={<Columns className="w-4 h-4" />}
-            className="rounded-2xl"
-          >
-            {compareMode ? 'Exit Comparison' : 'Compare Images'}
-          </Button>
-          
-          <label className={`
-            flex items-center gap-2 px-6 h-12 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all hover:bg-blue-500 cursor-pointer shadow-lg shadow-blue-500/20 active:scale-[0.98]
-            ${uploading ? 'opacity-50 pointer-events-none' : ''}
-          `}>
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {uploading ? `Uploading ${uploadProgress}%` : 'Upload Image'}
-            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} accept="image/png,image/jpeg" />
-          </label>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            {IMAGES_TAGS.map(tag => (
+              <button 
+                key={tag}
+                onClick={() => setSelectedUploadTag(tag)}
+                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${selectedUploadTag === tag ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant={compareMode ? 'primary' : 'outline'}
+              onClick={() => {
+                setCompareMode(!compareMode);
+                if (compareMode) setSelectedForCompare([]);
+              }}
+              icon={<Columns className="w-4 h-4" />}
+              className="rounded-2xl"
+            >
+              {compareMode ? 'Exit Comparison' : 'Compare Images'}
+            </Button>
+            
+            <label className={`
+              flex items-center gap-2 px-6 h-12 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all hover:bg-blue-500 cursor-pointer shadow-lg shadow-blue-500/20 active:scale-[0.98]
+              ${uploading ? 'opacity-50 pointer-events-none' : ''}
+            `}>
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploading ? `Uploading ${uploadProgress}%` : `Upload ${selectedUploadTag}`}
+              <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} accept="image/png,image/jpeg" />
+            </label>
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,2371 @@
+--- Page 0 ---
+OPD / Clinic Management  System  
+Admin  Panel  — Full  Feature  Documentation  
+Technology  Stack  
+● Frontend:  React.js  
+● Backend:  Node.js  with  Express.js  
+● Database:  PostgreSQL(as  per deployment)  
+● Payment  Gateway:  Razorpay  
+● Authentication:  JWT -based  role  authentication  
+● Notifications:  SMS  / Email  (OTP  & reminders)  
+ 
+ 
+ 
+ 
+• Roles  & Permissions  
+Each  user  role  has defined  access  to modules.  Admin  has full control  over  all sections.  
+ 
+ 
+● A  Reception :  
+Patient  registration,  appointment  booking,  payment  collection,  billing, follow -up scheduling  
+● B  Doctor : Full OPD  workflow  - complaints,  investigation,  drugs,  procedure,  diagnosis, instructions, reports  
+● C  Nursing : Patient  vitals  entry,  assisting  doctor,  uploading  lab reports  & images,  updating vitals  
+● D  Admin : Master  data  management  — drugs,  lab, procedure,  advice  lists.  Full system access & reporting  
+● E  Medical : showing  only  prescription,conformation drugh tacken,no drugh avelibal INFORM BY 
+ADMINE/DOCTOR /  
+NOTE:  Nursing  and Reception  can VIEW  patient  history  but can only  EDIT  their respective permitted fields 
+(see section 4).  
+ 
+Patient Management  
+Access:  Reception,  Doctor,  Nursing,  Admin  (View/Listing/Add/Edit)  
+.1 Features  
+● Add  Patient  
+● Edit  Patient with OTP  
+● Delete  / Deactivate  Patient  (Admin  / Doctor  only)  
+--- Page 1 ---
+ 
+ 
+OPD  Appointment  
+Access:  Reception  (Add/Edit/Pay)  | Doctor,  Nursing  (View)  | Admin  (Full)  
+ 
+.2 Features  
+● Add  New  Appointment  
+● Edit  Appointment  
+● Cancel  Appointment  (with  reason  
+ 
+data sefty  બધા દદીઓના  નંબર એક સાથે લિસ્ટમાં  દેખાવા  ન જોઈએ , જેથી કોઈ સ્રીનશોટ  િઈને તેનો દુરુપયોગ  ન 
+કરી શકે.”  
+• ખાસ દદીનો રેકોર્ડ ખોિીએ  ત્યારે જ તેનો મોબાઇિ  નંબર દેખાવા  જોઈએ . 
+• કોઈ  પણ  Staff  ને Mobile અથવા  અન્ય  Computer પરથી  Login કરવાની  permission ન હોવી  જોઈએ . ,System માત્ર  Hospital 
+દ્વારા  પ્રોવાઇડ  કરેલી Authorized System / Computer  પર જ Open અને  Access થવું જોઈએ .  Unauthorized  
+ 
+• Devices થી Login કરવાનો  પ્રયાસ  Auto Block થવો  જોઈએ .  Admin / IT Security System થી Verify કરેિી  Device Only 
+Access Allow કરે. 
+ 
+  
+PATIENT RAGIESTATION  Search  by Name,  Unique  ID, Contact  Numbe  
+  
+• Profile upgrade  માત્ર  Doctor અથવા  Admin  કરી શકે.  
+• કોઈ પણ staff patient ની profile માં changes ન કરી શકે, જેથી  data safety  maintain થાય .  
+• જયારે  patient first time hospital physical visit  કરે, ત્યારે  doctor profile check  કરશે  અને તેની  responsibility 
+રહેશે .  
+• જો patient ની profile upgrade કરવાની  જરૂર  પર્ે, તો visiting time  doctor ને આ માલહતી  આપવી  પર્શે , અને 
+doctor જ profile upgrade કરશે . 
+ 
+ 
+ 
+ 
+ 
+• MRD  NO  (MEDICAL RECORD DIPARMENT – MRD NO KNOW AS PARMENT ID)  
+P- PARMENET ID P03-260001   
+03 SUGESTIVE  MOUNTH  
+260001   1ST 2 DIGIT SUGESTIVE YR AND LAST 4 DIGHT  SUGESTIVE FOR NUMBER OF PT  THIS MONTH   
+--- Page 2 ---
+ 
+ 
+ 
+• RAGIESTION PATIENT BASIC DETIL ONLY BELOW  
+● Patient  Name * — Full name  — text  field  (SURNAME ,MIDDLE NAME ,LAST NAME )  
+● Contact  Number*  — Primary  mobile  number  ( Multiple  patient  create  ) 
+ 
+ 
+ 
+● Unique  ID* — Auto -generated  system  ID (e.g.  P03 -260001)  
+     P03-PARMENET ID WITH MOUNTH,2ND 6TH WORD SUGGESTIVE  26 – YR,LAST FOR MOTH OF TOTOL PT)  
+● Gender*  — Male  / Female  / Other  — dropdown  
+● Address*  — Full address  — text 
+ 
+● Age  (Display)*  days  /months  /year DAY / Auto -calculated  from  DOB;  shown  as years (IF ADD BIRTH DATE  
+)  
+ 
+Language*  Preferred  language  for communication  — GUJRATI/HINDI/ENGLISH  (ENTER) dropdown  
+ 
+  
+        (ED : - ENDEBAL -DISEBAL    OPTION )  
+ONE BUTTONE GIVE PRIENT STICKER PARMENET NUMBER (FILE FRUINT)  
+PARMENET NUMBER STICKER SHOW NAME /M/F 26YR WITH BARCORD  FOR FILE NAME  
+ 
+ 
+ 
+ 
+AFTER SUBMIT ION PRTOFILE GIVEN OPTION ADD APPOIENTMENT   
+ 
+જો patient first time  hospital માં હોય અને staff search  કરીને  click કરે, તો patient ની basic details  automatically 
+display થાશે . 
+• તેની  નીચે  options  દેખાવા  જોઈએ :  
+o Book Appointment   
+o Add Report   
+o All other available options   ETC  
+• આ તમામ  options patient selection  પછી  active થશે. 
+ 
+ 
+Book Appointment   
+BOOK APOENTMENT CLICK AFTER OPEN  
+ 
+TODAY DATE AUTO SETION  ,BUT CLICK AND CHANGES PICK UP IN CALENDAR  AKING WITH TIME  
+PIC IN TIME  
+AFTER GANRET CASE AUTO ACCODING TIME   
+ 
+CASE ID GENRATED  Ex for C001 -001 -130326    
+C –case ,1st 3 digit today opd token no ,  
+2nd 3 digit pt visit (NUMBER OF VISIT THIS PT)  
+3rd 6 digit  suggestive for date   
+• જો કોઈ patient call પર પહેલીવાર  appointment માટે  આવે  છે, તો staff એ patient નો registration  કરવો  
+જોઈએ . ત્યારબાદ  patient ની appointment create  કરવી  જોઈએ . 
+• જયારે  patient hospital physical visit કરે (પ્રથમવાર  આવે ) → તેની  profile update  કરવી  જોઈએ  BY DOCTOR , PRIENT PAMENT ID STICKER    
+ SUBMIT  
+--- Page 3 ---
+ 
+તમામ  details સાથે .  
+• Appointment create થતા  જ confirmation no. message  WITH DATE  auto send  AFTER SUBIMTION  
+APPOIENTMENT થવું જોઈએ  
+ 
+CHEECK PATIENT   
+જ્યારે  patient hospital માં આવે , ત્યારે  Mobile Number (Mo.) અથવા  Name દ્વારા  search  કરવો . 
+• Patient select કયાડ પછી :  
+o Patient Check -in entry  કરવી   
+o Check -in થતાં  જ check -in time automatically generate  થવું જોઈએ . 
+ 
+ 
+• DATE AUTO ,CHEEK TIME AUTO  
+ 
+• બાકીની  તમામ  details appointment visit વખતે  fill up  કરવી  જોઈએ .  
+જો કોઈ old patient  appointment માટે call કરે → appointment create કરવી  અને જયારે  patient hospital physical 
+visit કરે → auto check -in time record થવું જોઈએ . 
+• Case box patient માટે color coding  દ્વારા  visually indicate કરવું  જોઈએ . 
+ 
+ 
+ 
+ 
+Waiting  
+In-Progress  
+Completed  
+ Cancelled  
+ 
+ACTION BOTTONE IN  EDIT /CANCLE  
+ 
+• Appointment SMS / WhatsApp communication system:   
+ જેના  માટે appointment પહેિેથી  છે, તેને 1 day પહેલાાં  auto message send  કરવું  જોઈએ .  
+• જો patient call કરીને  appointment book કરે, તો call થી appointment પછી  pre-type message / WITH IF 
+SELETION  TIME WhatsApp automatically CONFORMATIO send  થવું જોઈએ  
+• Purpose  of Visit  — Dropdown  + free  text (e.g.  New  Consultation,  Follow -up, repoting )  ( IF  
+POSSIBAL 3 TAB SHOW  OPEN ONLY SLECTION  seletion direct )  
+● F/U  AUTO  UPDATE  RESION FOR EX  LESSOR  OTHER PROCER IF PT COMING  ON DUE DATE auto update  
+DELY F/U  DELY INFORMATION   Follow -up information  detail  It will be showing  in the OPD 
+ 
+● Patient  Category  - FOC/Payment  ( Height  Light  only  for FOC  ) SELECTION auto   ganrated  IF  PRE FILD (OLD  
+PT)  FOR  EX  FOR     FOC   PT Payment type  if foc category auto ganrateted all further no show payment 
+option  only in constation in only   
+•  
+• Date  of Birth (OPTONAL)  (E/D) — Date  picker  — system  auto -calculates  Age (updates  ,UPGREAD day 
+by day) 
+• If give send auto sms Birthday Wish SMS  
+• Pre type wish msg manage by admine  
+• Blood  Group  (E/D) — A+, A-, B+, B-, O+, O-, AB+,  AB- — box  
+• Email  Address  (E/D)  — Optional  — for digital  prescriptions  & reminders (E/D BY ADMINE )  
+• Created  Date  / Time  — Auto -stamped  on registration  
+• Created  By — Auto -stamped  — staff  name  
+• એક વખત  profile upgrade થઈ જાય પછી ફરીથી  ઉપરના  options દેખાવા  ન જોઈએ , આ options માત્ર 
+પ્રથમ  વખત  જ દેખાવા  જોઈએ . 
+•  
+IN GRAY  1TIME ONLY ASKING  NEXT VISITI ONLY SHOW  DO NOT SHOW F/U     
+ C001 -001 -130326    
+ C001 -001 -130326    
+C001 -001 -130326    
+C001 -001 -130326   
+--- Page 4 ---
+ 
+• Past  History  (Summary)  — Pre-fill from  patient  profile   if old pt or manual  entry  new pt /menully 
+entery  avelebal option given /IF CHANGES ANY UPDATE  
+• F/U FOR /CONSUTATION FOR ALL ENTER BY RESPTION/NURSING STFF  SHOW DOCTOR  BUT EDIT 
+OPTION BY DOCTO ECHING ON ON FACE  
+• HEIGHT  (CM)  
+• WEIGHT  (KG) 
+• BMI  AUTO CALCULATION  
+• TEMPERATURE  (°F) 
+• PULSE  RATE  (BPM)  
+• BLOOD  PRESSURE  (MMHG)  
+• SPO2  (%) 
+•  
+ 
+• PRENT FOR NEW  RAGISTED  PT STICKER FOR FILE  NEW PATIEN AFTER OPEN BOOK APOIENTMENT  
+• Consultation  Fee — Editable  amount  pre fix amount by ganareted  (up - down by admine)  
+• Discount  (%)  — Discount  on consultation  fee ( admin   and doctor ) not acces  by nursing and reseption  
+• Net Fee — Auto -calculated  after  discount  
+• Payment  Status  — Paid  / Pending  / Partial  
+• Payment  Mode  * — Cash  / Card  / UPI / Online  (Razorpay)  
+• Transaction  / Receipt  ID — Auto -generated  on payment  
+• Payment  Time  — Auto -stamped  when  payment  recorded  
+ 
+  
+ Followup reminder SMS (1 day prior) manage by admit   
+• પીળી  િાઇન  ફરલજયાત  છે. આગળના  ટેબ પર જવા માટે ‘Tab’ કી વાપરો . વૈકલપપક  ફીપર્  બતાવવામાં  આવશે , પરંતુ તેને લસ્કપ  
+કરીને  સીધા  સબલમટ  સુધી જઈ શકાય  છે. તમામ  સોફ્ટવેરમાં  ‘Tab’ કીથી  માત્ર જરૂરી  ફીપર્માં  જ જમ્પ  થાય છે.” 
+  
+        (ED : - ENDEBAL -DISEBAL    OPTION )  
+ONE BUTTONE GIVE PRIENT STICKER PARMENET NUMBER (FILE FRUINT)  
+PARMENET NUMBER STICKER SHOW NAME /M/F 26YR WITH BARCORD  FOR FILE NAME  
+● Past  History  (Summary) * — Pre-fill from  patient  profile   if old pt or manual  entry  new pt  
+● Height  (cm) * — Numeric (E/D)  
+● Weight  (kg) *— Numeric  (E/D)  
+● BMI  — Auto -calculated  from  Height  & Weight  (E/D)  
+● Temperature  (°F / °C) — Numeric  — taken  by nursing  
+● Pulse  Rate  (bpm)  — Numeric  — taken  by nursing  
+● Blood  Pressure  (mmHg)  — Systolic  / Diastolic  — e.g. 120/80  
+● Oxygen  Saturation  SpO2  (%) — Numeric  
+● Consultation  Fee — Editable  amount  pre fix amount by ganareted  (up - down by admine)  
+● Discount  (%)  — Discount  on consultation  fee ( admin   and doctor ) not acces by nursing and reseption  
+● Net Fee — Auto -calculated  after  discount  
+● Payment  Status  — Paid  / Pending  / Partial  Payment  Status  (Paid  / Pending  / Partial (COLOR BOX )  
+● Payment  Mode  * — Cash  / Card  / UPI / Online  (Razorpay)  
+● Transaction  / Receipt  ID — Auto -generated  on payment  
+Payment  Time  — Auto -stamped  when  payment  recorded  
+Notes  — Reception  internal  note 
+ 
+ Followup reminder SMS (1 day prior) manage by admit   
+• પીળી  િાઇન  ફરલજયાત  છે. આગળના  ટેબ પર જવા માટે ‘Tab’ કી વાપરો . વૈકલપપક  ફીપર્  બતાવવામાં  આવશે , પરંતુ તેને લસ્કપ  
+કરીને  સીધા  સબલમટ  સુધી જઈ શકાય  છે. તમામ  સોફ્ટવેરમાં  ‘Tab’ કીથી  માત્ર જરૂરી  ફીપર્માં  જ જમ્પ  થાય છે.” 
+ 
+
+--- Page 5 ---
+ 
+SUBMITION  Submit કરીએ  પછી  form close થવ ાં જોઈએ , અને જો submit કયાડ વગર  પણ બહાર  નીકળીએ  તો માલહતી  
+auto save થવી  જોઈએ . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+• જો કોઈ patient call પર પહેલીવાર  appointment માટે  આવે  છે, તો staff એ patient નો registration  કરવો  
+જોઈએ . ત્યારબાદ  patient ની appointment create  કરવી  જોઈએ . 
+• જયારે  patient hospital physical visit કરે (પ્રથમવાર  આવે ) → તેની  profile update  કરવી  જોઈએ  BY DOCTOR , 
+તમામ  details સાથે .  
+• Appointment create થતા  જ confirmation no. message  auto send થવું જોઈએ .  
+• બાકીની  તમામ  details appointment visit વખતે  fill up  કરવી  જોઈએ .  
+જો કોઈ old patient  appointment માટે call કરે → appointment create કરવી  અને જયારે  patient hospital physical 
+visit કરે → auto check -in time record થવું જોઈએ . 
+• Case box patient માટે color coding  દ્વારા  visually indicate કરવું  જોઈએ . 
+ 
+• Appointment SMS / WhatsApp communication system:   
+o જેના  માટે appointment પહેિેથી  છે, તેને 1 day પહેલાાં  auto message send  કરવું  જોઈએ .  
+o જો patient call કરીને  appointment book કરે, તો call થી appointment પછી  pre-type message / 
+WITH IF SELETION  TIME WhatsApp automatically CONFORMATIO send  થવું જોઈએ .  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+    BY DEFOLT CURRENT LIEST                                             Cheek pt liest  
+ 
+Case no  |APPOIENTMENT TIME |CHEEK IN TIME | Patient  Name| visit for  |Age|Gender|address 
+|BILIG | SATUES |ACTION BUTTONE  
+ 
+ 
+• લફપટર  માટે ઉંમર રેન્જ , સમય  અને દદીનું  નામ  (અક્ષરરમ  મુજબ ) ના નાના  લવકપપો  નીચે  પેનિમાં  આપવામાં  આવ્યા  છે.” 
+ 
+ 
+--- Page 6 ---
+ 
+ 
+લિસ્ટ  ખોિતી  વખતે  છેપિો  દદી છેપિી  પેજ પર જ ખુિવો  જોઈએ . ઉદાહરણ : પેજ 1,2,3,4 – જો છેપિો  દદી પેજ 3 પર 
+હતો, તો લિસ્ટ  ખોિતી  વખતે  સીધા  પેજ 3 ખુિવું  જોઈએ  
+ 
+ 
+ 
+SATUES  
+ 
+ 
+Waiting  
+In-Progress  
+Completed  
+ Cancelle  
+ 
+1. ACCTION BUTTON – 1)MODIFIED APOIENTMENT ,2)NEXT PT, 3) CANCLE AFTER DAY AUTO ADD IN 
+SPECIAL NOT ,IF F/U  CANCLE  
+ 
+PAYMENT BOX  Payment BOX  satues  below box highlight  
+ 
+PENDING  
+PAID  
+FOC  
+DISCOUNT  
+ 
+OLD /NEW  CASE  SATUES BY HIGH LIGHT ON NAME BOX       
+ 
+Color coding for ex  
+NEW PT HIGHLIGHT  
+    
+ 
+ 
+ 
+OLD HIGHTLIGHT  
+ 
+RESPTION FIL ED  
+ 
+SARCHING PATION  OPATION        
+SELECTION PATION  AFTR GIVEN  
+ 
+NEW PT RAGISTRTION  
+BOOK APOIENTMENT  
+BILLING  
+CONSENT FROM  
+MR ENTRAY  
+UP 
+C001 -001 -130326    
+ C001 -001 -130326    
+C001 -001 -130326    
+C001 -001 -130326   
+     FOR .EX - AMESHBHAI BABUBHAI  PATEL  
+ 
+AMESHBHAI BABUBHAI  PATEL  
+--- Page 7 ---
+ 
+• “લેબ રરપોટટ  (PDF) સ્કેન  અને અપલોડ  – રરસેપ્શન  ,DOCTOR,SAFF  પર. વેલ્ય  મ જબ  (CBC  - HB, TLC) ઓટો -રડટેક્ટ  અથવા  
+મેન્ય અલી  એન્ટરી  કરવી.” EX IN CBC IN HB,TLC…  
+ 
+ 
+ 
+RESPTION                                                                    NEW PATION RAGISTRATION                 CALENDAR (BOO K APPIENTMENT)  
+ 
+SARCHING PATION  OPATION        
+SELECTION PATION  AFTR GIVEN  
+Case no  | APPOIENTMENT TIME |CHEEK IN TIME | Patient  Name| visit for  |Age|Gender|address 
+|BILIG | SATUES |ACTION BUTTONE  
+ 
+ 
+                                                      
+ 
+SATUES DONE: - WITING/CANCLE (BOX COLOUR)  
+ACCTION BUTTON: - ADD,EDIT,CANCLEL.  
+ 
+• જો “Patient 3” પર સીધું  લલિક  કરવામાં  આવે  અથવા  કોઈપણ  અન્ય  ઓપ્શન  પસંદ  કરવામાં  આવે  તો: 
+• તરત  જ ચાિતા  (Running) પેશન્ટનું  નામ  બતાવવું   
+• સાથે  જ આગળના  (Next) પેશન્ટન ાં  નામ  અને  નાંબર  લર્સ્પ્િે  પર બતાવવું  રડસ્પ્લે  મારહતી  સ્રીન  પર હંમેશા  
+બતાવવું :  પેશન્ટન ાં  નામ (GUJRATI) કેસ નાંબર  (Case No.)  NEXT BY ACTION BUTTONE  
+• PC ની ડાબી  સાઇડ  પર હાંમેશા  પોપ -અપ  નોરટરિકેશન  દેખાવ ાં જોઈએ  આ નોલટલફકેશન  દ્વારા :  ડોક્ટર  અને  
+નરસિંગ  સ્ટાિ  વચ્ચે  મેસેરજાંગ  થઈ શકે  ઝર્પી  કોમ્યુલનકેશન  શક્ય  બને 
+• Calendar view સાથે  date અને time select કરીને  appointment આપવાની  સુલવધા  હોવી  જોઈએ . Patient select 
+કયાડ પછી  edit option દ્વારા  appointment માં ફેરફાર  (edit) કરવાની  સુલવધા  ઉપિબ્ધ  હોવી  જોઈએ . 
+ 
+• Patient profile upgrading માટે report સાથે  update કરવાની  સુલવધા  હોવી  જોઈએ . Running patients માંથી  
+patient select કરી શકાય  અને check -in option દ્વારા  patient entry કરી profile update કરી શકાય  તેવી  વ્યવસ્થા  
+હોવી  જોઈએ . 
+• Payment માત્ર particular patient માટે િેવાની  સુલવધા  હોવી જોઈએ , આખા  લદવસની  total collection તરીકે  
+નહીં. 
+o All opation acces disieded  by admine who can use and not used  
+ 
+• All opation acces disieded  by admine who can use and not used  
+• Search  /  Mobile  number*/  Patient  Name  — Search  by Name  or Unique  ID (MRD) — auto -fill 
+patient details  
+Ex. Rajeshbahi  Jitubhai  Patel  ( P03-260001  ) 
+ 
+• OPD  Specific  ID* — Auto -generated  per day per patient  (e.g.  OPD   C001 -001 -130326   — 
+resets daily  
+• Appointment  Date * — auto ganreat  today  date/in click edit opation IF SELETION DATE  
+• (Date  picker OPTION  — booked  slots  hidden/disabled)  
+• Appointment  Time  — Auto ganarated  editebal with menully  ( enable /disable ) 
+ 
+ 
+• દરેક 2 કેસ વચ્ચે લર્ફોપટ  10 રમરનટન ાં  અાંતર  આપમેળે  જનરેટ  થવું જોઈએ   આ સમય  એરડટેબલ  (Editable)  હોવો 
+--- Page 8 ---
+ 
+જોઈએ  (જરૂર  મુજબ  બદિી  શકાય ) એર્લમન  દ્વારા કલન્ફગર  કરી શકાય  દરેક નવા પેશન્ટ  માટેનો  એપોઇન્ટમેન્ટ  
+ટાઈમ : અગાઉના  (Last) પેશન્ટના  સમય  મુજબ  આપમેળે  અપર્ેટ  થવો જોઈએ  પેશન્ટ  “IN” થયા પછી 
+ 
+1. પેશન્ટ  એપોઇન્ટમેન્ટ  અને િોલો -અપ મેનેજમેન્ટ  
+o પેશન્ટ  એપોઇન્ટમેન્ટ  ચેરકાંગ   
+o જ્યારે  પેશન્ટની  એપોઇન્ટમેન્ટ  હોય અને તે આવે:  
+▪ ત્યારે લરસેપ્શન  દ્વારા ચેક-ઇન (Check -in) કરવું  
+2. પેશન્ટ  હાજર  ન હોય ત્યારે  
+o જો પેશન્ટ  એપોઇન્ટમેન્ટ  માટે ન આવે:  
+▪ લરસેપ્શન  તરફથી  કોલ કરીને  અપડેટ  લેવ ાં  
+3. Next Appointment અપડેટ   
+o જો પેશન્ટ  નવી તારીખ  આપે:  
+▪ તો તે Next Appointment માાં ઉમેરાઈ  જવ ાં જોઈએ   
+▪ જેથી લસસ્ટમમાં  આગળનું  શેડ્યૂિ  લલિયર  રહે  
+4. કોલનો  જવાબ  ન મળે ત્યારે  
+o જો પેશન્ટ  કોિનો  જવાબ  ન આપે:  
+▪ તો તેને Follow -up Missed  તરીકે  માકડ કરવું  
+Special Note રસસ્ટમ   
+o આવા  કેસમાં  એક Special Note Box  માં નોંધ કરવી :  
+▪ જેમ કે: “Call not answered  F/U Missed” જેથી જ્યારે  પણ પેશન્ટ  ફરીથી  કન્સપટેશન  માટે આવે:  
+ત્યારે આ માલહતી  તરત જ દેખાય  
+▪ Purpose  of Visit  — Dropdown  + free  text (e.g.  New  Consultation,  Follow -up, 
+repoting ,INQUIERY, )  
+સમગ્ર  software ન ાં design આ રીતે બનાવવ ાં  જોઈએ  કે એક વ્યલિ  પણ સરળતાથી  handle કરી શકે. 
+એવ ાં system હોવ ાં જોઈએ  કે જો કોઈ staff રજા પર હોય તો પણ બીજો  વ્યરિ  સહેિાઈથી  બધું manage 
+કરી શકે, અને કામમાાં  કોઈ મ શ્કેલી  ન પડે. 
+● Assigned  Doctor  — Select  from  active  doctor  list ( enable  /disable  ) 
+ 
+DOCTOR  PAGE   
+Hospital     logo   and name and doctor name                                                                                              CALENDAR  
+NEXT PATIEN NAME/AGE/M/F  RESOUN   
+FOR EX NIKUNJRAMJIBHAI 28YR MALE FOR ACNE SCARE color coding  
+ 
+                               add new patient ragiestrion /f/u pt  
+ ragistation (samjva mate real tab NAME  N  |f/u) 
+sarching tab               next patie nt name rameshbhai patel visit itching  with c olor coding  
+ 
+7TAB VIEW  DOCTOR PENAL   
+1 COMPLAINTS | 2 INVESTIGATION |3 DRUGH|4 PROSESSUER|5 IMAGE|6 DIGNOSI WITH INTRUTION 
+--- Page 9 ---
+ 
+AND F/U |7  FINAL REPOT (VIEW)  
+ 
+ 
+             
+ DOCTR FILED   
+ 
+• CONSUTATION  
+• PT PROFILE  
+• BOOK APOIENTMEN  
+• BILLING  
+• CONSENT  
+• MR MEGEGMENT  
+• PHARMACY MANAGEMENT  
+• CALENDAR  
+• UPLORD REPOT  
+ 
+ 
+MSG BOX                                                                                                                                                                  PAYMENT BOX  
+ 
+ 
+ 
+ 
+● Appointment  Time  — Auto ganarated  editebal with menully  ( enable /disable ) 
+ 
+દરેક 2 કેસ વચ્ચે લર્ફોપટ  રીતે 15 રમરનટન ાં  સમય  અાંતર  ઓટોમેરટક  જનરેટ થવ ાં જોઈએ , અને આ સમય  જરૂર  મુજબ  
+એરડટ  કરી શકાય  એવો  હોવો  જોઈએ . જો કોઈ પેશન્ટની  કન્સપટેશનમાં  મોર્ું થાય, તો આગળના  પેશન્ટના  એપોઇન્ટમેન્ટ  
+ટાઈમ  છેલ્લા  (Last) પેશન્ટના  સમય  મ જબ  આપમેળે  અપડેટ  થવો જોઈએ . 
+લસસ્ટમમાં  એર્લમનને  સુલવધા  હોવી જોઈએ  કે તે 2 સ્લોટ  વચ્ચેનો  સમય  બદલી  શકે, અને સાથે સાથે રમરનમમ  
+સ્લોટ  સમય  પણ કરન્િગર  કરી શકે. 
+એર્લમન  દ્વારા ર્ોક્ટરના  ટાઈમ  સ્લોટ  રેન્જ સેટ અને અપડેટ  કરી શકાય  તેવી સુલવધા  હોવી જોઈએ , જેમ કે: 
+• સવારે  9:00 થી 1:00  
+• અને સાંજે 4:00 થી 7:30  
+આ તમામ  ટાઈમ  સેલટંગ્સ  સરળતાથી  બદિાવી  શકાય  અને લસસ્ટમમાં  ઓટોમેલટક  રીતે િાગુ પર્ી જાય તેવી વ્યવસ્થા  
+હોવી જોઈએ . 
+ 
+● Patient select કયાડ પછી left side માં patient profile દેખાવ ાં જોઈએ , જેથી doctor તેમાં focus કરી શકે. જો કોઈ 
+changes કરવાની  જરૂર  હોય તો તે પણ સરળતાથી  કરી શકાય . આ માટે profile button આપવ ાં  જોઈએ  જેથી 
+profile સરળતાથી  access થઈ શકે. 
+● Patient નો BMI, Weight અને BP સતત  update થતો રહે અને તેની છેલ્લા  4 record (date સાથે ) 
+history box માં બતાવવી  જોઈએ . 
+• આ history Excel type format માાં હોવી  જોઈએ , જેમાં:  ઉપર  BP, BMI, Weight  જેવા headings 
+હોય અને નીચે તેમની  date મ જબ  values બતાવવામાાં  આવે  (latest records સાથે 
+• Payment type  if foc category auto ganrateted all further no show  payment option only in 
+constation in only   
+● Consultation  Fee — Editable  amount  pre fix amount by ganareted  
+(up- down by admine)  
+● Discount  (%)  — Discount  on consultation  fee ( admin   and doctor ) not acces by nursing and reseption  
+● Net Fee — Auto -calculated  after  discount  
+● Payment  Status  — Paid  / Pending  / Partial  
+● A STAFF SHOW ONLT APPOIENT MENT TODAY AND TOMOEEY NOT SHOW SELETED ON DATE  
+IF DOCTOR GNRET % / FOC  PYMENT   DONE BY PT POP NOTIFICATION GNARTION BY RESPTION    
+ 
+• Notes  — Reception  internal  note 
+--- Page 10 ---
+ 
+ 
+PROFILE UPGREDING  WITH  (REQUIED OTP new pt ganaret with otp ?  
+ 
+• TODAY CANFOM  APPOIENTMENT ,TOMORE APPOIENT VIEW ONLY  
+ 
+• tab give direct 7 tab consult ion open if  doctor ragestted  patient  /book  appoientment  
+• જ્યારે  ર્ોક્ટર  નવો  પેશન્ટ  ઉમેરે  અથવા  નવી  એપોઇન્ટમેન્ટ  જનરેટ  કરે, અને તે પ્રલરયા  પૂણડ થાય  (એપોઇન્ટમેન્ટ  સેવ થયા  પછી ), 
+ત્યારે  લસસ્ટમમાં  આપમેળે  7 Tab ઓપન  થવો  જોઈએ . 
+• IF … Doctor દ્વારા  New Patient / Appointment બનાવ્યા  પછી   બધી  લવગતો  સેવ થયા  પછી   લસસ્ટમ  સીધી  જ Tab 7 પર 
+નાવીગેટ  (Open) થવી  જોઈએ   
+• આથી : કામનો  ફ્િો ઝર્પી  રહેશે   અને ર્ોક્ટર   મેન્યુઅિી  Tab બદિવાની  જરૂર  નહીં  પર્ે 
+•  
+• patient saching  after selection mulipal  tab option given by doctor penal SAME AS NAMO HOSPITAL  
+ 
+ 
+ 
+ 
+ 
+• bilig  and repot  
+ DOCTOR NE LEFT SIDE MA HAMESHA VISITING H/O , TOAL PAYMENT H/O IN DETILE – TOTL FOC 
+AMOUNT, TOTAL DISCOUNT AMOUNT  ANA PAR CLICK KARI ALL DETILE MELVI SAKE 1ST  TOTAL 
+CONSLING, TOTAL PROSEGUR,TOTAL PAYMENT AFTER CLICK (AFTER PAT OPEN IN 8  
+o પેશન્ટ  ઓપન  કયાટ  પછી  Billing મારહતી  દશાટવવાની  રસસ્ટમ  જ્યારે પેશન્ટને  ઓપન  કરવામાાં  આવે , 
+ત્યારે સાઈડમાાં  એક Billing Tab આપમેળે  દેખાવ ાં જોઈએ , જેથી તરત  જ પેશન્ટની  તમામ  રબરલાંગ  
+મારહતી  જાણી  શકાય .આ Billing Tab માાં નીચેની  મારહતી  સ્પષ્ટ  રીતે બતાવવી  જોઈએ : પેશન્ટન ાં  
+આજન ાં  રબલ  (Today Bill)  ,એક મરહનાન ાં  રબલ  (Monthly Bill)  , એક વર્ટન ાં  રબલ  (Yearly Bill)  , અને  
+ટોટલ  રબલ  (Total Bill)  તે ઉપરાાંત , પેશન્ટે  કરાવેલ  દરેક સરવટસ  માટે  અલગ  મારહતી  દેખાવવી 
+જોઈએ :Procedure મ જબ  રબરલાંગ  (Procedure -wise Billing)  Consultation રબલ  અલગથી  
+બતાવવ ાં  (Consultation Billing Separate)  
+o બધ ાં રબરલાંગ  એક જ રરપોટટમાાં  નહીાં  પરાંત  અલગ  અલગ  રવભાગમાાં  (Separate View)  સ્પષ્ટ  રીતે બતાવવ ાં  
+જોઈએ . 
+જો કોઈ  રડસ્કાઉન્ટ  આપવામાાં  આવ્ય ાં  હોય , તો:, તે પણ  સ્પષ્ટ  રીતે દશાટવવ ાં  જોઈએ  ,કયા  પ્રોરસજર  પર કેટલો  
+રડસ્કાઉન્ટ  છે તેની  મારહતી  પણ  દેખાવવી જોઈએ  , Total  ,Discount અથવા  FOC (Free of Cost)  કેટલ ાં  છે તે 
+પણ  જાણી  શકાય  
+આ તમામ  મારહતી  પેશન્ટ  પ્રમાણે  (Patient -wise)  સ્પષ્ટ  અને  સરળ  રીતે જોવા  મળી  શકે તેવી  હોવી  
+o જ્યારે  ર્ોક્ટર  પેશન્ટનું  પ્રોફાઇિ  લસિેક્ટ  કરે, ત્યારે  પેશન્ટની  માલહતી  7 Tabs માાં ઓપન  થવી  જોઈએ . આ 
+Tabs માં પેશન્ટની  કુિ કન્સપટેશન  ફી તારીખ  પ્રમાણે , કુિ ફી લર્સ્કાઉન્ટ  સાથે  અથવા  વગર , પ્રોલસજર  ફી 
+તારીખ  અને પ્રોલસજર  પ્રમાણે , કુિ પ્રોલસજર  ફી લર્સ્કાઉન્ટ  સાથે  અથવા  વગર , અને Master Total લબલિંગ  
+with / without discount દશાડવવી  જોઈએ .  
+ 
+• cheek pt  
+done in consultion pt edit all 7 tab if re open and in cheek pt direct patien profile pick up show option 
+given  
+                                                             current pt liest  DOCTOR  
+• DOCTOR INFORM WHO IS NEXT PT NANE WITH PT CATOGARY . IN UPPER IN ONE   
+                 Case no|time | Patient  Name| visit for  |Age|Gender|address |PAYMENT  satues| MOBILE NO  |  ACTION 
+BUTTONE   
+• પેશન્ટ  લસિેક્ટ  કયાડ પછી , પ્રથમ  Tab ઓપન  રહેશે . ર્ોક્ટર  માટે “Next Patient” બટન  ઉપિબ્ધ  હોવું જોઈએ . જ્યારે  
+--- Page 11 ---
+ 
+પેશન્ટ  OPD માં IN થાય  ત્યારે  પેશન્ટનું  Running નામ  ર્લાંક  થાય , અને પેશન્ટની  પ્રોફાઇિ  લસિેક્ટ  થતાં  લબ્િંલકંગ  બંધ 
+થાય . લબ્િંલકંગ  બંધ થતાં  લરસેપ્શનને  ખબર  પર્ે કે Next Patient કોને લર્સ્પ્િે  કરવું . ર્ોક્ટર  માટે સ્રીનના  સાઈર્માં  
+Notification Tab  હંમેશા  ચાિું  રહેવું  જોઈએ , જે Next Patient કોને આવવાનો  છે તેની  જાણ  આપે . જ્યારે  ર્ોક્ટર  
+Next Patient Notification Tab પર લલિક  કરે, ત્યારે  Next Patient લર્સ્પ્િે  પર લબ્િંક  થવા  િાગે  અને લરસેપ્શનની  
+Patient List માં પણ Update થાય . 
+• સ્રીનના  નીચે  એક નાનું  Notification Box હંમેશા  ચાિુ  રહેવું  જોઈએ , જેમાં  Payment Received – પેશન્ટનું  નામ  અને 
+રકમ , Return Amount – કોણે  અને કેટિું , વગેરે  માલહતી  દેખાય . જો આ Box પર લલિક  કરવામાં  આવે  તો આજના  
+તમામ  Payment History ની લવગત  ખુિવી  જોઈએ . Payment Window હોવી  જોઈએ , જ્યાં  Daily Payment, 
+Patient -wise Payment, Return Payment / Refund Details અને All Transactions ની માલહતી  સતત  જોવા  મળે. 
+•  
+ 
+ 
+ 
+ 
+7TAB VIEW DOCTOR PENAL   
+ 
+1 COMPLAINTS | 2 INVESTIGATION |3 DRUGH|4 PROSESSUER|5 IMAGE|6 DIGNOSI WITH INTRUTION 
+AND F/U |7  FINAL REPOT (VIEW)  
+ 
+Particular patient પર click કયાડ પછી  open થાય  ત્યારે  special note section  દેખાવું  જોઈએ . 
+• તેમાં  નીચે  મુજબની  માલહતી  automatically show થવી  જોઈએ :  
+o દવા િીધી  છે કે નહીં (Drug taken / Not taken status)  
+o Example: “Pro SUGAR advised but patient એ લીધી  નથી ”  
+o Missed Appointment ( ચૂકેલી  appointment)   
+o Delayed Appointment ( મોડી  appointment)   
+     ઉપરની  side માં special note section સતત  દેખાવ ાં જોઈએ . આ special note consultation tab ખુપિી  હોય ત્યાં સુધી  
+સતત  ઉપર  દેખાતું  રહેવું  જોઈએ  જેથી  doctor ને દરેક સમયે  જરૂરી  માલહતી  તરત  મળી   
+ 
+1 Display  (read -only  vitals  from  appointment): but edit option if click   
+● f/u for /consutation for  all enter by resption/nursing stff  show 
+doctor  but edit option by doctor  
+● Height  (cm) 
+● Weight  (kg) 
+● BMI 
+● Temperature  (°F) 
+● Pulse  Rate  (bpm)  
+● Blood  Pressure  (mmHg)  
+● SpO2  (%) 
+Editable  Fields  (Doctor):  
+NOTE:  All complaint  field  labels  are configurable  by Admin. (E/D/ADD IF ANY )  
+ 
+ 
+•  
+ 
+ 
+ 
+ 
+ 
+ 
+--- Page 12 ---
+ 
+ 
+1 Complaints  Tab 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- Page 13 ---
+ 
+ 
+ 
+--- Page 14 ---
+ 
+ 
+ f/u for /consutation for all enter by resption/nursing stff  
+show doctor  but edit option by doctor  
+● Height  (cm) 
+● Weight  (kg) 
+● BMI 
+● Temperature  (°F) 
+● Pulse  Rate  (bpm)  
+● Blood  Pressure  (mmHg)  
+● SpO2  (%) 
+● all tab endalbal disebal option given , changes position option given edit tital 
+name optin given WITH ENEBAL /DISEBAL OPTION   
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  Relieving  Factors  
+What  makes  it better  — text area  
+Past  History  
+● — Relevant  past  medical  history  
+ 
+Personal  History  
+Surgical  History  
+Previous  surgeries  with  dates  
+Current  Medications  
+● — Ongoing  medicines  from  outside  — text  area 
+ 
+Obstetric  / Gynae  History  
+● For female  patients:  LMP,  parity,  etc. 
+ 
+Alargy H/O  
+Nursing  Notes  
+● — Nursing -specific  observation  notes  (Nursing  role)  
+ 
+PATIEN FEED BACK  PRE TYPING BY NURSING  ● Present  Complaint  
+● Main  reason  for today's  visit  — text  area 
+ 
+● Duration  of Complaint  
+How  long  the patient  has had this complaint option in day 
+box and moth box and yr box  
+● Severity  Mild  / Moderate  / Severe  — dropdown  
+● Onset  
+● Sudden  / Gradual  — dropdown  
+● Aggravating  Factors  
+What  makes  it worse  — text area 
+--- Page 15 ---
+ 
+2   Investigation  Tab    
+--- Page 16 ---
+ 
+Access:  Doctor  (Request)  | Nursing and reseption  (Upload  Results)  
+ 
+Sub-Tab:  Lab Report  
+Structured  input  for lab values.  All parameters  are configurable  by Admin.  
+ 
+Default  parameter  groups  
+Master key add by admit      show priviuely result   date, visit vies  
+ 
+Sarching name …………………. Seletin add auto right side note box given if any note type  
+ 
+ 
+ 
+ 
+ 
+ 
+Date  
+CHAT TYPE WITH NORMAL VALU EXIL SHIT IN PRIVIOUS 
+REPOT IN NAMO TRETMENT SHEET  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ PRIVIOUS REPOT  UPLORD REPOT  
+--- Page 17 ---
+ 
+MENUALLY WEITING INVESTIGATIN TYPE OPTION GIVEN  
+i. CBC  — WBC,  RBC,  Haemoglobin,  Haematocrit,  MCV,  MCH,  MCHC,  Platelets,  Neutrophils  
+%, Lymphocytes  %, Eosinophils  % (NEW:  extended)  
+ii. ESR  / CRP  — ESR  (1hr),  CRP 
+iii. Blood  Sugar  — Fasting,  Post -Prandial,  HbA1c  
+iv. Lipid  Profile  — Total  Cholesterol,  LDL,  HDL,  Triglycerides  
+v. LFT — SGOT,  SGPT,  ALP,  Bilirubin  Total/Direct  
+vi. RFT  — BUN,  Creatinine,  Uric  Acid,  eGFR  
+vii. Thyroid  — TSH,  T3, T4 
+viii. Urine  — Routine  Urine  Examination  
+ix. Custom  — Any  parameter  defined  by Admin  
+ 
+Not rquied information all below  gry  colour  
+x. Test  Name  — From  lab master  list 
+xi. Requested  By — Auto:  doctor  name  
+xii. Requested  Date  / Time  — Auto -stamped  
+xiii. Sample  Collected  By — Nursing  staff  name  
+xiv. Sample  Collection  Time  — Date  + Time  
+xv. Result  Value  — Numeric  or text 
+xvi. Unit  — From  master  
+xvii. Normal  Range  — From  master  — flag if out of range  
+2 Status  — Pending  / Sample  Collected  / Result  Available  
+i. Result  Entry  Time  — Auto -stamped  
+ii. Lab  Cost  — Per test cost 
+iii. Remarks  — Lab tech  or doctor  note 
+iv. Admin  — Lab Master  Management:  
+NOTE:  Admin  manages  lab test groups  and parameters.  Add  / Edit  / Delete  / Listing.  
+v. Test  Group  Name  — e.g. CBC,  LFT,  Thyroid  
+vi. Parameter  Name  — Individual  parameter  within  the group  
+vii. Unit  — e.g. g/dL,  mg/dL,  % 
+viii. Normal  Range  (Male)  — Reference  range  for males  
+ix. Normal  Range  (Female)  — Reference  range  for females  
+x. Normal  Range  (Child)  — Paediatric  reference  range  
+--- Page 18 ---
+ 
+xi. Critical  Low  / High  — Threshold  to flag critical  values  
+xii. Display  Order  — Sequence  in which  parameters  appear  
+xiii. Is Active  — Show  / hide  in investigation  selection  
+ If final prient time  time   
+ 
+      3  Drugs  Tab  
+Access:  Doctor  (Full  Edit)  
+ 
+ 
+Drugh tab open direct  AFTER  SINGLE  CLICK but right side OPTION GIVEN   procuressur pricription  
+BELOW EXAMPAL  
+ 
+ 
+ 
+ 
+ 
+                                                                                                                             SUB ID : -  BUX 930  
+  
+Master chart upte proseser vies liest  avelibal if seletion prosesser  add all instrument auto  
+Ex…. Seletion prp 1ml 5 syring.1cottone pad, medical tab  
+  
+  
+ 
+ 
+    Instrument /drugh  qunity  ID CORD  
+3.0 VICRIL SUTURE  1 BZX  320  
+Ex darma rollar  1 ZVX  580  
+Ex 5cc series  2 KMX 30  
+--- Page 19 ---
+ 
+  
+                 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Prescription  Fields  (Repeating  rows  — add multiple  drugs):  
+ 
+ 
+ 
+ 
+ 
+DRUGH NOTE  
+ 
+                                                                                              
+ 
+ 
+  
+ N
+O 
+ 
+ 
+  
+Content  
+name/cobinatin  
+  
+Brand name  
+  
+brand  
+ dose  
+ 
+  
+frequncy  
+  
+ 
+day  
+ 
+total note 
+ 
+  
+Slot no  
+ 
+ 
+ 
+  
+ 
+         
+1 Tab fluconazone 400 mg  TAB Flucocip  
+400mg  Cipla 
+pvt 1 tab  Od after 
+mill 5 day  
+ Total  
+5 Note  
+Not 
+teken 
+with 
+milk  
+BZX 120 
+ 
+2 
+2 Cream   
+clotrimazole  1%  
+hide   
+CREAM  
+Monpic  
+ 
+show            
+Atopic 
+darma  
+hide   
+1 
+ 
+show           tds 
+ 
+show           7 
+show           1 
+ 
+ 
+hide  Before 
+apply 
+dry 
+ 
+hide   
+BYX 80  
+ 
+hide  
+DRUGH NOTE   1 AND 2  JODE MIX KARI LAGAVI  HKX  200  
+--- Page 20 ---
+ 
+      
+ 
+ 
+ 
+• Slot Number ને Costing સાથે Correspond કરવાની  સુલવધા :  
+o Example:  
+▪ BXZ Corresponding – Rs 120  
+▪ BYX Corresponding – Rs 80  
+▪ HKX Corresponding – Total Rs 200  
+• . Mandatory Tab Selection  
+• દરેક Tab Compulsory Selection:  
+o જો કોઈ Tab Select ન થાય → Next Tab Open ન થાય.  
+o Admin Decide કરે કઈ Tab Compulsory છે અને કઈ Skip કરી શકાય .  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+SIMPAL DRUGH MANEGMENT  
+ 
+ 
+ 
+• Simple દવાઓ  માટે અલગ  Excel sheet રાખવી  જોઈએ . આ દવાઓ  normal drug જેવી  જ રહેશે , પરંતુ  તેમાં  ખાસ  ઓળખ  માટે code મૂકવો  જોઈએ . 
+• Example:  
+• Normal: Tab Levocip   
+• Simple: (S) Tab Levocip   
+• 👉 એટિે  drug ના નામ  પહેિા  (S) મુકવાથી  doctor ને તરત  ખબર  પર્ી જશે કે આ simple drug છે. 
+• જ્યારે  MR આવે  અને simple drug આપે , ત્યારે  તેને system માાં update કરી દેવ ાં જોઈએ .  
+• જો કોઈ drug simple તરીકે  set કરવામાં  આવે , તો તે next tab / list માાં પણ  દેખાવ ાં જોઈએ , પણ તેમાં  આગળથી  (S) code word automatically show થવ ાં 
+જોઈએ .  
+--- Page 21 ---
+ 
+• 👉 આ રીતે coding રાખવાથી  simple અને normal drugs વચ્ચેનો  ફરક  સરળતાથી  સમજાઈ  જશે. 
+ 
+ 
+• જો કોઈ patient ને simple drug આપવામાાં  આવે , તો special note માં drug taken / not taken status બતાવતી  વખતે  (S) Taken  અથવા  આ રીતે દશાડવવું  
+જોઈએ . 
+• 👉 આથી  જ્યારે  patient next time Follow -up (F/U)  માટે આવે , ત્યારે  doctor ને તરત  ખબર  પર્ી જશે કે simple drug આપવામાં  આવી  હતી અને patient એ 
+િીધી  હતી કે નહીં. 
+ 
+ 
+• SIMPLE LIEST તેમાં  manually add કરવાની  facility હોવી  જોઈએ  જેથી  MR આવે  ત્યારે  નવી  દવા સરળતાથી  add કરી શકાય . જ્યારે  દવા prescribe કરવામાં  આવે  
+ત્યારે  તે (S) stock માંથી  આપમેળે  ઘટી જવી  જોઈએ . દદીને  simple API આપવામાં  આવી  હોય તો તે માલહતી  save થવી  જોઈએ  જેથી  patient ફરીથી  આવે  ત્યારે  તેની  
+profile માંથી  આ માલહતી  સરળતાથી  મળી  શકે. 
+• જ્યારે  simple દવા આપવામાં  આવે  ત્યારે  TAB, Cream, Capsule જેવા  code wording માં દશાડવવું  જોઈએ . ઉદાહરણ  તરીકે , સામાન્ય  રીતે “Tab” િખાયેિું  હોય પરંતુ  
+simple તરીકે  આપતી  વખતે  “T” અથવા  “S” ને bold માં બતાવવું  જોઈએ  જેથી  તરત  જ ઓળખી  શકાય  કે આ simple medication છે. આ રીતે display કરવાથી  
+માલહતી  વધુ સ્પષ્ટ  અને સ 
+ 
+ 
+• 4. Manual Drug Entry  
+• One Tab provided for Direct Manual Entry  for New Drugs (Not in Excel File).  
+• New Drug Add કરવાની  Field Options:  
+• Drug Type / Form:  
+• Cream, Syrup, Injection, Tablet, Gel, Serum, Oil, Face Wash, Liquid, Capsule, Solution, Drop, Soap, Shampoo, Lotion, Powder, Sachet, 
+Pessary  
+• All added at one time  
+• Additional Details:  
+• Brand Name  
+• Brand  
+• Dose (1 Tab, Half Tab, ML, etc.) → Manual Add  
+• Frequency (OD, BD, TDS, QID, HS/Night, Alternative Day, Weekly, Weekly 2 Times, Weekly 3 Times, Every 1 Month)  
+• Day  
+• Price / Per Tab / Per Piece  
+• Timing (Before Food / After Food / With Food / Bedtime) → Pre -entered, Direct Edit Option Available  
+•  
+• 5. Auto Generation of Fields  
+• All Fields once added in Master Sheet  → After Drug Selection, Remaining Fields Auto Populate.  
+--- Page 22 ---
+ 
+• Example: BD, Before Food, Weekly → Master Sheet માં Add કરેિા  हिसાાબથી  Auto Generate.  
+• Direct Edit Option Available → But Frequency Manual Writing Not Needed.  
+•  
+• 6. Drug Availability & Pop -up Alerts  
+• If Drug Not Available → Pop -up Alert & Question:  
+o “Drug Not Available. Prescribe Another Drug? Yes / No”  
+•  
+• 7. Stock & Low Limit Management  
+• Admin / Doctor can Set Low Stock Limit (Example: Shampoo – Minimum 5 pieces)  
+• Show Option: Low Stock / Near Low Stock → Example: 6 Available  
+• Admin / Doctor → Show Drug Stock / Expiry Information  
+•  
+•    આ સ રવધાઓ  Doctor/Admin માટે Drug Management, Auto Population, Frequency Auto Generation, Stock Alert અને Manual Override સાથે 
+Complete System Friendly બનશે . 
+            
+ 
+ 
+• If drugh not avelibal show pop up /AFTER AND QUTION DRUGH NOT AVLIBAL PRISCRIB DRUGH .. YES /NO   ?  
+ 
+Admin અથવા  Doctor દરેક દવા માટે minimum stock limit set કરી શકે તેવી facility હોવી જોઈએ , જેમ કે કોઈ shampoo માટે stock હંમેશા  
+ઓછામાં  ઓછો  5 રહે એવો limit મુકવામાં  આવે. જો દવાનો  stock આ limit નજીક  આવી  જાય, જેમ કે 6 available હોય, તો system માં low stock 
+અથવા  near low stock નો option બતાવવો  જોઈએ . આ alert daily alert માં સતત  દેખાતો  રહે અને જ્યાં સુધી stock ફરીથી  પૂરતો  available ન થાય 
+ત્યાં સુધી ચાિુ રહેવું જોઈએ . સાથે સાથે Admin અથવા  Doctor ને આ alert ને modify કરવાની  અને જરૂર  પર્ે તો કોઈ દવાને  alert list માંથી  cancel 
+અથવા  remove કરવાની  પણ સુલવધા  આપવી  જોઈએ  
+ 
+• Admine / doctor  show drugh stock ,show information  near expariry  
+--- Page 23 ---
+ 
+• દરેક દવા select કયાડ પછી તેની dose અને frequency આપમેળે  (auto) add થવી જોઈએ  અને સાથે જ direct click દ્વારા edit કરવાનો  option પણ ઉપિબ્ધ  હોવો 
+જોઈએ . દવા માટે edit option dropdown અથવા  ઉપરના  option દ્વારા સરળતાથી  access કરી શકાય  તેવી વ્યવસ્થા  હોવી જોઈએ . લદવસ  પૂણડ થયા પછી reporting 
+માટે Admin ને alert મળવો  જોઈએ  અને નવી ઉમેરાયેિી  દવાઓની  માલહતી  Excel file માં update થવી જોઈએ . 
+ 
+ 
+ 
+ 
+ 
+• 1st windo continent name show /HIDE MANGE BY ADMINE  
+ 
+ 
+• All drugh addIN  tab  IN SINGLE EXILE SHIT / MASTER SHEET  
+ 
+• CONTENET NAME | BRAND NAME | BRAND |BEFORE /AFTER / WITH MEAL | PRICE 1 TAB /UNIT  
+ 
+• BELOW CREAM / LOATION   -  USE FOR BEFORE /AFTER /OTHER  
+ 
+• DRUGH UPDATE IN EXICLE SHITE  DRUGH NAME  
+ BRAND 
+NAME  BRAND  DOSE  FRQUNCY  DAY  
+ 
+ BEFOR/AFTER  
+FOOD/AFTER  WASH 
+/AFTER BATH/AFTER 
+DRY/OTHER OPTION 
+GIVEN AUTO ADD BY 
+EXCIL FILE  AND EDIT 
+OPTIN  NOTE  
+IF ANY NOT ADD PRE 
+TYPE ADD AND EDIT 
+OTION  
+EX EVER WEEK  PRICE /PS /PR 
+TABLET  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Tab Levocetrizine 
+10 mg   Zylivo 10 
+mg  zudus  1tab  BD  After food  Not tacken with acohol  5/tab  100 
+--- Page 24 ---
+ 
+• EXIEL  SHIT SARCHING OPTION GIVEN  
+ 
+• IF POSIBAL WINDOW PROVIED  IN EXCLE FILE /SACHING OPTIN / DIRECT NEW DRUGH ADD IN TAB UPDATE IN EXCILE SHIT 
+AUTO METICLYY  
+• Before / aftr/ with water/ with milk /other  
+• IN EXICLE SHITE PROVIED  
+• CREAM  \ SYRUP \ INJ \ TAB \ GEL \ SERUM \ OIL \ FACE WASH \ LIQUIED \ CAPSULE \ SOLUTION \ DROP \ SHOPE  \ SHAMPU \ 
+FROM \ LOTION \ .POWDAR \ SACHET  \ PESSORY  
+    Prescription  Fields  (Repeating  rows  — add multiple  drugs):  
+xiv. Item  Name  — Search  by drug  name  or content with dose /composition  
+xv. Brand  / Generic  Toggle  — Switch  between  brand  name  and generic  name  
+xvi.  
+xvii. Frequency  — OD / BD / TDS  / QID / HS  (night ) / SOS / Custom  
+xviii. Route  — Oral  / Topical  / IV / IM / Inhalation  — dropdown allreday drugh name dipent seletion for ex tab E/D)  
+xix. Timing  — Before  Food  / After  Food  / With  Food  / Bedtime  pre entar by seletion drugh  
+xx. Days  — Number  of days 
+xxi. Total  Quantity  — Auto -calculated:  Frequency  x Days  
+xxii. Unit  Cost  — Auto -filled  from  drug  master  price  
+xxiii. Note  — Special  instruction  for this drug 
+ 
+ 
+ 
+o જ્યારે  કોઈ Drug માટે Minimum Stock Level સેટ કરેિો  હોય અને સ્ટોક તે િેવિ કરતા  ઓછો  થઈ જાય, ત્યારે Doctor અને Admin ને ઓટોમેરટક  
+મેસેજ /નોરટરિકેશન  જવ ાં જોઈએ . જો કોઈ Drug સ્ટોકમાં  ઉપિબ્ધ  ન હોય, તો Medical Store તરફથી  Update કરવામાં  આવે કે આ Drug ઉપિબ્ધ  નથી, 
+ત્યારે પણ લસસ્ટમમાં  તરત જ “Drug Not Available” નો મેસેજ  દેખાવવો જોઈએ . 
+ 
+o સાથે સાથે, Pharmacy Management માટે એક Daily List હોવી જોઈએ , જેમાં તમામ  Drugs ની માલહતી  દેખાય  જેમ કે Available Stock, Low Stock, 
+Out of Stock વગેરે. આ List દ્વારા Pharmacy નું સંપૂણડ  મેનેજમેન્ટ  સરળતાથી  જોઈ શકાય . 
+ 
+ 
+--- Page 25 ---
+ 
+4 PROCEDURE  TAB  
+Access:  Doctor  (Add/Edit)  | Reception  (View  for billing)  
+Ask/doctor/nursing staff  
+ 
+• આ સાથે , List View ને અિગ -અિગ  પ્રકાર  પ્રમાણે  અિગ  પાર્વાની  (Filter / Separate List View) સુલવધા  હોવી  જોઈએ , જેથી  દરેક કેટેગરીના  Appointment 
+અિગથી  સરળતાથી  જોઈ  શકાય . તેમજ  Appointment ને મહત્વ  મુજબ  ગ્રેરડાંગ  (Priority / Importance Level)  આપવાની  સુલવધા  પણ હોવી  જોઈએ , જેથી  
+મહત્વના  અથવા  તાત્કાલિક  Appointment તરત  ઓળખી  શકાય . 
+SMART  Calendar માં એવી  સુલવધા  હોવી  જોઈએ  કે જેમાં  Selected Date / 1 રદવસ  પહેલાાંના  બધા  Appointment Calendar View માાં દેખાય. Appointment  
+dmin માં આવી  સુલવધા  હોવી  જોઈએ  કે selected date પસાંદ  કરે પછી  તે રદવસની  બધી  appointments માટે auto message મોકલી  શકાય  (બધા patients ને એક સાથે). 
+• Admin particular patients select કરીને  appointment cancel અથવા  reschedule  પણ કરી શકે.  
+• જો appointment next date પર મૂકાશે , તો તે calendar માાં પણ automatically update થવ ાં જોઈએ .  
+• Messages માટે:  
+o Admin દ્વારા pre-typed message template  બનાવેિો  હોવો  જોઈએ   
+o જરૂર  મુજબ  તે message edit કરી શકાય  એવો  option પણ હોવો  જોઈએ   
+     આથી  appointment management, communication અને rescheduling સરળતાથી  manage થઈ શકશે  
+•   Calendar માં અિગ -અિગ  પ્રકારના  Appointment દશાડવવા  માટે Option હોવો  જોઈએ , જેમ કે Consultation, Procedure, Laser, Follow -up (F/U), New 
+Case અને  Inquiry . 
+• આ તમામ  Appointment ને Category પ્રમાણે  Filter કરીને  અિગ -અિગ  રીતે જોવા  મળે તેવી  સુલવધા  હોવી  જોઈએ , જેથી  Doctor અને Staff સરળતાથી  જરૂરી  
+Appointment મેનેજ  કરી શકે. 
+ 
+• લસસ્ટમમાં  Date Selection કરવાની  સુલવધા  હોવી  જોઈએ , જેથી  કોઈપણ  પસંદ  કરેિી  તારીખની  તમામ  Appointment ની સંપૂણડ  માલહતી  મેળવી  શકાય . જો કોઈ 
+ચોક્કસ  તારીખ  માટે Appointment હોય અને તે લદવસ  માટે Doctor ઉપિબ્ધ  ન હોય, તો તે તારીખના  તમામ  Appointment ને એકસાથે  Cancel / Reschedule 
+કરવાની  સ રવધા  હોવી  જોઈએ . 
+સાથે  સાથે , તે લદવસના  તમામ  પેશન્ટને  એકસાથે  Pre-typed Message મોકલી  શકાય , જેમ કે “તમારી  Appointment છે, પરંતુ  હું તે લદવસે  ઉપિબ્ધ  નથી ,” જેથી  તમામને  
+એકસાથે  જાણ  કરી શકાય .   આ ઉપરાંત , તે તારીખના  Appointment ને Next Available Day પર ઓટોમેરટક  Shift / Move કરવાની  સ રવધા  હોવી  જોઈએ , જેથી  લદવસની  
+તમામ  Appointment આગળના  લદવસે  ટરાન્સફર  થઈ જાય અને Schedule સતત  ચાિુ  રહે. 
+ 
+NOTE:  When  a procedure  is added,  the pending  balance  is automatically  updated  at the Reception billing counter.  
+--- Page 26 ---
+ 
+ 
+•  
+ 
+ AFTER SELECTIN PROCESSUR ALL (fixed  by syste /IF ANY TAB ADD OPTION GIVEB BY MASTER  
+ TAB OPTION SHOW BLOW PROCUESR   
+ 
+               
+ 
+ 
+ 
+ 
+જ્યારે  ર્ોક્ટર  કોઈ પેશન્ટ  માટે પ્રોલસજર  એર્ કરે પરંતુ પેશન્ટ  તે પ્રોલસજર  તરત ન કરાવે , ત્યારે તે પ્રોલસજરની  માલહતી  Special Note માાં આપમેળે  સેવ થવી 
+જોઈએ , અને તે Previous / Current List  માં પણ દેખાવવી  જોઈએ . 
+જો પેશન્ટને  પહેિા  પ્રોલસજર  માટે એર્વાઇઝ  કરવામાં  આવ્યો  હોય પરંતુ પેશન્ટે  તે પ્રોલસજર  ન કરાવ્યો  હોય અને ઘણા લદવસો  પછી ફરીથી  આવે, ત્યારે ર્ોક્ટર  ફરીથી  
+તે જ પ્રોલસજર  કરવા  કહે, તો ર્ોક્ટર  Previous Procedure List માાંથી  સીધ ાં રસલેક્ટ  કરીને  એડ કરી શકે. 
+જ્યારે  આ પ્રોલસજર  ફરીથી  એર્ થાય, ત્યારે તે Special Note માાંથી  આપમેળે  Remove (Delete) થઈ જવ ાં જોઈએ , જેથી ર્ુલપ્િકેટ  અથવા  પેલન્ર્ંગ  નોંધો ન રહે Procedure  Fields  
+PRIVIOUES /CURRENT PROCUGAR LIEST VIEW ALL VIEW ONLY /ACTION BOTTONE VIEW LIEST IMAGE SHOW OPTION GIVEN   
+/ADD/EDIT/DELIT  SARCHING NAME …………………….  
+PHOTO, VIDIO TEMPLET FOR 
+UNDARSENDING  
+--- Page 27 ---
+ 
+ 
+ 
+ 
+ 
+ 
+ Date  
+---------------
+Therapiest  
+  
+Procegues  -
+-----------  
+by 
+ BODY 
+PART   
+Number 
+of 
+setion  
+ 
+4 
+ 
+Auto 
+ganretor 
+from 1st 
+seletion 
+day  
+  
+Auto ganrated f/u date  
+from today/ given date   
+ 
+ 
+B/W-F  
+DAY  20  
+ 
+ 
+AUTO UPGREAD  
+ 
+    
+PERFOMENS 
+DATE done  
+ Skin 
+type 
+ Unit 
+ Powar  
+ Wawe 
+length  
+ plus 
+duration  
+ sport 
+size 
+ Pulse 
+impuls  
+ Thick 
+ness  
+ Den 
+city 
+ Dot 
+dencity  
+ Short 
+fire 
+ satues  Remark  
+/ resouen  Rate  
+ Payment 
+satues  
+ Action 
+button  
+ 
+ 
+25/03/2026  
+---------------  
+Dr valaki  HAIR 
+REMOWAL  
+------------  
+DIOED  
+ FACE  1/4 1/4   5/03/2026  25/03/2026  2 0 10 100 hz  10 2.2 25 10 .5 10 100  done  2000  Done/pending  * 
+ HAIR 
+REMOWAL  
+------------  
+DIOED  
+ FACE  2/4 2/4   14/04/2026              CANFORME
+D  
+ 
+PAYMENT 
+PAY AND 
+GIVE 
+APPIENTME
+NT  
+ 
+ 
+ 
+DALY BY 12 
+DAY  AUTO  
+UPDATE  
+ 
+Cancle  
+ 
+Not tacken 
+further 
+interested  
+ 
+NOT 
+TACKEN  Not avelibal  
+ 
+20/04/2026 
+f/u date  2000  Cancle  *cancle 
+setion  
+ HAIR 
+REMOWAL  
+------------  
+DIOED  
+ FACE  3/4 3/4  04/05/2026                   
+ HAIR 
+REMOWAL  
+------------  
+DIOED  
+ FACE  4/4 4/4  24/05/2026                   
+ 
+Note   
+Dicouent     10 %  Acully price   10000  After discount price  9000  Total    9000   
+--- Page 28 ---
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+• જયારે  Auto Upgrade Option પર Click કરવામાં  આવે, ત્યારે Last Appointment Date આધારે  પેશન્ટ  માટે New Date આપમેળે  Generate / Update 
+થઈ જાય, અને Appointment હવે Late Period પછી Automatically Set થાય. 
+• જો Auto Upgrade Option Unclick હોય, તો પેશન્ટની  પ્રથમ  આપેિી  (Old) Date જ રાખવામાં  આવે અને દરેક Previously Given Appointment Detail 
+દેખાય . 
+• આ સુલવધાથી  પેશન્ટ  માટે Appointment Auto Reschedule અથવા  Original Date બંને સરળતાથી  Manage થઈ શકે. 
+ 
+ 
+• ADD NEW PROCUES IN EXICLE FILE SHOW  ACCODING TEBALE ADD  UPATE PRICE BY ADMINE  
+ 
+ 
+ 
+1. નવ ાં પ્રોરસજર  ઉમેરવ ાં  (Add New Procedure)   
+o નવું પ્રોલસજર  Excel ફાઈિ  માં Table પ્રમાણે  બતાવવું  જોઈએ .  
+o Admin દ્વારા પ્રોરસજરની  રકાંમત  (Price)  અપર્ેટ  કરવાની  સુલવધા  હોવી જોઈએ .  
+o Admin ને Direct Procedure View , Payment Option , Edit Price Option  (Location / Size / Appointment સાથે કે વગર) આપવી .  
+2. ડોક્ટર  અને Admin બાંને માટે Excel Sheet Sync   • CONSENT FROM UPDTE   -  
+ 
+• જયારે  ર્ોક્ટર  કોઈ પણ Procedure રસલેક્ટ  કરે, ત્યારે Consent Form આપમેળે  રસલેક્ટ  થવ ાં જોઈએ .  
+• Consent Form માં નીચેની  Patient ની મારહતી  આપમેળે  ભરાઈ  જવી જોઈએ :  
+• Patient Name ( નામ) ,M/F (લિંગ) ,Age (ઉમર) ,Place (સ્થાન ) ,IPD No ,MRD No ,Procedure Name ( પ્રોલસજરનું  નામ)  
+• Consent Form માં Update Procedure Option  હોવી જોઈએ , જેથી Doctor Procedure સુધારી  શકે.  
+• Xerox Option  હોવી જોઈએ , જેથી Doctor, Reception અને Nursing Panel માંથી  Consent Form ની Copy (Xerox) કરી શકે.  
+• જો 10-12 Consent Form તૈયાર  છે અને Doctorને બદિી  કરવી  હોય, જેમ કે 12 Lessons માંથી  11 Lessons નું Form જોઈએ , તો Doctor પસાંદગી  
+કરીને  Consent Form બદલી  શકે.  
+• Patient Profile માં જે Language  પસંદ કરેિી  છે, Consent Form તે Language માં Generate થશે.  
+•  Consent Form Template માં Patient ની તમામ  લવગતો  હશે. Doctor જે િખે છે તે Selected Procedure Name , Date , Name , MRD No , Case No  
+માં Auto Populate  
+--- Page 29 ---
+ 
+o જો ર્ોક્ટર  કોઈ નવું પ્રોલસજર  ઉમેરે, તો તે Admin Excel Sheet  માં આપમેળે  Update થઈ જાય.  
+o New Procedure Add Option બંને માટે ઉપિબ્ધ  હોવી જોઈએ .  
+3. Appointment Auto Update – Delayed Patient   
+o જો પેશન્ટ  DUE Date પછી આવે, તો Last Procedure ની તારીખ  પ્રમાણે  Auto Update થવું જોઈએ .  
+o Example: Appointment Date 22/02/2026, પેશન્ટ  10 લદવસ  પછી આવે → Pop-up દેખાર્વું : Delayed Appointment , 10 લદવસ  delay period 
+સાથે.  
+o Delay Reason Special Note  માં Auto Save થવી જોઈએ .  
+o Delay Appointment માટે Manual Procedure List Update પણ કરવા  માટે Option આપવી .  
+4. Next Appointment / Follow -up (F/U)   
+o પેશન્ટ  કહી શકે: “Coming Next Monday” → Auto Update Date Option સાથે F/U Notification બતાવવી .  
+o Sunday/Unavailable Dates: Admin દ્વારા Selection ન હોય તો Pop-up show AND GIVEN Appointment Date  /NEXT AVELIBAL DATE  પર 
+આપવી .  
+5. Procedure Payment / Due Management   
+o Doctor Procedure Generate કરે અને Payment / Due જો કરે, તો Record Excel માં Update થાય.  
+o જો Procedure Not Taken, તો Auto Delete + Special Note માં Save થાય: Not Taken / Advised Procedure / Reason.  
+o Inquiry Procedure: Patient Name, Reason, F/U Info Save થાય, જેથી Admin / Doctor જાણે કયા Patient Inquiry માટે આવ્યો .  
+6. Payment Edit Option   
+o તમામ  Session માટે Direct Edit Payment Option  હોવી જોઈએ .  
+o Payment Add થાય ત્યારે Excel Book માં Price Auto Update થાય.  
+7. Auto Writing Pre -type Procedure Name   
+o Procedure Add અને Session Set કરતી  વખતે  Pre-type Procedure Name Auto IN MULTIPAL SETION થવી જોઈએ . 
+--- Page 30 ---
+ 
+1. Pre -Procedure Notes ( લપ્ર-પ્રોલસજર  નોટ્સ ) 
+• Doctor માટે Pre-op Instructions Template ઉપિબ્ધ  હોવી  જોઈએ .  
+• Template Add કરવી  Compulsory નથી  → Hide/Show Option ઉપિબ્ધ  હોવી  જોઈએ .  
+• Procedure Selection સમયે  Auto Add: જો Admin દ્વારા  Template Add કરાયું  હોય, તો તે Auto Add થઈ જવું જોઈએ .  
+• Doctor પાસે  Edit / Delete (E/D) કરવાની  સુલવધા  હોવી  જોઈએ .  
+ 
+2. Post -Procedure Notes ( પોસ્ટ -પ્રોલસજર  નોટ્સ ) 
+• Procedure Template પ્રમાણે  Post -Procedure Care Instructions Auto Add થવી  જોઈએ .  
+• Doctor ઈચ્છે  તો તેને બદિી  શકે.  
+• Hide / Edit Option Admin દ્વારા  Control કરી શકાય .  
+ 
+4. Role -Based Viewing (Access Control)  
+• Reception: ફિ  Procedure Name + Payment Status જોવું  જોઈએ , બીજુ  કશું નહી .  
+• Nursing: Patient ની તમામ  details, Pre/Post Notes, Advice, Procedure History બધું જોવું  જોઈએ .  
+ 
+5. Payment & Doctor Approval Workflow  
+• Patient Payment થયાં  પછી  પણ Procedure Conducted હોય, જો Doctor Approval Pending હોય:  
+o Procedure Completion Record Save થાય   
+o Approval Pending Flag Auto Set થાય   
+o Doctor Approval આપ્યા  પછી  Remaining Payment Auto Update થાય .  
+--- Page 31 ---
+ 
+• Suggested Developer Logic:  
+o Procedure Status: Pending → Completed → Approved  
+o Role -Based Access + Notification (Doctor, Reception, Nursing)  
+o Auto Alerts for Pending Approval  
+If any patient  after  payment done with posesser  doctor aprvuval after  payment remening but prosessur  done but after doctor   approval  
+ Suggest in best devlopar  
+NOTE:  When  a procedure  is added,  the pending  balance  is automatically  updated  at the Reception billing counter
+--- Page 32 ---
+ 
+ 
+ 
+                          
+ 5 IMAGE   TAB   
+ 
+  ADD PROSEGUER  
+SESELETION FOR PRE LIEST/MENUALLY TYE /IF ADD PROSESSUER AUTO  
+ADD  
+  COMPERESSON  
+ 
+ 
+ 
+ 
+1. જ્યારે  ર્ોક્ટર  7મા Tab માં પેશન્ટ  માટે કોઈ ઈમેજ  લસિેક્ટ  કરે, ત્યાર પછી Add Procedure માં Master Key પરથી  Selection કરી શકાય  અને Manual પણ િખી 
+શકાય .  
+2. બટનની  નીચે બધા પ્રોલસજરની  લિસ્ટ  (All List) ઓટોમેલટક  Open થવી જોઈએ . આ લિસ્ટમાં  પેશન્ટના  તમામ  પ્રોલસજર  A થી Z રમમાં  દેખાવા  જોઈએ . લિસ્ટમાંથી  
+કોઈ પણ પ્રોલસજર  સીધું લસિેક્ટ  કરી શકાય  અને તે પેશન્ટની  પ્રોફાઇિમાં  ઈમેજ  સાથે Add થઈ શકે. લિસ્ટમાં  લસિેક્ટ  કરેિા  પ્રોલસજર  સાથે Comparison પણ કરી 
+શકાય . 
+3. જ્યારે  ર્ોક્ટર  Add Procedure Button  મારફત  કોઈ પ્રોલસજર  એર્ કરે, ત્યારે  એ પ્રોલસજર  તરત  જ પ્રોરસજરની  રલસ્ટ  (Procedure List)  માં બતાવવું  જોઈએ . 
+લિસ્ટમાં  એ પ્રોલસજર  ઉમેરાઈ  જાય  અને ત્યાંથી  તે Directly Selectable  રહે, જેથી  ર્ોક્ટર  અથવા  સ્ટાફ  તેને જોઈ  અને એર્ કરી શકે 
+ 
+LIEST VIEW  
+ 
+NO PROCESGAR   DATE  LIESTING AROW HIG /LOW  
+1 PRP  02/02/2026  
+2 HAIR REMOVAL  26/02/2026  
+3 PILING  16/03/2026  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- Page 33 ---
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+SINGAL SETION   
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+• જ્યારે  કોઈ સેકશનનો  Before / After લપક અપર્ેટ  થઈ ગયો હોય, અથવા  કોઈ પેશન્ટની  4 પ્રોલસજર  સેલટંગ  પૂણડ થઈ ગઈ હોય અને 1 એક્સ્ટરા  પ્રોલસજર  
+ઉમેરવો  હોય, ત્યારે પ્રોલસજર  Tab માં 5મી સેકશન  એર્ કરવાથી , તે સેકશન  પ્રમાણે  લપક પણ ઓટોમેલટક  અપર્ેટ  થવું જોઈએ . 
+• સેકશનની  ઓલરલજન  પેનિ  પર રાઈટ -લલિક  કરતાં  પણ સબ-સેકશન  ઉમેરવાની  સુલવધા  હોવી  જોઈએ , અને સબ-સેકશન  ર્બિ -લલિક  કરતાં  ઓટોમેલટક  
+એર્ થવું જોઈએ . સબ-સેકશન  એર્ કયાડ પછી, પ્રોલસજરનું  નામ અને તારીખ  ઓટોમેલટક  દેખાવું  જોઈએ  (જે લદવસે  એર્ કરવું છે તે તારીખ  auto). સબ-
+સેકશનમાં  Before લપકની  જરૂર  નથી. 
+• એક લપક લસિેક્ટ  કરતાં  તે Full Screen  માં ઓપન  થાય. સાઈર્ના  બટનથી  Send Image / Next Slide Press કરી શકાય , ત્યાં સુધી પહેિા  / પછીના  
+સેકશન  ફરી ન આવે . ESC  દબાવતા  Full Screen બંધ થાય. 
+• જો Compare બટન  પર લલિક  થાય, તો Compare View માં Full Screen લસિેક્શન  લપક 2 અથવા  વધુ લપક સાથે ઓપન  થાય. Compare લપકમાં  લાઇટ  
+રડવાઇઝર  દેખાય , 2 પાટડમાં  વહેંચાય  – Left અને Right, અને બંને સાઇર્  પર Zoom Option ઉપિબ્ધ  હોય. ADD IMAGE  
+ADD IMAGE  EAR LOBE 02/02/2028  
+--- Page 34 ---
+ 
+Compare કરી શકાય . Compare Screen પર તમામ  લપક Side-to-Side અને Up-Down મા উસથી Adjust કરી શકાય . Compare Box માં લપક મૂકેિ  સ્થાને  રહી 
+શકે અને Zoom Option પણ ઉપિબ્ધ  રહે. Compare Reset કરવાની  સુલવધા  પણ હોવી  જોઈએ . 
+•  
+ 
+MULTIPAL SETION  
+ 
+ 
+ 
+ 
+ 
+ 
+BEFORE  
+ 
+  
+AFTER 1  
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+AFTER 2  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ ADD IMAGE  
+ADD IMAGE  HAIR REMOVAL 10/04/2026 1 SETION  
+ 
+HAIR REMOVAL 2ND SETION  
+ADD IMAGE  
+--- Page 35 ---
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+COMPER  
+ 
+ 
+ 
+NOTE  
+ 
+ 
+ 
+mage લસિેક્શન  થયા  પછી , તમામ  Title નામો  Time અને  Date પ્રમાણે  દેખાવા જોઈએ , જેમાં  સૌથી  નવી  (Recent) એન્ટરી  સૌથી  પહેિા  દેખાય  અને Date પ્રમાણે  Up/Down 
+સોલટિંગ  થઈ શકે, જેમાં  default તરીકે  Recent પહેિા  બતાવવું  
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ACULLIT DATE /DATE  
+--- Page 36 ---
+ 
+ 
+1. જો કોઈ નવી  Procedure બનાવવામાં  આવે , તો તે Auto Generate થઈને  List માાં Box View તરીકે  દેખાવ ાં જોઈએ . જો પેશન્ટ  માટે કોઈ નવી  Procedure 
+બનાવવામાં  આવે , તો તે Procedure Name અને  Date સાથે  ઓટોમેરટક  એન્ટરી  બને. 
+2. Before / After ફોટા  માટે Direct Selection ની સુલવધા  હોવી  જોઈએ , એટિે  કે ફોટો  અપિોર્  કરતા  પહેિા  જ Before / After પસંદ  કરી શકાય . એક જ Procedure 
+માટે Multiple Appointment જનરેટ  થઈ શકે, પણ તે બધું એક જ Folder / Sub Title હેઠળ  ગોઠવાયેિું  રહે (ઉદાહરણ  તરીકે  Blue/Green Box View માં). 
+3. Photo Add કરતા  વખતે , ફોટામાં  Auto Date અને  Time Generate થવ ાં જોઈએ , અને સાથે  Crop, Left -Right Adjustment જેવા  Option ઉપિબ્ધ  હોવા  જોઈએ . 
+ફોટો  અપર્ેટ  થયા  પછી  Edit Option હોવું જોઈએ , જેમાં  Crop, Rotation, Mark, Delete જેવી  સુલવધાઓ  મળે, અને નીચે  Photo માટે Auto Generated Date અને 
+Time દેખાવા  જોઈએ . 
+4. દરેક ફોટાના  નીચે  નાના  White Box માં Black Font માં Date અને Time દેખાવા  જોઈએ , અને Admin માટે Edit/Delete (E/D) Option ઉપિબ્ધ  હોવો  જોઈએ , જેથી  
+જરૂર  મુજબ  Date અને Time બદિી  શકાય . 
+ 
+ 
+ 
+ 
+ 
+           
+AFTER ADD IMAGE  OPTION  GIVEN   AND SELETION DIRECT OPEN  DIVIES    
+CAMERA IF POSIBAL LOGO  DARMA SCOPE LOGO AND BLOW NAME  FACE SACNER (E/D OPTION BY ADMINE  
+ 
+ 
+ 
+ 
+અહીં ફિ  રલલરનકલ  પ્રોરસજર  જ જનરેટ થવી  જોઈએ , એટિે  કે માત્ર  મેલર્કિ  સંબંલધત  ટરીટમેન્ટ  જ લિસ્ટમાં  દેખાવા  જોઈએ . ઉદાહરણ  તરીકે , રપમ્પલ  (Pimples)  જેવી  
+લલિલનકિ  કન્ર્ીશન  અથવા  ટરીટમેન્ટ  માટે જ પ્રોલસજર  બનાવવી  અને બતાવવી . અન્ય  નોન -લલિલનકિ  અથવા  અનલરિેટેર્  પ્રોલસજર  લિસ્ટમાં  આવવી  નહીં જોઈએ . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- Page 37 ---
+ 
+ 
+ 
+● Upload  File  — JPEG  / PNG  / PDF OPEN  accepted  
+ 
+● Image  Capture  Date  / Time  — Auto -stamped  or manual  entry  
+●  
+● Doctor's  Observation  / Report  — Free  text interpretation  by doctor  
+ 
+● PIC EDIT OPTION – ZOOM,CROP,ROTATION,MARKING OPTION GIVEN  
+ 
+  
+ 
+ 
+BETWEEN  2 PROSSUSUER   ----------------------------------------- 00000 ----------------  (ONLY FOR EXAMPAL DEVLOPAR GIVEN FOR BEST )  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- Page 38 ---
+ 
+DIAGNOSIS  TAB   
+Access:  Doctor  (Edit)  
+i. Diagnosis  — Main  diagnosis  — search  ICD-10 code  or free  text (NEW:  ICD-10 search) HIDE/SHOW OPTINE  
+ 
+ii. Differential  Diagnosis  — List of possible  diagnoses  considered HIDE /SHOW OPTION  HIDE/SHOW OPTION  
+iii. Provisional  / Confirmed  — Toggle  — provisional  or confirmed  diagnosis (E/D OPTIONE )  
+ 
+iv. Notes  — Additional  diagnostic  notes/OTHER IF ANY  
+ 
+v. AFTER SELETION DIGNOSIS ADD DEVISED AUTO BY MASTER CHAT (HIDE DIGNOSISI)  
+ 
+ 
+AUTO HIDE /SHOW BY ADMINE PENAL  (IF PATICULAR PATIENT NOT SHOW CLICK HIDE/SHOW )  
+--- Page 39 ---
+ 
+EYE OPTION (HIDE/SHOW )  AND ADMINE                                                                 EYE OPTION (HIDE/SHOW ) AND ADMINE   
+ 
+ 
+                  
+ 
+Tinea curies  
+Tinea capities  
+ 
+ 
+ 
+ 
+ 
+ TINEA  
+Diffent diagnosis and next plan  
+PRE TYE BY MASTER KEY/ WRITING  
+DIAGNOSIS NOTE  (EYE OPTION)  થયા  પછી  તેની  મુજબ  pre-typed notes આપમેળે  (auto) fill થવી  જોઈએ . એટિે  જે diagnosis select કરવામાં  આવે  તે પ્રમાણે  system 
+automatically યોગ્ય  note િખી  આપે . 
+Note  EDITABAL BY DOCTOR / ADMINE  
+ 
+ 
+ EYE OPTION  
+DITE ADVIESED   EYE OPTIONE (HIDE/SHOW )  IF NOT ADD PRICPTION NOT SHOW DITE ADVIESD   
+Diagnosis મુજબ  diet advice આપમેળે  (automatically) add થવું જોઈએ  અને તે સાથે  editable હોવું જોઈએ , જેથી  Doctor તેને direct edit કરી શકે તેવી સુલવધા  ઉપિબ્ધ  હોવી  જોઈએ  
+ 
+ 
+PATIENT CATOGORY  Patient category doctor દ્વારા  એક વખત  select કરવામાાં  આવશે , ત્યારબાદ  next visit વખતે  તે auto update થઈને  આવી  જશે . પરંતુ  doctor અથવા  admin 
+તેને જરૂર  મુજબ  edit કરી શકે તેવી  સ રવધા  હોવી  જોઈએ . 
+Constion charges  Discount  total 
+   100 10 90 
+ FOC  
+ 
+F/U 
+DAY  7 22/02/2026 MONDAY  F/U FOR  ACANE TRETMENT/LESSUR ,ETC                                                                                                                         
+(NOT SHOW )  
+--- Page 40 ---
+ 
+In tabal given eye symbol  hide /show  in priciption page  
+ 
+PROSEUER F/U SETION SHOW ONLY DATE  (EYE HIDE SHOW OPTINE)  
+ 
+1/4  20/02/20226  
+ 2/4  25/03/2026  
+3/4    25/04/2026  
+4/4    26/05/2026  
+ 
+ 
+ 
+ 
+ 
+REVIW LINK   
+• આ option બધા  patients માટે  auto ન હોય , માત્ર  doctor જે patient record માં click કરે તેના  માટે.  
+• Admin દ્વારા  Google review link add  કરવાની  સુલવધા  હોવી  જોઈએ , જેમાં  tick box  આપવામાં  આવે .  
+• Doctor જ્યારે  patient record open કરે → tick box mark કરે → Send button  press કરે → patient ને review link auto send  થઈ જાય .  
+     આ રીતે, review link જરૂરી  patient માટે  જ મોકિવામાં  આવશે  અને admin દ્વારા  manage પણ થઈ શકે. 
+ SEND REVIW LINK VIA WHATS APP/ TEX 
+OPTION  
+--- Page 41 ---
+ 
+ 
+RAMESHBHAI MANUBHAI PATEL                                                               DATE 20/03/2026  
+AGE 35YR   MALE                                                                                            CASE: - C001 -001 -130326    
+PLACE :-SURAT                   MRD: -  P03 -260001  
+ 
+ 
+VITAL  (H) ( H/S ) (EYE SIMBOLI)  
+WIGHT  45 KG | HIGHT 5.6 FT| TEM  98.6F | PLUS  76/MINIT | BP 122/82mmhg | BMI 125  
+ 
+[PARTICULAR (H) OPTION SIMBOLY EYE /ON EYE COSS]  
+ 
+C/C – ICING  WITH REDNESS  ON  AXILARRY  AREA  
+DIGNOSIS  (H) 
+PRIMORY :- TINIEA  
+DIAGNOS :-TINIA CURIES  
+DIRRENT  :-DIGNOSIS  ECT,ECT,ECT  
+[PARTICULAR (H) OPTION SIMBOLY EYE /ON EYE COSS]  
+ 
+DRUGH  
+ 
+Rx NAME  DOSE  FREQUENCY  DURATION  NOTE IF ANY  
+1 TAB DOLO 650 MG  1TAB 1-1-1 
+(AFTER FOOD)  7 DAY           - 
+2 SYP ALBENDAZOLE  5ML 0-0-1 
+(BEFOR FOOD)  EVERY 
+WEEK  FOR  4 
+WEEK  WITH MILK  
+3 CREAM  TM PHOB  1 1-0-1 
+(KEEP DRY PLCE BE 
+FOR APPLIY)  8 DAY  ALTRNATIVE DAY  
+ 
+4 CREAM   MONPIC  1 1-1-1 
+(KEEP DRY PLCE BE 
+FOR APPLIY)  10 DAY  - 
+5 CREAM   FUCIBET  1 1-1-1 
+(KEEP DRY PLCE BE 
+FOR APPLIY)  10 DAY  - 
+ 
+NOTE  
+ 
+xxiv.  xxv. RX -1 AND 2 MIX AND  APPLY  
+xxvi.  
+ 
+PROCUER NAME AND LIEST AND F/U DATE /SETION  IF ADVIESD  
+ 
+INVESTIGATIN  
+s.IgE  
+cbc 
+ 
+ 
+ADVIESD  
+Sdgfsdah sdfigdsafg hyudsgfhagd yuhfgyuhgf yuhsdgfyudasg yufgduwesaf yusdgfsdgf yudgfyu 
+fgtaedsgvfdhj yudgahfd ytugfdaS YUFGASD FFYUGFa fyu ggfdvbaG FDAEDSFG GDFGAHYFG YD 
+FYUGYF DAsgfdyu gyudasg f fdasedfsadf fsadgfsadgf fsade df afd gf asdgfaSDGFG FDSFGA FASDGS 
+GFSDFGGA FASDGASDGF FASFASDF GSR GF SDG G SDGF SDF G SDFG G SD GF SDF HDGF H FG 
+GH FXDZsda F ASDDGF SD GF SDFFG D AGVFDSDF GH SDG  SDRFGH BDF H FGDKJDFG SFD G 
+RSDG XC BV FDGJ FD F G SDFHFDGH FGDH SX GFFDGTGHFDGHSD GBH FDG H FDGTH DFGH 
+DFGG HFGDHJDFGT H  
+ 
+CONSLING WITH  DOCTOR   
+DR R.R. PATED MD MEDICINE  
+ FOR HIGH SGPT   
+ 
+Next F/U  
+AFTER 12 DAY ON 02/04/2026 (PIMPUL )  
+--- Page 42 ---
+ 
+ 
+  
+Prescription માં font size માટે arrow (High / Low) option  આપવું  જોઈએ . 
+• જો prescription log 2 pages નું હોય, doctor font size adjust  કરી શકે છે.  
+• Prescription માં બધી fonts, bold, formatting  admin દ્વારા pre-generated હોય છે.  
+• Doctor માટે માત્ર size increase / decrease  કરવાની  option ઉપિબ્ધ  રહેશે.  
+     એટિે  prescription ની overall design/admin settings secure રહેશે, અને doctor માત્ર size control  કરી શકશે . 
+ 
+ 
+F/U WITH  
+1/4  20/02/20226  MONDAY  
+ 2/4  25/03/2026   FRYDAY  
+3/4    25/04/2026  MONDAY  
+4/4    26/05/2026  MONDAY  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+--- Page 43 ---
+ 
+લસિંગ  પેનિ  માટે મલપટપિ  યુઝર  (Multiple User) લસસ્ટમ  ઉપિબ્ધ  કરાવવી  જરૂરી  છે, જેથી  એકથી  વધુ નલસિંગ  સ્ટાફ  એક સાથે  
+િોલગન  કરીને  લસસ્ટમમાં  કામ કરી શકે. દરેક યુઝર  માટે અિગ -અિગ  િોલગન  અને પરલમશન  લસસ્ટમ  હોવી  જોઈએ . 
+• HOSPITAL NAME  
+• MOBILE NUMBER  
+• EMAIL ED  
+• LOCATION  
+• DOCTOR NAME  
+• ALL CONSULATION FEES EDITEBAL PRE TYPING OPATION  
+• PRICPTION TEMPLET AND MANAGE FOR PRIENT 4 SIDE AND , PAGE SELECTION A4,A3 ETC  
+• ALL WHATS APP MASENGAR MENEGMENT /TEX MSG MANAGE  
+• ALL DRUGH LIEST  MANAGEMENT  
+• ALL TEST LIEST MANEGMENT  
+• CONSULATION FEE ,ETC FEES MANAGEMENT  
+• PRECIPTION  ALL COLUM HIDIN AND SHOW OPTION BOTH  DOCTOR AND ADDMINE ONE TIME  CLICK NEXT 
+PATIEN REMINING ,IF NEXT PATEN SELECT FURTHER NEXT OT SAME AS CANTINUES  
+• PAYMENT TYPE  SELECTIN BY DOCTOR ONE TIME ..FOC ETC  
+• PAYMENT OPTION AND FOC ODAR ONLY BY DOCTOR  
+• PATIENT GIVEN SHADUAL APPOIENTMENT BUT DOCTOR NOT AVELBAL THIS DATE SELECTION DATE RANGE 
+ALL SHDUAL  APPOIENT PT SEND  SMS BUK AND NEW MSG IF ANY SEND (DOCTOR ON MONAY REGULY 
+AVELIBAL ,ETC )  
+• BILIG  AND REPOT  
+•  
+• AFTER DAY REPOTING ALART IN ADMINE NEW DRUGH UPADTE IN EXCILE FILE  
+• HOSPITAL REVIE LINK SHARE BY WHATS APP  
+• Patient not tacken druugh by medical repoting day,week,montly,particular patient vies ,repoting wich patient 
+mulipal consoling but not tacken by drugh name ( time of  not taken)  
+ 
+રરપોરટિંગ  અને  Appointment System – Gujarati Translation  
+Reporting Views:   
+ 
+1. •કેટિા  New Patients  આવ્યા   
+2. •  કેટિા  F/U (Follow -up) Patients  આવ્યા   
+3. •  કેટિા  Missed F/U Patients  છે  
+4. •  કેટિી  Procedures  થઈ  
+5. •  કેટિા  Inquiry ( પૂછપરછ ) આવ્યા   
+6. •  કેટિા  Appointments Cancel થયા  
+ 
+     Income / Payment Report (₹ માાં) 
+• Consultation માાંથી  કેટલો  income થયો   
+• Procedures માાંથી  કેટલો  income થયો   
+• Total income (Consultation + Procedure)  
+ 
+     Detailed Procedure Report  
+--- Page 44 ---
+ 
+• કઈ કઈ procedures થઈ  
+• કેટિા  patients એ િીધી   
+• કેટિા  patients એ not taken  રાખી   
+• Procedure -wise complete details  
+ 
+           Appointment Report  
+• Total appointments  
+• Done appointments  
+• Pending appointments  
+• Cancelled appointments (reason સાથે )  
+• Cancel થયેિ  appointment ની list view   
+ 
+     Inquiry Report  
+• Total inquiry count  
+• Inquiry ની list (date wise / patient detail સાથે )  
+ 
+      View Types ( બધ ાં view માાં મળવ ાં  જોઈએ ) 
+• Particular Date wise   
+• Weekly   
+• Monthly   
+• Yearly   
+• Custom Selection Date   
+ 
+        Graph / Chart View  
+• Bar chart / Pie chart / Line graph માં show કરવું :  
+o Patients (New / F/U / Missed)  
+o Income (Consultation / Procedure)  
+o Appointments (Done / Cancel / Pending)  
+o Inquiry  
+     Graphical view થી analysis easy અને  fast  થઈ જશે 
+ 
+ 
+--- Page 45 ---
+ 
+ 
+o Staff Reporting:   
+o NURSING REPORTING 1,2,3 / RECEPTION REPORTING ,PHARMACES ,ETC WORKER  
+o DAILY WORKING ATTENDANCE, EXTRA TIME, PAYMENT HISTORY, ABSENT  
+o TOTAL MONTHLY PAYMENT, EXTRA TIME INCREMENT CALCULATION  
+o EXTRA TIME PER HOUR PRICE ADMIN દ્વારા  DECIDE  
+1. WEEKLY / MONTHLY / YEARLY VIEWS:  
+o COUNSELING / FOLLOW -UP (F/U) REPORT GENERATOR  
+o કેટિી  INCUMAE  STAFF દ્વારા  GENERATED છે, ADMIN DECISION પ્રમાણે   
+o STAFF PRESENT, EXTRA BONUS, INCENTIVES, PERFORMANCE REPORT  
+o Staff માટે auto biometric attendance machine  દ્વારા  attendance record generate થવું જોઈએ . 
+o Admin દ્વારા :  
+o Attendance report generate કરી શકાય   
+o Monthly total hours view કરી શકાય   
+o Regular payment અને extra time payment calculate કરી શકાય   
+o તમામ  payment અને reports admin દ્વારા  manage થવી  જોઈએ   
+o      આ રીતે staff attendance, working hours અને  payments  centralized system માં accurately 
+track અને manage થઈ શકે. 
+Time Views:   
+o Today | 1 week | 1 month | Date -wise reporting  
+       Detailed Report:   
+o Consulting fees  
+o Lessor  
+o Procedure  
+o Total price  
+o Patient -wise breakdown  
+                                                                                                                                                                                                                                                                                             
+Doctor View:   
+o Total patients A to Z  
+o Payment received history  
+o New registration information (daily, weekly, monthly, yearly)  
+o Follow -up patient information (today, weekly, monthly, yearly)  
+o Number of procedures, lesser, selections (today, weekly, monthly, yearly)  
+2. Income Reporting:   
+o Reporting by day, week, month, yearly  
+o Patient -wise income generated reporting  
+     આ system થી financial, patient, procedure અને  follow -up reporting  structured, accurate અને easy -to-
+access બની  શકે. 
+--- Page 46 ---
+ 
+o  
+o  
+Appointment:   
+ 
+o Staff call/communication notes recorded  
+o Appointment missed / not decided / 1 day advance notification reports generate  
+ 
+ 
+ 
+ 
+Follow -up (F/U) Date Missed Patients – : 
+• જો કોઈ patient F/U date ચૂકી  જાય , તો system માં:  
+o Patient ની previous date -wise list  દેખાવું  જોઈએ   
+o Previous treatment, drug not taken status સલહત  તમામ  details દેખાવું  જોઈએ   IN SPECIAL NOTE  
+• Call / Reporting:   
+o F/U માટે call કરો → notes enter કરો, જેમ કે:  
+▪ “Out of city, next visit 5 days પછી  કરો”  
+o Nursing staff patient ની next F/U date 5 days પછી  update કરશે   
+o New F/U date automatically generate થશે  
+• Notification to Patient:   
+o Patient ને SMS / WhatsApp દ્વારા  confirmation message  મોકિાશે   
+o Message pre -type અથવા  type -able format માં હોવો  જોઈએ ,  ADMINE  દ્વારા  edit કરી શકાય   
+     આથી  missed F/U patients efficiently track થઇ શકે અને next visit ensure થાય  
+ 
+Doctor અને  Nursing Staff Daily Reporting – 
+• Doctor daily track  કરી શકે કે કયા patients કયા treatment િીધા .  
+• Next day doctor patient નો name click કરીને  nursing station ને list મોકલી  શકે, જેથી  nursing staff F/U કરે.  
+• Nursing staff F/U કયાડ પછી  notes  િખશે , જેમ કે treatment progress, drug taken/not taken, patient 
+feedback  NOTE DO NOT CALL  વગેરે .   
+• Doctor ને daily F/U patients ની list આપવામાં  આવશે , અને તે કેટિા  patients treat થયા  તેની  complete 
+reporting    
+--- Page 47 ---
+ 
+• Nursing / doctor માટે daily reporting  morning માં auto generate થશે, જેમાં  બતાવવામાં  આવશે  કે આજે  
+કેટિા  patientsના F/U છે અને કયા patientsના F/U pending છે.  
+     આ systemથી daily treatment, F/U tracking, અને  reporting  સરળ  અને systematic રીતે manage થઈ શકે. 
+  આ list માંથી  doctor જે patients નો F/U લેવાનો  નથી  તે patients ને select કરીને  અલગ  list બનાવી  શકે.  
+  Doctor patient selection કરીને  F/U call માટેની  list nursing staff ને મોકલી  શકે.  
+  Doctor પાસે  option હોવું જોઈએ  કે:  
+• Consultation wise   
+• Procedure wise  
+પ્રમાણે  patients ને અિગ  કરી શકે  
+  સાથે  doctor priority set કરી શકે:  
+• કોણે  પહેિો  call કરવો   
+• પછી  કોણે  next call કરવો   
+  આ પ્રમાણે  તૈયાર  થયેિી  priority -wise F/U list nursing panel માાં મોકલી  શકાય  જેથી  nursing staff સરળતાથી  call 
+કરીને  follow -up manage ક 
+ 
+Doctor Next Day / Selection Day Calendar & F/U Reporting – Gujarati Translation:  
+• Doctor next day અથવા  selection day ના calendar  માં જઈને  report જોઈ  શકે.  
+• Report માંથી  કોઈ  patient ને F/U માટે  call કરવો  એ select (tick) કરી શકે.  
+• Priority માટે 1st કોનાથી  call કરવ ાં  એ પણ tick કરી nursing panel માં મોકિવામાં  આવશે .  
+• Nursing panel  થી call કરી patient appointment time book કરશે .  
+• Patient feedback પણ nursing staff write કરશે , જેથી  doctor ને અિગ  call કરવાની  જરૂર  ન પર્ે.  
+• Doctor daily report generate  કરશે , જેમાં :  
+o જે patients માટે call કરવાની  જરૂર  નથી  એ alag highlight  થાય .  
+o Report list view generated પછી  nursing staff ને forward  કરવામાં  આવશે .  
+• Doctor processes view, counseling view વગેરે  alag grading / categories  પ્રમાણે  structured રહેશે ,  
+o જેથી  procedure patients  ને પહેિા  call કરી શકાય .  
+     આ systemથી F/U management, call prioritization અને  daily reporting  organized અને efficient બનશે . 
+ 
+ 
+  
+--- Page 48 ---
+ 
+Pre type information  
+Drugh taken  - not taken by color 
+cording /helf tacken  
+ 
+Advise taken /not  tacken  
+( advise name moll removal ,co2 
+lessor ,pilling )  
+Information tack by procure iest  
+and medical cornformation  
+ 
+ 
+ 
+ Note  
+P[ayment  issue ,next time after 
+time tacken ,poor consoling, 
+missing consoling poient like  
+don,t proper undarstebding  etc  
+ 
+ 
+MEDICAL SHOW ONLY DRUGH LIEST ONLY AND PATIEN DETILE NAME,MRD,OPD CASE NO,M/F  
+ 
+Patient Advice, Calendar & Appointment System – Gujarati Translation:  
+1. Patient Advice / Procedure Tab:   
+o Patient ને advise કરેિ  procedures જેમ કે lessor, peeling  વગેરે  directly procedures tab  માં add 
+કરી શકાય .  
+o Appointment એ same day માટે આપ્યું  હોય અને patient એ procedure not taken  હોય, તો 
+procedures tab માં “advised but not taken”  તરીકે  record કરવું .  
+o Doctor માટે easy reference રહેશે , જેથી  next visit  પર પણ patient ને advised procedures બતાવી  
+શકાય .  
+Calendar View & Appointment Booking:   
+o Left upper side  માં small calendar show કરવો  – current month display.  
+o Particular date click → time select → appointment booking.  
+o Calendar માં show થવું:  
+▪ Today / Selection day info  
+▪ Today inquiry generation  
+▪ Today procedure confirmation  
+▪ Done procedure  
+--- Page 49 ---
+ 
+▪ Today new case  
+▪ Follow -up (F/U) case  
+▪ Today payment (esthetic & consultation)  
+▪ All details single date view  
+2. Nursing Access:   
+o Nursing staff માટે appointment booking  & today / next day appointment list  show only.  
+o Particular day access admin permission  દ્વારા  manage.  
+o Next day appointment list: consultation / new patient / F/U / procedure all show.  
+ 
+3. Today / Selection Date Report:   
+o Total patients  
+o Total new patients  
+o Total appointments  
+o Total done appointments  
+o Today pending appointments  
+o Total canceled appointments with reason  
+o Today total advised procedures / taken / not taken  
+o Today payment – consultation / procedure  
+o Today inquiry  
+4. Graphic / Chart View:   
+o Reports should be graphical / chart view  for better understanding.  
+o Best idea: develop software with easy visualization , color -coded status, clear single -date 
+reporting and summary dashboard for admin and doctor.  
+ 
+ 
+ 
+ 
+ 
+ 
+. 
+• . Pharmacy Management (Admin Panel / Doctor Panel)  
+• New drug add કરવી  હોય :  
+o List admin અને doctor દ્વારા  update કરી શકાય .  
+--- Page 50 ---
+ 
+• Patient drug pending:   
+o જો patient drug માટે request કયો પરંતુ  drug મળી  નથી  → patient list today / selected date  show.  
+• Patient half drug લીઈ  છે:  
+o Half drug patients નું today / selected date  list show.  
+• Drug unavailable:   
+o Patient drug િેવા  ગયો  પરંતુ  drug available નથી  → list notify medical shop .  
+• Drug return:   
+o Patient drug return કરે → today / selected date  list show  
+o Medical shop update કરશો  → automatically patient profile માાં update .  
+Medical shop દ્વારા  total drug stock Excel file માાં daily add કરવામાાં  આવશે . ત્યારબાદ  patient જેમ જેમ drug િેશે, 
+તેમ તે stock માાંથી  આપમેળે  ઘટત ાં  જશે . 
+• કોઈ પણ drug પર click કરીએ  તો તેની  સંપૂણડ  માલહતી  મળવી  જોઈએ :  
+o હાિ  કેટિો  stock ઉપિબ્ધ  છે  
+o કેટિો  stock કયા patient ને આપવામાં  આવ્યો  છે  
+     આથી  stock tracking અને  drug distribution  સરળતાથી  m 
+ 
+જો હું કોઈ દવા select કરું, તો મને તે દવા કયા patient ને આપવામાં  આવી  છે તેની  list view મળવી  જોઈએ . 
+• તેમાં  નીચે  મુજબની  માલહતી  દેખાવા  જોઈએ :  
+o Patient ID   
+o Patient Name   
+o કેટલી  quantity આપવામાાં  આવી   
+o કયા  રદવસે  આપવામાાં  આવી  (Date)  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- Page 51 ---
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+2. MR Management (Admin & Doctor Panel)  
+• Admin management:  
+o All staff attendance  
+o Staff work report  
+o Staff payment history  
+     આ system થી pharmacy drug tracking, patient drug status, staff management & payments  centralized 
+અને efficient રીતે manage થ 
+ 
+Reporting System –  
+• Time Views:   
+o Today | 1 week | 1 month | Date -wise reporting  
+• Detailed Report:   
+o Consulting fees  
+o Lessor  
+o Procedure  
+o Total price  
+o Patient -wise breakdown  
+• Doctor View:   
+o Total patients A to Z  
+o Payment received history  
+o New registration information (daily, weekly, monthly, yearly)  
+o Follow -up patient information (today, weekly, monthly, yearly)  
+o Number of procedures, lesser, selections (today, weekly, monthly, yearly)  
+• Income Reporting:   
+o Reporting by day, week, month, yearly  
+o Patient -wise income generated reporting  
+--- Page 52 ---
+ 
+     આ system થી financial, patient, procedure અને  follow -up reporting  structured, accurate અને easy -to-
+access બની  શકે. 
+ 
+ 
+ 
+HOSPIAL EXPENSIS  
+1. Income   
+2. Expense   
+3. Profit (Auto Calculation)   
+ 
+Expense  
+• Light Bill ( લવજળી  લબિ )  
+• Rent (ભાર્ું )  
+• Municipality Tax  
+• Worker Salary  
+• Sanitary / Cleaning ખચડ  
+• Installment (Loan / EMI)  
+• Internet / WiFi Bill  
+• Phone Bill  
+•  Printing / Stationary ( પેન, પેપર , રજીસ્ટર ) 
+•  Drug Purchase ( દવા ખરીદી )  
+•  Surgical Items (Injection, Syringe, Gloves)  
+•   Equipment Purchase  
+•   Maintenance  
+• Staff Related Expenses  
+• Doctor Salary / Sharing  
+• Nursing Salary  
+• Reception Salary  
+• Bonus / Incentive  
+• Overtime Payment  
+ 
+મને મારા  સોફ્ટવેરમાં  એવો  ફીચર  જોઈએ  છે કે જેમાં  ઇમેજ  (ફોટો ) સેવ થઈ શકે. હાિ મારું  સોફ્ટવેર  લિાઉર્  પર ચાિે  છે, પણ 
+મને ઈમેજ  િોકિ  ર્રાઈવ  (કમ્પ્યુટર )માં સેવ થવી  જોઈએ . 
+લસસ્ટમ  આ રીતે કામ કરવો  જોઈએ : 
+• એક મેઇન  PC ર્ોક્ટર  માટે રહેશે   
+• બીજો  PC નલસિંગ  માટે રહેશે   
+નલસિંગના  PC પરથી : 
+• ફિ  ફોટો  અપિોર્ /અપર્ેટ  કરી શકાશે   
+• ફોટો  લર્િીટ  કે અન્ય  કોઈ ફેરફાર  કરી શકાશે  નહીં  
+--- Page 53 ---
+ 
+ર્ોક્ટરના  PC પરથી : 
+• બધા  કંટરોપસ  રહેશે  (ફોટો  જોવો , મેનેજ  કરવો  વગેરે )  
+ 
+કઈ કંપનીનું  લિાઉર્  સોપયુશન  પસંદ  કરવું  તે લનણડય  અમે પોતે  િઈશું . લિાઉર્  આધાલરત  સોપયુશન  અમારાં  ખાસ  જરૂલરયાતોને  
+અનુરૂપ  કસ્ટમાઇઝ  કરીને  તૈયાર  કરી આપવું  રહેશે . 
+ 
+• Doctor અને Patient વચ્ચે  લવલર્યો  કોિ 
+• કોિ શેડ્યૂિ  કરવાની  સુલવધા  
+• કોિ શરૂ /બંધ (Start/End) બટન  
+• Low internet માટે optimized કોિ 
+• Audio -only લવકપપ  
+ 
+4. Appointment System:  
+• Patient સમય  બુક કરી શકે 
+• Doctor એપ્રુવ /લરજેક્ટ  કરી શકે 
+• તારીખ  અને સમય  મુજબ  એપોઇન્ટમેન્ટ  લિસ્ટ  video nu alag thi  
+ 
+5. Patient Management:  
+• Patient માલહતી  (નામ , ઉંમર, મોબાઇિ  નંબર ) 
+• Patient history જોવા  મળે 
+• Prescription add અને save કરી શકાય  
+ 
+6. File & Image Management:  
+• Photo/Report upload system  
+ 
+• Delete permission ફિ  Doctor પાસે  
+. Security:  
+• Login system (ID + Password  +OTP ) 
+• Role -based access control  
+• Data encryption જરૂરી  
+ 
+--- Page 54 ---
+ 
+ Notifications:  
+• Appointment reminder  
+• Video call alert  
+ 
+Reports & Records:  
+• તમામ  લવલર્યો  કોિનો  રેકોર્ડ  
+• Doctor માટે લરપોટડ  લસસ્ટમ  
+ 
+ Platform Requirement:  
+• System PC પર ચાિે  (Doctor & Nursing)  
+• જરૂર  હોય તો Mobile support (Android/iPhone)  
+ 
+ 
+ Cloud Requirement:  
+• Cloud solution અમારી  જરૂલરયાત  મુજબ  કસ્ટમાઇઝ  કરવું  
+• કઈ કંપનીનું  લિાઉર્  િેવું તે અમે નક્કી  કરીશું  
+• Proper backup system હોવો  જોઈએ  
+ 
+. Additional Requirement:  
+• System સરળ  અને user -friendly હોવું  જોઈએ  
+• Future માં feature add કરી શકાય  તેવી flexibility હોવી  જોઈએ  
+ 
+Payment Terms & Service Agreement  
+ડેવલપર  માટે  ક લ ચાજટ  રૂ. 50,000 નક્કી  કરવામાાં  આવ્યા  છે. 
+• 1પેમેન્ટ : 15% (રૂ. 7,500) — પ્રોજેક્ટ કન્િમટ  થાય  ત્યારે આપવાન ાં  રહેશે  
+• 2 પેમેન્ટ : 25% (રૂ. 12,500) — સોફ્ટવેરન ાં  50% કામ  પૂણટ  થાય  ત્યારે આપવાન ાં  રહેશે  
+• 3 પેમેન્ટ : 25% (રૂ. 12,500) — સોફ્ટવેરન ાં  સાંપૂણટ  ડેવલપમેન્ટ  પૂણટ  થાય  ત્યારે આપવાન ાં  રહેશે  
+• 4 પેમેન્ટ : 35% (રૂ. 17,500) — પ્રોજેક્ટ સાંપૂણટ  રીતે લાઈવ  (Live) થાય  ત્યારે આપવાન ાં  રહેશે  
+• જો સોફ્ટવેર  100% પૂણટ  ન થાય  અથવા  નક્કી  કરેલા સમય  કરતાાં  વધ  મોડ ાં  થાય  
+અથવા  યોગ્ય  સરવટસ  ન મળે, તો 100% પેમેન્ટ  પરત  આપવ ાં  રહેશે  
+• સોફ્ટવેરનો  સાંપૂણટ  સોસટ  કોડ, ડેટાબેઝ  અને  સ્ટરક્ચર  અમને  હસ્તાાંતરરત  (handover) કરવો  િરરજયાત  રહેશે  
+• પ્રોજેક્ટ શરૂ  કરવા  માટે  બાંને પક્ષની  સહમરત  િરરજયાત  રહેશે  અને  પ્રથમ  પેમેન્ટ  મળ્યા  પછી  જ કામ  શરૂ  થશે. 
+• નક્કી  કરેલા સમય  (3 MOUNTH ) અાંદર  પ્રોજેક્ટ પૂણટ  કરવો  િરરજયાત  રહેશે , જો રવલાંબ  થાય  તો તે અાંગે  
+અગાઉથી  જાણ  કરવી  પડશે . 
+• સોફ્ટવેર  સાંપૂણટ  રીતે કાયટરત  (fully functional) અને  બગ -ફ્રી હોવો  જોઈએ . 
+--- Page 55 ---
+ 
+• તમામ  સોસટ  કોડ, ડેટાબેઝ  અને  પ્રોજેક્ટ સ્ટરક્ચર  લલાયન્ટને  સાંપૂણટ  રીતે હસ્તાાંતરરત  કરવાન ાં  રહેશે . 
+• લલાયન્ટની  માંજૂરી  વગર  કોઈપણ  ડેટા રડલીટ  અથવા  ન કસાન  ન થવ ાં જોઈએ . 
+• પ્રોજેક્ટ Live થયા  પછી  3 મરહના  સ ધી  ફ્રી સરવટસ  આપવામાાં  આવશે . 
+• 3 મરહના  પછી  જો કોઈ  સરવટસ  અથવા  સપોટટ  જોઈએ  તો 1 વર્ટ માટે  રૂ. 4,000 ચાજટ  લાગ  પડશે . 
+• જો સોફ્ટવેર  નક્કી  કરેલી શરતો  મ જબ  પૂણટ  ન થાય  અથવા  સમયમયાટદા  કરતાાં  વધ  રવલાંબ  થાય , તો 100% 
+પેમેન્ટ  પરત  આપવ ાં  િરરજયાત  રહેશે . 
+• 3 મરહના  ફ્રી સરવટસ  પૂણટ  થયા  પછી , જો કોઈ  સરવટસ  અથવા  સપોટટ  જોઈએ  તો 1 વર્ટ માટે  રૂ. 4,000 ચાજટ  લાગ  
+પડશે . આ 1 વર્ટની  અવરધ  દરરમયાન  આ ચાજટ  રસવાય  કોઈ  વધારાનો  સરવટસ  ચાજટ  લેવામાાં  આવશે  નહીાં . 
+• WhatsApp API અને  Cloud સાંબાંરધત  પેમેન્ટ  રૂ. 50,000ના ક લ પ્રોજેક્ટ ચાજટમાાં  સમાવેશ  થત ાં નથી . આ 
+સેવાઓ  માટેન ાં  પેમેન્ટ  સાંબાંરધત   પાટીને  અલગથી  સીધ ાં  ચૂકવવાન ાં  રહેશે .  
+• તમામ  ઇમેજ  અપલોડ  સમયે  Automatic Compression System લાગ  કરાશે , (AUTO - ON/OFF  જેથી િાઇલ  
+સાઇઝ  ઓછી  થાય  પરાંત  ઇમેજની  સ્પષ્ટતા  (Clarity) અને  ગ ણવત્તા  (Quality) પર કોઈ  નોાંધપાત્ર  અસર  ન થાય . 
+• ચોક્કસ  ર્ોક્ટર , હોલસ્પટિ  જ્યારે  બંધ હોય ત્યારે પેશન્ટને  ચોક્કસ  ખબર  પર્વી  જોઈએ  કે તમે કઈ તારીખે  
+અને કયા વારે પાછા  આવશો . આનાથી  પેશન્ટને  રાહ જોવામાં  સરળતા  રહેશે . 
+• તમારા  સોફ્ટવેર  માટે આ એકદમ  પરફેક્ટ  અને લવનમ્ર  મેસેજ  ર્રાફ્ટ  છે: 
+•  
+• નમસ્કાર !                      
+•     "રનષ્ણાત  સારવાર  અને ક દરતી  રનખાર  માટે અમે આપની  સેવામાાં  હાજર  છીએ ." 
+•   અત્યારે હોરસ્પટલ  બાંધ છે. 
+• અત્યારે  હોલસ્પટિ  રજાના  કારણે  બંધ છે, હવે હોલસ્પટિ  નીચે મુજબના  સમયે  ફરી શરૂ થશે: 
+•              ખ લવાની  તારીખ : [તારીખ , દા.ત. ૨૬-૦૪-૨૦૨૬ ]                 વાર: [વાર, દા.ત. સોમવાર ]         સમય : સવારે  
+૧૦:૦૦ વાગ્યે  
+• તમે તે લદવસ  માટે એર્વાન્સ  એપોઇન્ટમેન્ટ  અત્યારે  જ બુક કરી શકો છો. તે માટે ૧ દબાવો . 
+• અસ રવધા  બદલ  ખેદ છે. 
+• ડૉ. છાયા  વાલાકી  (SKIN CITY)  MBBS, DDV (Gold Medalist)  
+•  
+• ર્ેવિપર  માટે સૂચના  (Smart Feature):  
+• તમારા  ર્ેવિપરને  કહેજો  કે સોફ્ટવેરમાં  એક "Holiday Settings"  નું ફોમડ આપે  જેમાં તમે આ ૩ લવગત  ભરો 
+એટિે  મેસેજ  જાતે બની જાય:  
+• ૧. રજા ક્યાં સુધી છે? (તારીખ )  
+• ૨. કયો વાર છે? 
+•  ૩. કયા સમયDATE થી ઓપન  થશે? 
+ 
+ 
+ 
+WhatsApp Business API   :- Meta Cloud API   
+ Confirmation: જ્યારે રરસેપ્શન  પર એપોઇન્ટમેન્ટ  બ ક થાય , ત્યારે પેશન્ટને  તરત  જ કન્િમેશન  મેસેજ  જવો  જોઈએ . 
+Reminder: એપોઇન્ટમેન્ટના  ૨ કલાક  પહેલા  પેશન્ટને  ઓટોમેરટક  રીમાઇન્ડર  જવો  જોઈએ . (E/D) for particular 
+patient in personal profile and without seletion patient for all  for ( E/D)  
+Cancellations (Holiday Logic): જો હ ાં કોઈ  રદવસ  રજા રાખ ાં , તો સોફ્ટવેરમાાં  તારીખ  રસલેક્ટ  કરતા  જ માત્ર  તે રદવસની  
+એપોઇન્ટમેન્ટ  ધરાવતા  પેશન્્સને  કેન્સલેશનનો  મેસેજ  જવો  જોઈએ . 
+--- Page 56 ---
+ 
+Birthday Wishes: સોફ્ટવેર  રોજ  સવારે પેશન્ટ  ડેટા ચેક કરી જેનો જન્મરદવસ  હોય  તેને "Skin City" તરિથી  
+ઓટોમેરટક  રવશ  કરે. 
+Festival Bulk SMS: રદવાળી  કે હોળી  જેવા તહેવારો  પર એકસાથે  બધા  જ પેશન્ટને  રવશ  કરવાનો  ઓપ્શન  હોવો  
+જોઈએ . 
+Auto Follow -up: પેશન્ટ  દવા લઈ જાય  તેના  ૭ રદવસ  પછી  "તમારી  તરબયત  કેવી  છે?" તેવો  ઓટોમેરટક  મેસેજ  જવો  
+જોઈએ . 
+Today's Status: રરસેપ્શન  ડેશબોડટ  પર એક 'Yes/No' બટન  હોવ ાં  જોઈએ . જો હ ાં 'No' કર ાં અને  કોઈ  પેશન્ટ  WhatsApp 
+પર ઈન્વાયરી  કરે, તો તેને ઓટોમેરટક  જવાબ  જવો  જોઈએ  કે "ડોક્ટર  આજે હાજર  નથી ." 
+Digital Prescription સોફ્ટવેરમાાં  રબલ  કે રપ્રરસ્િપ્શન  જનરેટ થાય  એટલે  તરત  જ પેશન્ટના  WhatsApp પર તેની  PDF 
+જવી  જોઈએ . 
+Template Tracking: મેસેજ  પેશન્ટને  મળ્યો  કે નહીાં  (Sent/Delivered/Read) તેન ાં સ્ટેટસ  સોફ્ટવેરમાાં  પેશન્ટના  નામ  
+સામે  દેખાવ ાં જોઈએ . 
+ 
+ WhatsApp MATE Official Meta Cloud API નો જ ઉપયોગ  કરવાનો  રહેશે  
+ 
+૧. પેશન્ટ  માટે  મેન  (Welcome Message)  
+જ્યારે નવો  પેશન્ટ  મેસેજ  કરે ત્યારે તેને આવો  મેસેજ  જવો  જોઈએ : 
+નમસ્તે , Skin City રલલરનકમાાં  આપન ાં  સ્વાગત  છે.                      નીચેનામાાંથી  જે સ રવધાનો  લાભ  લેવો  હોય  તેનો  નાંબર  (1 થી 9) 
+ટાઇપ  કરીને  મોકલો : 
+ 
+   એપોઇન્ટમેન્ટ  બ રકાંગ  (નવા  અને  જૂના  પેશન્ટ  માટે )  
+   રલલરનકન ાં  લોકેશન  (Google Maps રલાંક )  
+   રલલરનકનો  સમય  (સવાર  અને  સાાંજનો  સમય ) 
+    આજે હોરસ્પટલ  ચાલ  છે કે બાંધ? (Live Status)  
+   ડૉક્ટર  પરરચય  અને  ઉપલ્ધ  સારવાર  (રડગ્રી , ગોલ્ડ  મેડલ  અને  સ્પેરશયારલટી ) 
+    રરપોટટ  અથવા  િોટા  મોકલવા  માટે  (ડાયરેક્ટ અપલોડ  ઓપ્શન )  
+   રરસેપ્શરનસ્ટ  સાથે  વાત  કરવા  (સીધો  િોન  નાંબર ) 
+ 
+ 
+નમસ્તે  [પેશન્ટન ાં  નામ ], 
+આશા  છે કે આપની  તરબયત  સારી  હશે. સારવાર  બાબતે  કોઈપણ  મદદ  માટે  હોરસ્પટલના  સમયે  સાંપકટ  કરવા  રવનાંતી . 
+આપનો  રદવસ  શ ભ  રહે! ✨ 
+ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+--- Page 57 ---
+ 
+MBBS, DDV (Gold Medalist ) 
+ 
+ 
+નમસ્તે  [પેશન્ટન ાં  નામ ], 
+આશા  છે કે આપની  તરબયત  સારી  હશે. આવતીકાલે  આપની  આગળની  તપાસ  માટે  હોરસ્પટલના  સમયે  આવવા  રવનાંતી . 
+આપનો  રદવસ  શ ભ  રહે! ✨ 
+ડૉ. છાયા  વાલાકી  (SKIN CITY) MBBS, DDV (Gold Medalist  
+ 
+ 
+   એપોઇન્ટમેન્ટ  બ રકાંગ  (નવા  અને  જૂના  પેશન્ટ  માટે )  
+પગલ ાં  ૧: મોબાઈલ  નાંબર  ચેરકાંગ  
+પેશન્ટ  જેવો મેસેજ  કરશે , સોફ્ટવેર  એના  નાંબર  પરથી  ચેક કરશે : 
+• જો જૂના  પેશન્ટ  છે: તો સીધ ાં  પૂછશે  - "નમસ્તે  [નામ ], તપાસ  (Follow -up) માટે  કઈ તારીખે  આવશો ?"  MORING 
+/ EVING  SELETION KARIYA PACHI CALENDAR OPTION  BOOK AND CANFORMATION MSG  
+• જો નવા  પેશન્ટ  છે: તો નીચે  મ જબની  રવગતો  પૂછશે . 
+સ્ટેપ ૧: સ્વાગત  મેસેજ  (ઓટો -રડટેક્શન ) સોફ્ટવેર  પેશન્ટને  ઓળખીને  સીધો  આ મેસેજ  કરશે : 
+"નમસ્તે  [પેશન્ટનું  નામ], 'લસ્કન  લસટી ' હોલસ્પટિમાં  આપનું  સ્વાગત  છે. તમારી  આગળની  તપાસ  (Follow -up) માટે 
+એપોઇન્ટમેન્ટ  બુક કરી રહ્યા છો." 
+સ્ટેપ ૨: સવાર /સાાંજ  પસાંદગી  (Selection)  તરત જ બે બટન  આવશે : 
+•    સવાર  (Morning)  
+•    સાાંજ  (Evening)  
+સ્ટેપ ૩: કેલેન્ડર  ઓપ્શન  (Calendar View)  પેશન્ટ  જેવું 'સવાર ' કે 'સાંજ' પસંદ  કરશે , એટિે  તરત જ કેલેન્ડરની  
+રવન્ડો  (Flow)  ખુિશે . 
+• પેશન્ટ  તેમાંથી  પોતાની  અનુકૂળ  તારીખ  પર લલિક  કરશે . 
+•  
+નમસ્કાર  [પેશન્ટન ાં  નામ], સ્કીન  અને વાળની  શ્રેષ્ઠ સારવાર  માટે આપન ાં  સ્વાગત  છે🙏 
+"અરભનાંદન! તમારી એપોઇન્ટમેન્ટ ડૉ. છાયા વાલાકી (SKIN CITY) માટે બ ક થઈ ગઈ છે."  
+          📅 તારીખ : [તારીખ ] ⏰ સમય : [સવાર  / સાંજ] 
+          ⏰ સમય : ☀️ સવારે: ૧૦:૦૦ થી ૦૧:૦૦  
+            સ્થળ : 📍 સ્થળ : [રલલરનકન ાં  સરનામ ાં ] 🗺️ લોકેશન : [Google Maps રલાંક ] 
+                ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+--- Page 58 ---
+ 
+                MBBS, DDV (Gold Medalist)  
+ 
+ 
+ 
+પગલ ાં  ૨: નવા  પેશન્ટ  માટે  (Registration)   
+નવા  પેશન્ટ  માટે  સ્ટેપ -બાય -સ્ટેપ  પ્રોસેસ : 
+૧. શરૂઆત  (Trigger): પેશન્ટ  મેનૂમાાંથી  "   એપોઇન્ટમેન્ટ  બ રકાંગ " રસલેક્ટ  કરશે . 
+૨. મોબાઈલ  વેરરરિકેશન  (OTP):  
+• સોફ્ટવેર  પેશન્ટને  પૂછશે : "તમારો  મોબાઈલ  નાંબર  વેરીિાય  કરવા  માટે  OTP મોકલવામાાં  આવ્યો  છે." 
+• પેશન્ટના  િોન  પર ૪ કે ૬ આાંકડાનો  OTP આવશે . (આનાથી  ખોટા  બ રકાંગ  અટકશે ). 
+• પેશન્ટ  OTP નાખશે  એટલે  સોફ્ટવેર  ચેક કરશે  કે આ નાંબર  નવો  છે. 
+૩. પેશન્ટ  પ્રોિાઇલ  (નવા  પેશન્ટ  માટે  િોમટ ): નવો  નાંબર  હોવાથી  સોફ્ટવેર  એક રવન્ડો  (Flow) ખોલશે  જેમાાં પેશન્ટ  આ ૩ 
+રવગત  ભરશે : 
+૪. સમય  અને  તારીખની  પસાંદગી  (Session & Calendar): િોમટ  ભયાટ  પછી  તરત  જ પેશન્ટને  બે ઓપ્શન  દેખાશે: 
+•    સવાર  (Morning)  
+•    સાાંજ  (Evening) ત્યારબાદ  Calendar ખ લશે  અને  પેશન્ટ  તારીખ  પસાંદ  કરશે . 
+૫. િાઈનલ  કન્િમેશન  મેસેજ : તારીખ  અને  સમય  રસલેક્ટ  કરતા  જ પેશન્ટને  નીચે  મ જબનો  િાઈનલ  મેસેજ  જશે : 
+ 
+ 
+ 
+નમસ્કાર  [પેશન્ટન ાં  નામ ],                      
+આપની  એપોઇન્ટમેન્ટ   
+           "અરભનાંદન! [પેશન્ટન ાં નામ], તમારી એપોઇન્ટમેન્ટ ડૉ. છાયા વાલાકી (SKIN CITY) માટે બ ક થઈ 
+ગઈ છે.  
+ 
+નમસ્કાર  [પેશન્ટન ાં  નામ], સ્કીન  અને વાળની  શ્રેષ્ઠ સારવાર  માટે આપન ાં  સ્વાગત  છે🙏 
+"અરભનાંદન! તમારી એપોઇન્ટમેન્ટ ડૉ. છાયા વાલાકી (SKIN CITY) માટે બ ક થઈ ગઈ છે."  
+          📅 તારીખ : [તારીખ ] ⏰ સમય : [સવાર  / સાંજ] 
+          ⏰ સમય : ☀️ સવારે: ૧૦:૦૦ થી ૦૧:૦૦  
+            સ્થળ : 📍 સ્થળ : [રલલરનકન ાં  સરનામ ાં ] 🗺️ લોકેશન : [Google Maps રલાંક ] 
+--- Page 59 ---
+ 
+                ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+                MBBS, DDV (Gold Medalist)  
+ 
+ 
+ 
+   રલલરનકન ાં  લોકેશન  (Google Maps રલાંક )  
+નમસ્કાર !                      
+"શ્રેષ્ઠ સ્કીન  કેર માટે  આપન ાં  સ્વાગત  છે. મેપ્સની  મદદથી  સરળતાથી  પધારો ." 
+    ગૂગલ  મેપ્સ  રલાંક : [તમારી  રલાંક ] 
+        સરનામ ાં : [તમાર ાં  એડરેસ ] 
+ 
+ 
+ 
+ 
+ 
+   રલલરનકનો  સમય  (સવાર  અને  સાાંજનો  સમય ) 
+નમસ્કાર  ,સ્કીન  અને વાળની  શ્રેષ્ઠ સારવાર  માટે આપન ાં  સ્વાગત  છે🙏 
+⏰ સમય : ☀️ સવારે: ૧૦:૦૦ થી ૦૧:૦૦  
+            સ્થળ : 📍 સ્થળ : [રલલરનકન ાં  સરનામ ાં ] 🗺️ લોકેશન : [Google Maps રલાંક ] 
+                ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+                MBBS, DDV (Gold Medalist)  
+ 
+ 
+ 
+    આજે હોરસ્પટલ  ચાલ  છે કે બાંધ? (Live Status)  
+નમસ્કાર ! 🙏 
+   સચોટ  રનદાન , શ્રેષ્ઠ પરરણામ  – Skin City માાં આપન ાં  સ્વાગત  છે." 
+✅ આજે હોરસ્પટલ  ચાલ  છે. 
+⏰ સમય : ☀️ સવારે: ૧૦:૦૦ થી ૦૧:૦૦ 🌙 સાાંજે: ૦૫:૦૦ થી ૦૮:૦૦ 
+        સ્થળ : 📍 સ્થળ : [રલલરનકન ાં  સરનામ ાં ] 🗺️ લોકેશન : [Google Maps રલાંક ] 
+                ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+--- Page 60 ---
+ 
+                MBBS, DDV (Gold Medalist)  
+ 
+• હોરસ્પટલ  બાંધ હોય ત્યારે 
+• ✨ નમસ્કાર ! 🙏 "તમારા  સ્વાસ્્યની  કાળજી , એ જ અમાર ાં  લક્ષ્ય ." 
+ક્ષમા  કરશો , અત્યારે હોરસ્પટલમાાં  રજા છે. અમે  [વાર] તારીખ  [તારીખ ] થી િરી આપની  સેવામાાં  હાજર  થઈશ ાં . 
+🕒 સમય : સવારે ૧૦ થી ૧ અને  સાાંજે ૫ થી ૮ 
+એપોઇન્ટમેન્ટ  કન્િમટ  કરવા  માટે  અત્યારે જ ૧ દબાવો . 
+શ ભકામનાઓ !  
+ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+MBBS, DDV (Gold Medalist)  
+ 
+    રરપોટટ  અથવા  િોટા  મોકલવા  માટે  (ડાયરેક્ટ અપલોડ  ઓપ્શન )  
+   રરસેપ્શરનસ્ટ  સાથે  વાત  કરવા   
+ 
+નમસ્કાર ! 🙏 
+✨ "આપની  સ રવધા , અમારી  પ્રાથરમકતા ." 
+જો તમારે એપોઇન્ટમેન્ટ  રવશે  વધ  મારહતી  જોઈતી  હોય  અથવા  સીધી  વાત  કરવી  હોય , તો નીચે  આપેલા  નાંબર  પર રલલક  
+કરીને  િોન  કરી શકો  છો: 
+📱 રરસેપ્શન : [તમારો  મોબાઈલ  નાંબર ] ☎️ લેન્ડલાઇન : [જો હોય  તો નાંબર ] 
+⏰ િોન  કરવાનો  સમય : સવારે ૧૦:૦૦ થી ૦૧:૦૦ | સાાંજે ૦૫:૦૦ થી ૦૮:૦૦ 
+નોાંધ : જો િોન  વ્યસ્ત  આવે  અથવા  રરસીવ  ન થાય , તો કૃપા  કરીને  થોડીવાર  પછી  િરી પ્રયત્ન  કરવા  રવનાંતી . 
+ડૉ. છાયા  વાલાકી  (SKIN CITY)  
+ 

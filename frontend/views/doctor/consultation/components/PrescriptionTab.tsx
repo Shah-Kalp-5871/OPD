@@ -41,6 +41,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
   const [frequency, setFrequency] = useState('1-0-1');
   const [duration, setDuration] = useState(5);
   const [instructions, setInstructions] = useState('After Food');
+  const [isSimple, setIsSimple] = useState(false);
 
   const [aiSafetyReport, setAiSafetyReport] = useState<any>(null);
   const [checkingSafety, setCheckingSafety] = useState(false);
@@ -81,8 +82,26 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     }
   };
 
+  const calculateQty = (freq: string, days: number) => {
+    let perDay = 1;
+    if (freq === '1-0-0' || freq === '0-1-0' || freq === '0-0-1' || freq === 'OD') perDay = 1;
+    else if (freq === '1-0-1' || freq === 'BD') perDay = 2;
+    else if (freq === '1-1-1' || freq === 'TDS') perDay = 3;
+    else if (freq === 'SOS') return 'As needed';
+    return perDay * days;
+  };
+
   const addItem = () => {
     if (!currentDrug) return;
+    
+    const qty = calculateQty(frequency, duration);
+    const requiredQty = typeof qty === 'number' ? qty : 0;
+    const stock = currentDrug.inventory?.totalStock || 0;
+    
+    if (requiredQty > 0 && stock < requiredQty) {
+      toast.error(`Drug Not Available: ${currentDrug.drugName} (Stock: ${stock}, Required: ${requiredQty})`);
+      return;
+    }
     
     const newItem = {
       drugId: currentDrug.id,
@@ -91,7 +110,9 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       frequency,
       duration,
       instructions,
-      formulation: currentDrug.formulation
+      formulation: currentDrug.formulation,
+      isSimple,
+      totalQty: qty
     };
 
     setSelectedItems(prev => [...prev, newItem]);
@@ -101,6 +122,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     setFrequency('1-0-1');
     setDuration(5);
     setInstructions('After Food');
+    setIsSimple(false);
   };
 
   const removeItem = (index: number) => {
@@ -254,6 +276,23 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                 </div>
               </div>
 
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={isSimple}
+                    onChange={(e) => setIsSimple(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Mark as Simple Drug (S)</span>
+                </label>
+                
+                <div className="text-right">
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Qty: </span>
+                   <span className="text-lg font-black text-blue-600">{calculateQty(frequency, duration)}</span>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Frequency Schedule</label>
                 <div className="flex flex-wrap gap-2.5">
@@ -396,7 +435,10 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-slate-900 font-black text-sm tracking-tight">{item.drugName}</h4>
+                        <h4 className="text-slate-900 font-black text-sm tracking-tight">
+                          {item.isSimple ? <span className="text-blue-500 mr-1">(S)</span> : null}
+                          {item.drugName}
+                        </h4>
                         <Badge variant="blue" className="text-[8px] py-0">{item.formulation}</Badge>
                       </div>
                       <div className="flex items-center gap-2">
@@ -405,6 +447,9 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                         </span>
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                           {item.frequency} • {item.duration} Days
+                        </span>
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 uppercase tracking-tighter">
+                          Qty: {item.totalQty}
                         </span>
                       </div>
                     </div>

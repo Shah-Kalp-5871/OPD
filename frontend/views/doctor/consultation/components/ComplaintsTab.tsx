@@ -9,6 +9,7 @@ import {
   Scissors,
   Activity,
   Baby,
+  Pill,
   History as HistoryIcon,
   Search
 } from 'lucide-react';
@@ -189,26 +190,49 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
             placeholder="Pregnancies, births, complications..."
           />
         )}
+        <HistoryCard 
+          icon={<Pill className="w-4 h-4" />} 
+          label="Current Medications" 
+          value={history.currentMedications} 
+          onChange={(val) => updateHistory('currentMedications', val)}
+          placeholder="Ongoing medicines from outside..."
+        />
+        <HistoryCard 
+          icon={<Stethoscope className="w-4 h-4" />} 
+          label="Nursing Notes" 
+          value={history.nursingNotes} 
+          onChange={(val) => updateHistory('nursingNotes', val)}
+          placeholder="Nursing-specific observation notes..."
+        />
       </div>
     </div>
   );
 };
 
-const HistoryCard = ({ icon, label, value, onChange, placeholder, isAlert }: { icon: any, label: string, value: string, onChange: (v: string) => void, placeholder: string, isAlert?: boolean }) => (
-  <Card className={`group transition-all ${isAlert ? 'border-rose-100 hover:border-rose-200' : 'hover:border-blue-200'}`}>
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${isAlert ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
-        {icon}
+const HistoryCard = ({ icon, label, value, onChange, placeholder, isAlert }: { icon: any, label: string, value: string, onChange: (v: string) => void, placeholder: string, isAlert?: boolean }) => {
+  const isEmpty = !value || value.trim() === '';
+  
+  return (
+    <Card className={`group transition-all relative ${isAlert ? 'border-rose-100 hover:border-rose-200' : 'hover:border-blue-200'}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${isAlert ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
+            {icon}
+          </div>
+          <h4 className={`text-sm font-black tracking-tight ${isAlert ? 'text-rose-700' : 'text-slate-900'}`}>{label}</h4>
+        </div>
+        {isEmpty && (
+          <Badge variant="slate" className="bg-slate-100 text-slate-400 text-[9px]">Not taken by Reception</Badge>
+        )}
       </div>
-      <h4 className={`text-sm font-black tracking-tight ${isAlert ? 'text-rose-700' : 'text-slate-900'}`}>{label}</h4>
-    </div>
-    <TextArea
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={`bg-white border-slate-100 min-h-[100px] ${isAlert ? 'focus:border-rose-400 focus:ring-rose-500/5' : ''}`}
-    />
-  </Card>
-);
+      <TextArea
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={isEmpty ? "Not taken by reception/nursing - Doctor to enter details..." : placeholder}
+        className={`bg-white border-slate-100 min-h-[100px] ${isAlert ? 'focus:border-rose-400 focus:ring-rose-500/5' : ''}`}
+      />
+    </Card>
+  );
+};
 
 export default ComplaintsTab;

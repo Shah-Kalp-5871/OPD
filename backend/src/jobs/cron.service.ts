@@ -101,4 +101,45 @@ export class CronService {
     const count = await this.apiUsageService.aggregateMonthlySummaries();
     this.logger.log(`API usage aggregation complete: ${count} clients processed`);
   }
+
+  /**
+   * Send Birthday wishes every day at 9:00 AM
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async handleBirthdayWishes() {
+    this.logger.log('Checking for patient birthdays today...');
+    
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1;
+    const currentDay = today.getDate();
+
+    // In Prisma, filtering by day/month on a DateTime isn't direct.
+    // Fetch active patients with DOB, filter in memory, or use raw query.
+    const allPatients = await this.prisma.patient.findMany({
+      where: { profile: { dob: { not: null } } },
+      include: { profile: true }
+    });
+
+    const birthdayPatients = allPatients.filter(p => {
+      if (!p.profile?.dob) return false;
+      const dob = new Date(p.profile.dob);
+      return dob.getMonth() + 1 === currentMonth && dob.getDate() === currentDay;
+    });
+
+    for (const patient of birthdayPatients) {
+      if (!patient.mobile) continue;
+
+      await this.notificationsService.sendNotification({
+        recipient: patient.mobile,
+        type: 'SMS',
+        templateName: 'BIRTHDAY_WISH',
+        data: {
+          patientName: `${patient.firstName} ${patient.lastName}`
+        },
+        patientId: patient.id,
+      });
+    }
+    
+    this.logger.log(`Sent birthday wishes to ${birthdayPatients.length} patients.`);
+  }
 }

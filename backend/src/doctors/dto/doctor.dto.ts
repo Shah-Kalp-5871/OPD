@@ -125,3 +125,17 @@ export class UpdateDoctorDto {
   @IsOptional()
   isActive?: boolean;
 }
+
+export class CreateDoctorLeaveDto {
+  @IsString()
+  @IsNotEmpty()
+  startDate: string;
+
+  @IsString()
+  @IsNotEmpty()
+  endDate: string;
+
+  @IsString()
+  @IsOptional()
+  reason?: string;
+}

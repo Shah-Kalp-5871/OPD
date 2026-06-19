@@ -21,7 +21,10 @@ import {
   Zap,
   MoreVertical,
   Stethoscope,
-  ChevronRight
+  ChevronRight,
+  UserPlus,
+  Search,
+  CalendarDays
 } from 'lucide-react';
 import ClinicalWorkflowWidget from '@/components/dashboard/ClinicalWorkflowWidget';
 
@@ -122,70 +125,87 @@ const DoctorDashboardView = () => {
       <div className="max-w-[1600px] mx-auto space-y-8 pb-20 px-6">
         
         {/* 🔷 SECTION 1: ACTIVE / NEXT PATIENT ALERT */}
-        <div className="bg-slate-900 rounded-[2.5rem] p-2 pr-2 overflow-hidden shadow-2xl flex items-center justify-between border-4 border-slate-800">
+        <div className="bg-[#036d92] rounded-[2.5rem] p-2 pr-2 overflow-hidden shadow-2xl flex items-center justify-between border-4 border-[#025674]">
            <div className="flex items-center gap-8 px-10 py-8">
-              <div className={`w-14 h-14 ${activeSessionEntry ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 shadow-blue-500/20'} rounded-2xl flex items-center justify-center shadow-lg animate-pulse`}>
-                 {activeSessionEntry ? <Activity className="w-7 h-7 text-white" /> : <Zap className="w-7 h-7 text-white" />}
+              <div className="w-14 h-14 bg-white shadow-black/10 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+                 {activeSessionEntry ? <Activity className="w-7 h-7 text-[#036d92]" /> : <Zap className="w-7 h-7 text-[#036d92]" />}
               </div>
               <div>
                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-black ${activeSessionEntry ? 'text-emerald-400' : 'text-blue-400'} uppercase tracking-[0.3em]`}>
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.3em]">
                        {activeSessionEntry ? 'Currently In Session' : 'Next Patient Prepared'}
                     </span>
-                    <span className={`w-2 h-2 ${activeSessionEntry ? 'bg-emerald-500' : 'bg-blue-500'} rounded-full animate-ping`}></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-ping"></span>
                  </div>
                  <h2 className="text-2xl font-black text-white tracking-tight mt-2 flex items-center gap-4">
                     {activeSessionEntry ? (
                       <>
                         {activeSessionEntry.patient.firstName} {activeSessionEntry.patient.lastName}
-                        <span className="text-slate-600">/</span>
-                        <span className="text-emerald-500 text-lg uppercase tracking-widest">{activeSessionEntry.tokenDisplay}</span>
+                        <span className="text-white/50">/</span>
+                        <span className="text-white text-lg uppercase tracking-widest">{activeSessionEntry.tokenDisplay}</span>
                       </>
                     ) : nextPatientEntry ? (
                       <>
                         {nextPatientEntry.patient.firstName} {nextPatientEntry.patient.lastName}
-                        <span className="text-slate-600">/</span>
-                        <span className="text-blue-500 text-lg uppercase tracking-widest">{nextPatientEntry.tokenDisplay}</span>
+                        <span className="text-white/50">/</span>
+                        <span className="text-white text-lg uppercase tracking-widest">{nextPatientEntry.tokenDisplay}</span>
                       </>
                     ) : (
                       'NO PATIENTS WAITING'
                     )}
                  </h2>
-                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1 italic">
+                 <p className="text-[11px] font-bold text-white/70 uppercase tracking-[0.2em] mt-1 italic">
                     {activeSessionEntry ? `Case ID: ${activeSessionEntry.case.caseNumber}` : nextPatientEntry ? `Awaiting Room Entry | ${nextPatientEntry.case.visitType}` : 'Ready for next check-in'}
                  </p>
               </div>
            </div>
 
            {(activeSessionEntry || nextPatientEntry) && (
-             <button 
-               onClick={() => {
-                 const target = activeSessionEntry || nextPatientEntry;
-                 handleStartConsultation(target.caseId, target.patientId);
-               }}
-               disabled={isSubmitting}
-               className={`${activeSessionEntry ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-white hover:bg-blue-50'} text-slate-900 px-16 py-10 rounded-[2rem] flex items-center gap-4 transition-all group border-l border-slate-800 min-w-[280px] justify-center`}
-             >
-                <span className={`text-xs font-black uppercase tracking-[0.2em] ${activeSessionEntry ? 'text-white' : ''}`}>
-                   {activeSessionEntry ? 'RESUME CHART' : 'START SESSION'}
-                </span>
-                <ArrowRight className={`w-6 h-6 ${activeSessionEntry ? 'text-white' : 'text-blue-600'} group-hover:translate-x-3 transition-transform`} />
-             </button>
+             <div className="flex items-center gap-2 px-6">
+                <button 
+                  onClick={() => {
+                    const target = activeSessionEntry || nextPatientEntry;
+                    router.push(`/reception/patients/${target.patientId}`);
+                  }}
+                  className="bg-[#025674] hover:bg-[#01425a] text-white p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all border border-[#01425a] min-w-[120px]"
+                >
+                   <User className="w-6 h-6 text-white/80" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Profile</span>
+                </button>
+
+                {(!activeSessionEntry && nextPatientEntry?.status === 'WAITING') ? (
+                  <button 
+                    onClick={() => handleCallPatient(nextPatientEntry.id)}
+                    disabled={isSubmitting}
+                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all min-w-[160px] shadow-lg shadow-amber-500/20"
+                  >
+                     <Zap className="w-6 h-6 animate-bounce" />
+                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                        Call Patient
+                     </span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      const target = activeSessionEntry || nextPatientEntry;
+                      handleStartConsultation(target.caseId, target.patientId);
+                    }}
+                    disabled={isSubmitting}
+                    className="bg-white hover:bg-gray-50 text-[#036d92] p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all min-w-[160px]"
+                  >
+                     <ClipboardList className="w-6 h-6" />
+                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                        {activeSessionEntry ? 'Resume Chart' : 'Start Chart'}
+                     </span>
+                  </button>
+                )}
+             </div>
            )}
         </div>
-
-        {/* 🔷 SECTION 2: CLINICAL WORKFLOW WIDGET */}
-        <ClinicalWorkflowWidget
-          activePatientId={activeSessionEntry?.patientId || nextPatientEntry?.patientId}
-          activePatientName={activePatientName}
-          onPrescribe={handlePrescribe}
-          onRefer={handleReferral}
-        />
-
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
+        <div className="grid grid-cols-1 gap-10 items-start">
            
            {/* LEFT COLUMN: LIVE DOCTOR QUEUE */}
-           <div className="xl:col-span-8 space-y-8">
+           <div className="space-y-8">
               <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden min-h-[600px]">
                  <div className="p-8 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -207,18 +227,22 @@ const DoctorDashboardView = () => {
                     <table className="w-full text-left border-collapse">
                        <thead className="sticky top-0 z-20 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                           <tr className="bg-white/95 backdrop-blur-sm">
-                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Token</th>
-                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">In Time</th>
-                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Patient Detail</th>
-                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Stage</th>
-                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Visit Type</th>
-                             <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Status</th>
-                          </tr>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Case No</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Time</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Patient Name</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Visit For</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Age</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Gender</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Address</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Payment Status</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Mobile No</th>
+                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Action Buttons</th>
+                           </tr>
                        </thead>
                        <tbody className="divide-y divide-slate-50">
                           {isLoading ? (
                             <tr>
-                              <td colSpan={6} className="py-20 text-center">
+                              <td colSpan={10} className="py-20 text-center">
                                  <div className="flex flex-col items-center gap-4">
                                     <div className="w-8 h-8 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Board...</span>
@@ -227,7 +251,7 @@ const DoctorDashboardView = () => {
                             </tr>
                           ) : queue.length === 0 ? (
                             <tr>
-                              <td colSpan={6} className="py-20 text-center">
+                              <td colSpan={10} className="py-20 text-center">
                                  <div className="flex flex-col items-center gap-4 opacity-30">
                                     <Users className="w-12 h-12 text-slate-400" />
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Your Queue is Empty</span>
@@ -246,48 +270,50 @@ const DoctorDashboardView = () => {
                                }}
                                className={`group transition-all duration-200 border-l-4 ${entry.status === 'IN_SESSION' ? 'cursor-pointer bg-emerald-50/40 border-emerald-500 hover:bg-emerald-50' : entry.status === 'CALLING' ? 'cursor-pointer bg-blue-50/40 border-blue-500 hover:bg-blue-50' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
                              >
-                                <td className="px-10 py-6">
+                                <td className="px-4 py-6">
                                    <div className={`w-fit text-[12px] font-black tracking-widest px-3 py-1.5 rounded-xl border-2 transition-all group-hover:scale-105 ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700 shadow-[4px_4px_0px_rgba(16,185,129,0.2)]' : 'bg-white text-slate-900 border-slate-900 shadow-[4px_4px_0px_rgba(0,0,0,0.05)]'}`}>
-                                      {entry.tokenDisplay}
+                                      {entry.case?.caseNumber || entry.tokenDisplay}
                                    </div>
                                 </td>
-                                <td className="px-10 py-6 text-center">
+                                <td className="px-4 py-6 text-center">
                                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-center gap-2">
                                       <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                      {new Date(entry.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      {entry.checkInTime ? new Date(entry.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}
                                    </span>
                                 </td>
-                                <td className="px-10 py-6">
-                                   <div className="flex flex-col">
-                                      <div className="flex items-center gap-2">
-                                         <span className="text-[15px] font-bold text-slate-900 tracking-tight">{entry.patient.firstName} {entry.patient.lastName}</span>
-                                         {getPriorityBadge(entry.priority)}
-                                      </div>
-                                      <div className="flex items-center gap-2 mt-0.5">
-                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">{entry.patient.mrdNumber}</span>
-                                         <span className="text-[10px] font-bold text-slate-300">•</span>
-                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{entry.patient.gender}</span>
-                                      </div>
+                                <td className="px-4 py-6">
+                                   <div className="flex items-center gap-2">
+                                      <span className="text-[14px] font-bold text-slate-900 tracking-tight">{entry.patient.firstName} {entry.patient.lastName}</span>
+                                      {getPriorityBadge(entry.priority)}
                                    </div>
                                 </td>
-                                <td className="px-10 py-6 text-center">
-                                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${
-                                     entry.case.stage === 'NURSING' 
-                                       ? 'bg-amber-50 text-amber-600 border-amber-200' 
-                                       : entry.case.stage === 'DOCTOR'
-                                       ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                                       : 'bg-slate-50 text-slate-400 border-slate-200'
-                                   }`}>
-                                      {entry.case.stage}
-                                   </span>
-                                </td>
-                                <td className="px-10 py-6">
+                                <td className="px-4 py-6">
                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50 border border-slate-200 px-3 py-1.5 rounded-xl">
-                                      {entry.case.visitType}
+                                      {entry.case?.visitType || '--'}
                                    </span>
                                 </td>
-
-                                <td className="px-10 py-6 text-right">
+                                <td className="px-4 py-6 text-center text-[12px] font-bold text-slate-600">
+                                   {entry.patient?.dateOfBirth ? Math.abs(new Date(Date.now() - new Date(entry.patient.dateOfBirth).getTime()).getUTCFullYear() - 1970) : '--'}
+                                </td>
+                                <td className="px-4 py-6 text-center text-[12px] font-bold text-slate-600 uppercase">
+                                   {entry.patient?.gender || '--'}
+                                </td>
+                                <td className="px-4 py-6 text-[12px] font-bold text-slate-600 truncate max-w-[120px]">
+                                   {entry.patient?.address?.city || '--'}
+                                </td>
+                                <td className="px-4 py-6 text-center">
+                                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${
+                                     entry.patient?.isFoc || entry.case?.bill?.paymentStatus === 'COMPLETED'
+                                       ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                       : 'bg-amber-50 text-amber-600 border-amber-200'
+                                   }`}>
+                                      {entry.patient?.isFoc ? 'FOC' : (entry.case?.bill?.paymentStatus || 'PENDING')}
+                                   </span>
+                                </td>
+                                <td className="px-4 py-6 text-center text-[12px] font-bold text-slate-600">
+                                   {entry.patient?.phone || '--'}
+                                </td>
+                                <td className="px-4 py-6 text-right">
                                    {entry.status === 'IN_SESSION' ? (
                                      <div className="flex items-center justify-end gap-2.5">
                                        <span className="px-4 py-1.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-emerald-500/20">
@@ -312,7 +338,7 @@ const DoctorDashboardView = () => {
                                           onClick={(e) => handleCallPatient(entry.id, e)}
                                           className="flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-full transition-colors border border-blue-200 hover:border-blue-600 shadow-sm"
                                         >
-                                          <span className="text-[10px] font-black uppercase tracking-widest">Call Patient</span>
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Call</span>
                                         </button>
                                      </div>
                                    )}
@@ -325,61 +351,7 @@ const DoctorDashboardView = () => {
                </div>
            </div>
 
-           {/* RIGHT COLUMN: CLINICAL SNAPSHOT */}
-           <div className="xl:col-span-4 space-y-8 sticky top-28">
-              
-              <div className="bg-white rounded-[3rem] border border-slate-200 shadow-xl overflow-hidden min-h-[500px]">
-                 <div className="p-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                       <User className="w-5 h-5 text-blue-400" />
-                       <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">Patient Focus</h3>
-                    </div>
-                    <MoreVertical className="w-5 h-5 text-slate-600" />
-                 </div>
 
-                 {!activeSessionEntry && !nextPatientEntry ? (
-                   <div className="p-20 text-center opacity-30 flex flex-col items-center gap-6">
-                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center">
-                         <User className="w-10 h-10 text-slate-400" />
-                      </div>
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">No Selection</p>
-                   </div>
-                 ) : (
-                   <div className="p-8 space-y-8">
-                      {/* FOCUS PATIENT INFO */}
-                      <div className="space-y-6">
-                         <div>
-                            <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-[1.1]">
-                               {activeSessionEntry ? activeSessionEntry.patient.firstName + ' ' + activeSessionEntry.patient.lastName : nextPatientEntry.patient.firstName + ' ' + nextPatientEntry.patient.lastName}
-                            </h2>
-                            <div className="flex flex-wrap gap-3 mt-5">
-                               <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">MRD: {(activeSessionEntry || nextPatientEntry).patient.mrdNumber}</span>
-                               <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">{(activeSessionEntry || nextPatientEntry).patient.gender}</span>
-                            </div>
-                         </div>
-
-                         {/* ACTION PANEL */}
-                         <div className="pt-8 border-t border-slate-100">
-                            <button 
-                              onClick={() => {
-                                const target = activeSessionEntry || nextPatientEntry;
-                                handleStartConsultation(target.caseId, target.patientId);
-                              }}
-                              className="w-full py-5 bg-blue-600 text-white rounded-3xl text-xs font-black uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-4 group"
-                            >
-                               {activeSessionEntry ? 'CONTINUE CHARTING' : 'OPEN CASE FILE'}
-                               <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                            </button>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center mt-5 italic">
-                               {activeSessionEntry ? 'Chart currently open on your workstation' : 'Review patient vitals and clinical history'}
-                            </p>
-                         </div>
-                      </div>
-                   </div>
-                 )}
-              </div>
-
-           </div>
         </div>
       </div>
     </DoctorLayout>

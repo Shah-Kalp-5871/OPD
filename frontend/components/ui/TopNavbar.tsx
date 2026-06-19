@@ -16,13 +16,13 @@ interface TopNavbarProps {
 // Brutalist / Industrial Role Themes
 const roleThemes = {
   doctor: {
-    accent: 'blue',
-    activeText: 'text-blue-600',
-    activeBorder: 'border-blue-600',
-    iconBg: 'bg-blue-600',
+    accent: '[#036d92]',
+    activeText: 'text-[#036d92]',
+    activeBorder: 'border-[#036d92]',
+    iconBg: 'bg-[#036d92]',
     iconText: 'text-white',
-    lightIconBg: 'bg-blue-50',
-    lightIconText: 'text-blue-600'
+    lightIconBg: 'bg-[#036d92]/10',
+    lightIconText: 'text-[#036d92]'
   },
   admin: {
     accent: 'indigo',
@@ -141,11 +141,11 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
 
   return (
     <header className={`sticky top-0 z-50 bg-white ${isReception ? 'shadow-[0_2px_12px_rgba(249,115,22,0.10)] border-b border-orange-100' : 'border-b border-slate-200'}`}>
-      <div className="flex h-16 items-center justify-between px-6">
+      <div className="flex h-16 items-center justify-between px-6 w-full max-w-[1920px] mx-auto">
         
-        {/* BRANDING */}
-        <div className="flex items-center gap-6">
-          <Link href={`/${role}/dashboard`} className="flex items-center gap-3 group">
+        {/* LEFT: BRANDING */}
+        <div className="flex items-center gap-6 lg:w-1/4">
+          <Link href={`/${role}/dashboard`} className="flex items-center gap-3 group shrink-0">
             <div className={`w-8 h-8 ${theme.iconBg} ${theme.iconText} rounded-lg flex items-center justify-center shadow-[2px_2px_0px_rgba(249,115,22,0.25)] transition-transform group-hover:scale-105`}>
               <Activity className="w-5 h-5" />
             </div>
@@ -158,38 +158,38 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
               </span>
             </div>
           </Link>
-
-          {/* DESKTOP NAVIGATION */}
-          <nav className="hidden lg:flex items-center ml-8 gap-1">
-            {flattenedNav.map((item) => {
-              const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-              const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
-              const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
-              const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
-              
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`
-                    group flex items-center gap-2.5 px-4 h-16 border-b-2 transition-colors
-                    ${isActive 
-                      ? `border-orange-500 text-orange-600 bg-orange-50/50` 
-                      : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-orange-300'
-                    }
-                  `}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-orange-500' : 'text-slate-400 group-hover:text-slate-700'}`} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
         </div>
 
+        {/* CENTER: DESKTOP NAVIGATION */}
+        <nav className="hidden lg:flex flex-1 items-center justify-center gap-1 px-4 overflow-x-auto no-scrollbar">
+          {flattenedNav.map((item) => {
+            const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+            const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
+            const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
+            const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
+            
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  group flex items-center gap-2.5 px-4 h-16 border-b-2 transition-colors shrink-0
+                  ${isActive 
+                    ? `${theme.activeBorder} ${theme.activeText} ${theme.lightIconBg}` 
+                    : `border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300`
+                  }
+                `}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400 group-hover:text-slate-700'}`} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-end gap-4 lg:w-1/4">
           
           {/* FULLSCREEN TOGGLE */}
           <button

@@ -148,21 +148,43 @@ const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinaliz
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {data?.prescriptions?.[0]?.items?.map((item: any, idx: number) => (
-                        <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="text-xs font-black text-slate-900 uppercase tracking-tight">{item.drugName}</div>
-                            <div className="text-[9px] font-medium text-slate-400 mt-0.5 uppercase italic">{item.instructions}</div>
-                          </td>
-                          <td className="px-6 py-4 text-xs font-bold text-slate-600">{item.dosage}</td>
-                          <td className="px-6 py-4 text-xs font-black text-blue-600">{item.frequency}</td>
-                          <td className="px-6 py-4 text-xs font-bold text-slate-500 text-right">{item.duration} Days</td>
+                      {data?.prescriptions?.[0]?.items?.length > 0 ? (
+                        data.prescriptions[0].items.map((item: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="text-xs font-black text-slate-900 uppercase tracking-tight">{item.drugName}</div>
+                              <div className="text-[9px] font-medium text-slate-400 mt-0.5 uppercase italic">{item.instructions}</div>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-bold text-slate-600">{item.dosage}</td>
+                            <td className="px-6 py-4 text-xs font-black text-blue-600">{item.frequency}</td>
+                            <td className="px-6 py-4 text-xs font-bold text-slate-500 text-right">{item.duration} Days</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center text-xs font-medium text-slate-400 italic">No medications prescribed.</td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
+
+              {data?.investigationOrders?.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                    Investigations Ordered
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {data.investigationOrders.map((order: any, idx: number) => (
+                      <span key={idx} className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                        {order.test?.name || 'Lab Test'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <ReportSection 
                 title="Clinical Advice & Follow-up" 

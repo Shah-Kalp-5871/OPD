@@ -32,7 +32,17 @@ export const useQueueSSE = (options: QueueSSEOptions = {}) => {
 
         // Show toast for important events
         if (data.type === 'STATUS_CHANGED' && data.status === 'CALLING') {
-          toast.info(`Calling Patient: ${data.patientName} (${data.token})`);
+          toast.info(`Calling Patient: ${data.patientName} (${data.token})`, {
+            icon: '🔔',
+            duration: 8000,
+          });
+          
+          try {
+            const audio = new Audio('/sounds/bell.mp3');
+            audio.play().catch(e => console.warn('Audio play blocked by browser:', e));
+          } catch (e) {
+            console.warn('Audio creation failed', e);
+          }
         }
         if (data.type === 'SESSION_STARTED') {
           toast.success(`Session Started: ${data.patientName}`);

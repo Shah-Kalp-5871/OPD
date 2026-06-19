@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { PatientSelectionStep } from './components/PatientSelectionStep';
+import { useAuthStore } from '@/store/authStore';
 
 const MySwal = withReactContent(Swal);
 import { AppointmentBookingStep } from './components/AppointmentBookingStep';
@@ -82,12 +83,19 @@ const BookAppointmentView = () => {
     }
   }, [searchQuery]);
 
+  const user = useAuthStore(state => state.user);
+  const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
+
   const fetchDoctors = async () => {
     try {
       const res = await api.get('/doctors');
-      setDoctors(res.data);
-      if (res.data.length > 0) {
-        setSelectedDoctorId(res.data[0].doctorProfile?.id || res.data[0].id);
+      let availableDocs = res.data;
+      if (isDoctor && user) {
+        availableDocs = availableDocs.filter((d: any) => d.id === user.id);
+      }
+      setDoctors(availableDocs);
+      if (availableDocs.length > 0) {
+        setSelectedDoctorId(availableDocs[0].doctorProfile?.id || availableDocs[0].id);
       }
     } catch (error) {
       toast.error('Failed to load doctors');

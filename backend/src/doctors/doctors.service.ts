@@ -4,13 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDoctorDto, UpdateDoctorDto } from './dto/doctor.dto';
+import { CreateDoctorDto, UpdateDoctorDto, CreateDoctorLeaveDto } from './dto/doctor.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import { SmsWhatsappService } from '../communications/sms-whatsapp.service';
 
 @Injectable()
 export class DoctorsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private smsWhatsappService: SmsWhatsappService,
+  ) {}
 
   async create(createDoctorDto: CreateDoctorDto) {
     const existingUser = await this.prisma.user.findUnique({
@@ -125,5 +129,60 @@ export class DoctorsService {
 
     const { password, ...result } = updatedUser;
     return result;
+  }
+
+  async getLeaves(id: string) {
+    return this.prisma.doctorLeave.findMany({
+      where: { doctorId: id },
+      orderBy: { startDate: 'desc' },
+    });
+  }
+
+  async addLeave(id: string, branchId: string, leaveDto: CreateDoctorLeaveDto) {
+    const leave = await this.prisma.doctorLeave.create({
+      data: {
+        doctorId: id,
+        startDate: new Date(leaveDto.startDate),
+        endDate: new Date(leaveDto.endDate),
+        reason: leaveDto.reason,
+        status: 'APPROVED',
+      },
+    });
+
+    // Alert affected patients
+    const affectedAppointments = await this.prisma.appointment.findMany({
+      where: {
+        doctorId: id,
+        status: 'SCHEDULED',
+        appointmentDate: {
+          gte: new Date(leaveDto.startDate),
+          lte: new Date(leaveDto.endDate),
+        },
+      },
+      include: { patient: true },
+    });
+
+    for (const appt of affectedAppointments) {
+      if (appt.patient.mobile) {
+        await this.smsWhatsappService.sendSms({
+          recipient: appt.patient.mobile,
+          content: `Alert: Your appointment on ${appt.appointmentDate.toLocaleDateString()} has been cancelled as the doctor is on leave. Please reschedule.`,
+          patientId: appt.patient.id,
+        });
+        
+        await this.prisma.appointment.update({
+          where: { id: appt.id },
+          data: { status: 'CANCELLED' }
+        });
+      }
+    }
+
+    return leave;
+  }
+
+  async removeLeave(id: string, leaveId: string) {
+    return this.prisma.doctorLeave.delete({
+      where: { id: leaveId, doctorId: id },
+    });
   }
 }

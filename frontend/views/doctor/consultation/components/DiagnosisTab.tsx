@@ -34,6 +34,7 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
   
   const [formData, setFormData] = useState({
     provisionalDiagnosis: data?.consultation?.provisionalDiagnosis || '',
+    differentialDiagnosis: data?.consultation?.differentialDiagnosis || '',
     finalDiagnosis: data?.consultation?.finalDiagnosis || '',
     treatmentPlan: data?.consultation?.treatmentPlan || '',
     advice: data?.consultation?.advice || ''
@@ -147,29 +148,43 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
         {/* Main Work Area */}
         <div className="col-span-12 lg:col-span-8 space-y-8">
           {/* Diagnosis Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Diagnosis Section */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card 
               className="border-amber-100 hover:border-amber-200"
-              title="Provisional Diagnosis"
-              subtitle="Initial clinical impression"
+              title="Provisional"
+              subtitle="Initial impression"
             >
               <TextArea 
                 value={formData.provisionalDiagnosis}
                 onChange={(e) => setFormData({...formData, provisionalDiagnosis: e.target.value})}
-                placeholder="Initial findings and diagnostic theory..."
+                placeholder="Initial findings..."
                 className="min-h-[140px] bg-amber-50/10 focus:bg-white"
               />
             </Card>
 
             <Card 
+              className="border-indigo-100 hover:border-indigo-200"
+              title="Differential"
+              subtitle="Alternative possibilities"
+            >
+              <TextArea 
+                value={formData.differentialDiagnosis}
+                onChange={(e) => setFormData({...formData, differentialDiagnosis: e.target.value})}
+                placeholder="Rule out conditions..."
+                className="min-h-[140px] bg-indigo-50/10 focus:bg-white"
+              />
+            </Card>
+
+            <Card 
               className="border-blue-100 hover:border-blue-200"
-              title="Final Diagnosis"
-              subtitle="Confirmed clinical finding"
+              title="Final"
+              subtitle="Confirmed finding"
             >
               <TextArea 
                 value={formData.finalDiagnosis}
                 onChange={(e) => setFormData({...formData, finalDiagnosis: e.target.value})}
-                placeholder="Confirmed diagnosis based on evidence..."
+                placeholder="Confirmed diagnosis..."
                 className="min-h-[140px] bg-blue-50/10 focus:bg-white"
               />
             </Card>
@@ -190,12 +205,35 @@ const DiagnosisTab: React.FC<DiagnosisTabProps> = ({ caseId, data, onSaved }) =>
                 className="min-h-[180px]"
               />
               <TextArea 
-                label="Clinical Advice & Red Flags"
-                value={formData.advice}
-                onChange={(e) => setFormData({...formData, advice: e.target.value})}
-                placeholder="Instructions for patient: Diet, lifestyle, warning signs..."
-                className="min-h-[100px] italic bg-slate-50 border-dashed"
+                label="Therapeutic Strategy & Procedures"
+                value={formData.treatmentPlan}
+                onChange={(e) => setFormData({...formData, treatmentPlan: e.target.value})}
+                placeholder="Detailed surgical, medical or rehabilitative plan..."
+                className="min-h-[180px]"
               />
+              <div className="relative">
+                <div className="absolute top-0 right-0 flex gap-2">
+                  <button 
+                    onClick={() => setFormData(prev => ({...prev, advice: prev.advice ? prev.advice + '\n- Soft Diet\n- High Protein\n- Plenty of Oral Fluids' : '- Soft Diet\n- High Protein\n- Plenty of Oral Fluids'}))}
+                    className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md hover:bg-emerald-100 transition-colors"
+                  >
+                    + Diet Auto-fill
+                  </button>
+                  <button 
+                    onClick={() => setFormData(prev => ({...prev, advice: prev.advice ? prev.advice + '\n- Complete Bed Rest\n- Avoid heavy lifting' : '- Complete Bed Rest\n- Avoid heavy lifting'}))}
+                    className="text-[9px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md hover:bg-indigo-100 transition-colors"
+                  >
+                    + Rest Auto-fill
+                  </button>
+                </div>
+                <TextArea 
+                  label="Clinical Advice & Red Flags"
+                  value={formData.advice}
+                  onChange={(e) => setFormData({...formData, advice: e.target.value})}
+                  placeholder="Instructions for patient: Diet, lifestyle, warning signs..."
+                  className="min-h-[100px] italic bg-slate-50 border-dashed pt-8"
+                />
+              </div>
             </div>
           </Card>
         </div>

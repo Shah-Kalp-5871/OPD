@@ -5,12 +5,13 @@ import {
   Body,
   Param,
   Put,
+  Delete,
   UseGuards,
   SetMetadata,
   Logger,
 } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { CreateDoctorDto, UpdateDoctorDto } from './dto/doctor.dto';
+import { CreateDoctorDto, UpdateDoctorDto, CreateDoctorLeaveDto } from './dto/doctor.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Role } from '@prisma/client';
@@ -49,5 +50,30 @@ export class DoctorsController {
   @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() updateDoctorDto: UpdateDoctorDto) {
     return this.doctorsService.update(id, updateDoctorDto);
+  }
+
+  @Get(':id/holidays')
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  getHolidays(@Param('id') id: string) {
+    return this.doctorsService.getLeaves(id);
+  }
+
+  @Post(':id/holidays')
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  addHoliday(
+    @Param('id') id: string,
+    @Body() leaveDto: CreateDoctorLeaveDto,
+    @Body('branchId') branchId: string
+  ) {
+    return this.doctorsService.addLeave(id, branchId, leaveDto);
+  }
+
+  @Delete(':id/holidays/:holidayId')
+  @Roles(Role.ADMIN, Role.DOCTOR)
+  removeHoliday(
+    @Param('id') id: string,
+    @Param('holidayId') holidayId: string
+  ) {
+    return this.doctorsService.removeLeave(id, holidayId);
   }
 }

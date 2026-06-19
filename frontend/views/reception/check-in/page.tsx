@@ -6,10 +6,14 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Clock, Sunrise, Sun, Sunset, Stethoscope, Briefcase, User, Phone, CheckCircle, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 const CheckInView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const user = useAuthStore(state => state.user);
+  const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
@@ -55,9 +59,13 @@ const CheckInView = () => {
   const fetchDoctors = async () => {
     try {
       const res = await api.get('/doctors');
-      setDoctors(res.data);
-      if (res.data.length > 0 && !selectedDoctorId) {
-        setSelectedDoctorId(res.data[0].doctorProfile?.id || res.data[0].id);
+      let availableDocs = res.data;
+      if (isDoctor && user) {
+        availableDocs = availableDocs.filter((d: any) => d.id === user.id);
+      }
+      setDoctors(availableDocs);
+      if (availableDocs.length > 0 && !selectedDoctorId) {
+        setSelectedDoctorId(availableDocs[0].doctorProfile?.id || availableDocs[0].id);
       }
     } catch (error) {
       toast.error('Failed to load doctors');

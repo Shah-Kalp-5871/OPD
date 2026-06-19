@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   Dna,
   Activity,
-  FileText
+  FileText,
+  History
 } from 'lucide-react';
 import api from '@/lib/api';
 import { labApi, LabCategory, LabParameter } from '@/lib/api/lab';
@@ -40,6 +41,7 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
   
   const [submitting, setSubmitting] = useState(false);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
+  const [activeSubTab, setActiveSubTab] = useState<'ORDER' | 'RESULTS'>('ORDER');
 
   useEffect(() => {
     fetchCategories();
@@ -98,10 +100,30 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
   };
 
   return (
-    <div className="flex flex-col space-y-12 pb-24">
-      <div className="grid grid-cols-12 gap-8 overflow-hidden">
-        {/* Left Column: Investigation Catalog */}
-        <div className="col-span-12 lg:col-span-7 space-y-6">
+    <div className="flex flex-col space-y-8 pb-24">
+      {/* Sub-Tabs for Investigation */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+          <button 
+            onClick={() => setActiveSubTab('ORDER')}
+            className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'ORDER' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Order New Tests
+          </button>
+          <button 
+            onClick={() => setActiveSubTab('RESULTS')}
+            className={`px-6 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'RESULTS' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Review Results & Reports
+          </button>
+        </div>
+      </div>
+
+      {activeSubTab === 'ORDER' && (
+        <>
+          <div className="grid grid-cols-12 gap-8 overflow-hidden">
+            {/* Left Column: Investigation Catalog */}
+            <div className="col-span-12 lg:col-span-7 space-y-6">
           <Card className="p-0 border-none shadow-none bg-transparent">
             <div className="flex flex-col gap-6">
               <div className="relative group">
@@ -337,9 +359,101 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No Existing Orders</p>
               <p className="text-xs text-slate-300 mt-2">Place an order using the catalog to begin diagnostics.</p>
             </div>
-          )}
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeSubTab === 'RESULTS' && (
+        <div className="grid grid-cols-12 gap-8 h-[700px] overflow-hidden">
+          {/* Left: Previous Reports */}
+          <div className="col-span-12 lg:col-span-5 flex flex-col bg-slate-50 rounded-[2rem] border border-slate-200 p-6 overflow-hidden">
+            <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
+              <History className="w-5 h-5 text-indigo-500" /> Previous Reports
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900">Complete Blood Count (CBC)</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">12 May 2026</p>
+                  </div>
+                </div>
+                <Badge variant="slate" className="text-[8px]">PDF</Badge>
+              </div>
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900">Liver Function Test (LFT)</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">01 Mar 2026</p>
+                  </div>
+                </div>
+                <Badge variant="slate" className="text-[8px]">PDF</Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: New Report Data Entry & Master Key */}
+          <div className="col-span-12 lg:col-span-7 flex flex-col bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 p-6 overflow-hidden">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-500" /> Enter Lab Values
+              </h3>
+              <Button size="sm" variant="secondary" icon={<Plus className="w-4 h-4"/>}>Upload New Report</Button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
+              <table className="w-full text-left">
+                <thead className="sticky top-0 bg-white/95 backdrop-blur z-10">
+                  <tr className="border-b border-slate-100">
+                    <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Parameter</th>
+                    <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Value</th>
+                    <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Master Range</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  <tr>
+                    <td className="py-4 px-4 text-xs font-bold text-slate-700">Hemoglobin (Hb)</td>
+                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
+                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">13.8 - 17.2 g/dL</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 text-xs font-bold text-slate-700">Total WBC Count</td>
+                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
+                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">4,500 - 11,000 /mcL</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 text-xs font-bold text-slate-700">ESR</td>
+                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
+                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">0 - 22 mm/hr</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 text-xs font-bold text-slate-700">Fasting Blood Sugar</td>
+                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24 border-rose-300 bg-rose-50 text-rose-700" defaultValue="140" /></td>
+                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">70 - 100 mg/dL</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 text-xs font-bold text-slate-700">SGPT (ALT)</td>
+                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
+                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">7 - 56 U/L</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <Button icon={<CheckCircle2 className="w-4 h-4" />}>Save Values</Button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
