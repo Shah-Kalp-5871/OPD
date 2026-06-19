@@ -144,8 +144,8 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
       <div className="flex h-16 items-center justify-between px-6 w-full max-w-[1920px] mx-auto">
         
         {/* LEFT: BRANDING */}
-        <div className="flex items-center gap-6 lg:w-1/4">
-          <Link href={`/${role}/dashboard`} className="flex items-center gap-3 group shrink-0">
+        <div className="flex items-center gap-6 shrink-0">
+          <Link href={`/${role}/dashboard`} className="flex items-center gap-3 group">
             <div className={`w-8 h-8 ${theme.iconBg} ${theme.iconText} rounded-lg flex items-center justify-center shadow-[2px_2px_0px_rgba(249,115,22,0.25)] transition-transform group-hover:scale-105`}>
               <Activity className="w-5 h-5" />
             </div>
@@ -161,8 +161,8 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
         </div>
 
         {/* CENTER: DESKTOP NAVIGATION */}
-        <nav className="hidden lg:flex flex-1 items-center justify-center gap-1 px-4 overflow-x-auto no-scrollbar">
-          {flattenedNav.map((item) => {
+        <nav className="hidden lg:flex flex-1 items-center justify-start xl:justify-center gap-1 px-8">
+          {flattenedNav.slice(0, 6).map((item) => {
             const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
             const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
             const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
@@ -174,7 +174,7 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
                 key={item.href}
                 href={item.href}
                 className={`
-                  group flex items-center gap-2.5 px-4 h-16 border-b-2 transition-colors shrink-0
+                  group flex items-center gap-2.5 px-3 xl:px-4 h-16 border-b-2 transition-colors shrink-0
                   ${isActive 
                     ? `${theme.activeBorder} ${theme.activeText} ${theme.lightIconBg}` 
                     : `border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300`
@@ -182,14 +182,47 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
                 `}
               >
                 <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400 group-hover:text-slate-700'}`} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{item.label}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{item.label}</span>
               </Link>
             );
           })}
+
+          {flattenedNav.length > 6 && (
+            <div className="relative group h-16 flex items-center shrink-0">
+              <button className="flex items-center gap-1.5 px-3 xl:px-4 h-16 border-b-2 border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300 transition-colors">
+                <span className="text-[10px] font-black uppercase tracking-widest">More</span>
+                <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-700" />
+              </button>
+              
+              <div className="absolute top-full right-0 mt-0 w-64 bg-white border border-slate-200 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] rounded-b-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col py-2 z-50">
+                {flattenedNav.slice(6).map((item) => {
+                  const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+                  const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
+                  const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
+                  const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
+                  const Icon = item.icon;
+                  
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`
+                        flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors
+                        ${isActive ? `${theme.activeText} ${theme.lightIconBg}` : 'text-slate-600'}
+                      `}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400'}`} />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* RIGHT ACTIONS */}
-        <div className="flex items-center justify-end gap-4 lg:w-1/4">
+        <div className="flex items-center justify-end gap-2 lg:gap-4 shrink-0">
           
           {/* FULLSCREEN TOGGLE */}
           <button

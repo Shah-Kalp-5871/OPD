@@ -150,6 +150,19 @@ export class QueueService {
     if (!entry) throw new NotFoundException('Queue entry not found');
 
     return this.prisma.$transaction(async (tx) => {
+      if (dto.status === 'CALLING' && entry.doctorId) {
+        const activeOrCalling = await tx.queueEntry.findFirst({
+          where: {
+            doctorId: entry.doctorId,
+            branchId,
+            status: { in: ['CALLING', 'IN_SESSION'] },
+          },
+        });
+        if (activeOrCalling) {
+          throw new BadRequestException('You already have an active or calling patient. Please complete or cancel the current consultation before calling the next patient.');
+        }
+      }
+
       const result = await tx.queueEntry.update({
         where: { id },
         data: {

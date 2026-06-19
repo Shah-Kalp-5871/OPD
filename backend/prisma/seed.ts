@@ -296,7 +296,7 @@ async function main() {
   // 2. Create Sample Patients
   console.log('Creating sample patients...');
   const patient1 = await prisma.patient.upsert({
-    where: { mobile: '9876543210' },
+    where: { mrdNumber: 'MRD-001' },
     update: {},
     create: {
       mrdNumber: 'MRD-001',
@@ -318,7 +318,7 @@ async function main() {
   });
 
   const patient2 = await prisma.patient.upsert({
-    where: { mobile: '9123456789' },
+    where: { mrdNumber: 'MRD-002' },
     update: {},
     create: {
       mrdNumber: 'MRD-002',

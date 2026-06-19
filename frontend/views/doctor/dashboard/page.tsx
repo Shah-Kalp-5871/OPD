@@ -173,11 +173,11 @@ const DoctorDashboardView = () => {
                    <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Profile</span>
                 </button>
 
-                {(!activeSessionEntry && nextPatientEntry?.status === 'WAITING') ? (
+                {(!activeSessionEntry && nextPatientEntry?.status === 'WAITING' && !queue.some(q => q.status === 'CALLING')) ? (
                   <button 
                     onClick={() => handleCallPatient(nextPatientEntry.id)}
                     disabled={isSubmitting}
-                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all min-w-[160px] shadow-lg shadow-amber-500/20"
+                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 p-6 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all min-w-[160px] shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                      <Zap className="w-6 h-6 animate-bounce" />
                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">
@@ -224,85 +224,85 @@ const DoctorDashboardView = () => {
                  </div>
                  
                   <div className="table-scroll-container rounded-b-[3rem] max-h-[620px] overflow-y-auto scrollbar-hover-only">
-                    <table className="w-full text-left border-collapse">
-                       <thead className="sticky top-0 z-20 shadow-[0_1px_0_rgba(0,0,0,0.05)]">
-                          <tr className="bg-white/95 backdrop-blur-sm">
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Case No</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Time</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Patient Name</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Visit For</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Age</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Gender</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Address</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Payment Status</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Mobile No</th>
-                              <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Action Buttons</th>
+                     <table className="w-full text-left border-collapse border border-slate-200">
+                       <thead className="sticky top-0 z-20 shadow-md">
+                          <tr className="bg-[#107ca3] text-white">
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Case No</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Time</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282]">Patient Name</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Visit For</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Age</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Gender</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282]">Address</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Payment Status</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Mobile No</th>
+                              <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest border border-[#0d6282] text-center">Action Buttons</th>
                            </tr>
                        </thead>
-                       <tbody className="divide-y divide-slate-50">
+                       <tbody className="divide-y divide-slate-200">
                           {isLoading ? (
                             <tr>
-                              <td colSpan={10} className="py-20 text-center">
+                              <td colSpan={10} className="py-20 text-center border border-slate-200">
                                  <div className="flex flex-col items-center gap-4">
-                                    <div className="w-8 h-8 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin"></div>
+                                    <div className="w-8 h-8 border-4 border-slate-100 border-t-[#107ca3] rounded-full animate-spin"></div>
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Board...</span>
                                  </div>
                               </td>
                             </tr>
                           ) : queue.length === 0 ? (
                             <tr>
-                              <td colSpan={10} className="py-20 text-center">
+                              <td colSpan={10} className="py-20 text-center border border-slate-200">
                                  <div className="flex flex-col items-center gap-4 opacity-30">
                                     <Users className="w-12 h-12 text-slate-400" />
                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Your Queue is Empty</span>
                                  </div>
                               </td>
                             </tr>
-                          ) : queue.map((entry) => (
+                          ) : queue.map((entry, index) => {
+                             const hasActiveOrCalling = queue.some(q => q.status === 'IN_SESSION' || q.status === 'CALLING');
+                             
+                             return (
                              <tr 
                                key={entry.id} 
-                               onClick={() => {
-                                 if (entry.status === 'IN_SESSION') {
-                                   router.push(`/doctor/consultation/${entry.caseId}`);
-                                 } else if (entry.status === 'CALLING') {
-                                   handleStartConsultation(entry.caseId, entry.patientId);
-                                 }
-                               }}
-                               className={`group transition-all duration-200 border-l-4 ${entry.status === 'IN_SESSION' ? 'cursor-pointer bg-emerald-50/40 border-emerald-500 hover:bg-emerald-50' : entry.status === 'CALLING' ? 'cursor-pointer bg-blue-50/40 border-blue-500 hover:bg-blue-50' : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
+                               className={`group transition-all duration-200 ${
+                                 entry.status === 'IN_SESSION' ? 'bg-emerald-100/50' 
+                                 : entry.status === 'CALLING' ? 'bg-blue-100/50' 
+                                 : index % 2 === 0 ? 'bg-slate-100' : 'bg-white'
+                               }`}
                              >
-                                <td className="px-4 py-6">
-                                   <div className={`w-fit text-[12px] font-black tracking-widest px-3 py-1.5 rounded-xl border-2 transition-all group-hover:scale-105 ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700 shadow-[4px_4px_0px_rgba(16,185,129,0.2)]' : 'bg-white text-slate-900 border-slate-900 shadow-[4px_4px_0px_rgba(0,0,0,0.05)]'}`}>
+                                <td className="px-4 py-4 border border-slate-200 text-center">
+                                   <span className={`w-fit mx-auto text-[12px] font-black tracking-widest px-3 py-1.5 rounded-xl border transition-all ${entry.status === 'IN_SESSION' ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' : 'bg-white text-slate-900 border-slate-300 shadow-sm'}`}>
                                       {entry.case?.caseNumber || entry.tokenDisplay}
-                                   </div>
+                                   </span>
                                 </td>
-                                <td className="px-4 py-6 text-center">
-                                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-center gap-2">
+                                <td className="px-4 py-4 text-center border border-slate-200">
+                                   <span className="text-[12px] font-bold text-slate-700 flex items-center justify-center gap-2">
                                       <Clock className="w-3.5 h-3.5 text-slate-400" />
                                       {entry.checkInTime ? new Date(entry.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--'}
                                    </span>
                                 </td>
-                                <td className="px-4 py-6">
+                                <td className="px-4 py-4 border border-slate-200">
                                    <div className="flex items-center gap-2">
-                                      <span className="text-[14px] font-bold text-slate-900 tracking-tight">{entry.patient.firstName} {entry.patient.lastName}</span>
+                                      <span className="text-[14px] font-bold text-slate-900 tracking-tight uppercase">{entry.patient.firstName} {entry.patient.lastName}</span>
                                       {getPriorityBadge(entry.priority)}
                                    </div>
                                 </td>
-                                <td className="px-4 py-6">
-                                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                                <td className="px-4 py-4 text-center border border-slate-200">
+                                   <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest bg-slate-50/50 border border-slate-200 px-3 py-1.5 rounded-xl">
                                       {entry.case?.visitType || '--'}
                                    </span>
                                 </td>
-                                <td className="px-4 py-6 text-center text-[12px] font-bold text-slate-600">
-                                   {entry.patient?.dateOfBirth ? Math.abs(new Date(Date.now() - new Date(entry.patient.dateOfBirth).getTime()).getUTCFullYear() - 1970) : '--'}
+                                <td className="px-4 py-4 text-center text-[12px] font-bold text-slate-700 border border-slate-200">
+                                   {entry.patient?.dateOfBirth ? `${Math.abs(new Date(Date.now() - new Date(entry.patient.dateOfBirth).getTime()).getUTCFullYear() - 1970)} Years` : '--'}
                                 </td>
-                                <td className="px-4 py-6 text-center text-[12px] font-bold text-slate-600 uppercase">
-                                   {entry.patient?.gender || '--'}
+                                <td className="px-4 py-4 text-center text-[12px] font-bold text-slate-700 capitalize border border-slate-200">
+                                   {entry.patient?.gender?.toLowerCase() || '--'}
                                 </td>
-                                <td className="px-4 py-6 text-[12px] font-bold text-slate-600 truncate max-w-[120px]">
+                                <td className="px-4 py-4 text-[12px] font-bold text-slate-700 truncate max-w-[120px] border border-slate-200">
                                    {entry.patient?.address?.city || '--'}
                                 </td>
-                                <td className="px-4 py-6 text-center">
-                                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${
+                                <td className="px-4 py-4 text-center border border-slate-200">
+                                   <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] border shadow-sm ${
                                      entry.patient?.isFoc || entry.case?.bill?.paymentStatus === 'COMPLETED'
                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
                                        : 'bg-amber-50 text-amber-600 border-amber-200'
@@ -310,41 +310,48 @@ const DoctorDashboardView = () => {
                                       {entry.patient?.isFoc ? 'FOC' : (entry.case?.bill?.paymentStatus || 'PENDING')}
                                    </span>
                                 </td>
-                                <td className="px-4 py-6 text-center text-[12px] font-bold text-slate-600">
+                                <td className="px-4 py-4 text-center text-[12px] font-bold text-slate-700 border border-slate-200">
                                    {entry.patient?.phone || '--'}
                                 </td>
-                                <td className="px-4 py-6 text-right">
+                                <td className="px-4 py-4 text-center border border-slate-200">
                                    {entry.status === 'IN_SESSION' ? (
-                                     <div className="flex items-center justify-end gap-2.5">
-                                       <span className="px-4 py-1.5 bg-emerald-500 text-white rounded-full text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-                                          <Activity className="w-3 h-3 animate-pulse" /> ACTIVE
-                                       </span>
+                                     <div className="flex items-center justify-center gap-2.5">
+                                       <button 
+                                          onClick={() => router.push(`/doctor/consultation/${entry.caseId}`)}
+                                          className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-2 shadow-sm transition-colors"
+                                       >
+                                          <Activity className="w-3 h-3 animate-pulse" /> RESUME
+                                       </button>
                                      </div>
                                    ) : entry.status === 'CALLING' ? (
-                                     <div className="flex items-center justify-end gap-2.5">
-                                       <span className="px-4 py-1.5 bg-blue-500 text-white rounded-full text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-blue-500/20 animate-pulse">
+                                     <div className="flex items-center justify-center gap-2.5">
+                                       <span className="px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-2 animate-pulse">
                                           CALLING...
                                        </span>
-                                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
-                                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Start</span>
-                                          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                       <button 
+                                          onClick={() => handleStartConsultation(entry.caseId, entry.patientId)}
+                                          className="flex items-center justify-center gap-2 transition-all duration-300 group/start"
+                                       >
+                                          <span className="text-[10px] font-black text-blue-600 group-hover/start:text-blue-700 uppercase tracking-widest">Start</span>
+                                          <div className="w-8 h-8 bg-blue-600 group-hover/start:bg-blue-700 rounded-full flex items-center justify-center shadow-sm">
                                              <ChevronRight className="w-4 h-4 text-white" />
                                           </div>
-                                       </div>
+                                       </button>
                                      </div>
                                    ) : (
-                                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                                     <div className="flex items-center justify-center gap-2 transition-all duration-300">
                                         <button 
                                           onClick={(e) => handleCallPatient(entry.id, e)}
-                                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-full transition-colors border border-blue-200 hover:border-blue-600 shadow-sm"
+                                          disabled={isSubmitting || hasActiveOrCalling}
+                                          className="flex items-center gap-2 px-6 py-1.5 bg-white text-slate-700 hover:bg-[#107ca3] hover:text-white rounded-full transition-colors border border-slate-300 hover:border-[#107ca3] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-slate-300 font-bold"
                                         >
-                                          <span className="text-[10px] font-black uppercase tracking-widest">Call</span>
+                                          <span className="text-[11px] font-black uppercase tracking-widest">Call</span>
                                         </button>
                                      </div>
                                    )}
                                 </td>
                              </tr>
-                          ))}
+                          )})}
                        </tbody>
                     </table>
                   </div>
