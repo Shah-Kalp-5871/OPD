@@ -33,7 +33,9 @@ const CheckInView = () => {
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const checkInSubmittingRef = useRef(false);
   useEffect(() => {
-    fetchDoctors();
+    if (user?.id) {
+      setSelectedDoctorId(user.id);
+    }
     // Auto-load if coming from schedule
     const mrdParam = searchParams.get('mrd');
     const apptId = searchParams.get('appt');
@@ -56,21 +58,6 @@ const CheckInView = () => {
     }
   }, []);
 
-  const fetchDoctors = async () => {
-    try {
-      const res = await api.get('/doctors');
-      let availableDocs = res.data;
-      if (isDoctor && user) {
-        availableDocs = availableDocs.filter((d: any) => d.id === user.id);
-      }
-      setDoctors(availableDocs);
-      if (availableDocs.length > 0 && !selectedDoctorId) {
-        setSelectedDoctorId(availableDocs[0].doctorProfile?.id || availableDocs[0].id);
-      }
-    } catch (error) {
-      toast.error('Failed to load doctors');
-    }
-  };
 
   useEffect(() => {
     if (selectedDoctorId && !selectedAppointment) {

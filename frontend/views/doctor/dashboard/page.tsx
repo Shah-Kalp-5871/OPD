@@ -127,8 +127,9 @@ const DoctorDashboardView = () => {
     }
   };
 
-  const totalPages = Math.ceil(queue.length / itemsPerPage);
-  const paginatedQueue = queue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const activeQueue = queue.filter(q => q.status !== 'COMPLETED' && q.status !== 'CANCELLED');
+  const totalPages = Math.ceil(activeQueue.length / itemsPerPage);
+  const paginatedQueue = activeQueue.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <DoctorLayout>

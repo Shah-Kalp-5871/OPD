@@ -56,7 +56,7 @@ export class AppointmentsService {
         });
         if (!patient) throw new NotFoundException('Patient not found');
 
-        const doctorProfile = await tx.doctorProfile.findUnique({
+        let doctorProfile = await tx.doctorProfile.findUnique({
           where: { id: doctorId },
           include: {
             user: true,
@@ -68,6 +68,22 @@ export class AppointmentsService {
             },
           },
         });
+        
+        if (!doctorProfile) {
+          doctorProfile = await tx.doctorProfile.findUnique({
+            where: { userId: doctorId },
+            include: {
+              user: true,
+              schedules: {
+                where: {
+                  dayOfWeek: appointmentDateOnly.getDay(),
+                  isActive: true,
+                },
+              },
+            },
+          });
+        }
+
         if (!doctorProfile)
           throw new NotFoundException('Doctor profile not found');
 
@@ -286,7 +302,7 @@ export class AppointmentsService {
     const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
 
     // 1. Get Doctor Profile & Schedules
-    const doctorProfile = await this.prisma.doctorProfile.findUnique({
+    let doctorProfile = await this.prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
         schedules: {
@@ -294,6 +310,17 @@ export class AppointmentsService {
         },
       },
     });
+
+    if (!doctorProfile) {
+      doctorProfile = await this.prisma.doctorProfile.findUnique({
+        where: { userId: doctorId },
+        include: {
+          schedules: {
+            where: { dayOfWeek, isActive: true },
+          },
+        },
+      });
+    }
 
     if (!doctorProfile) throw new NotFoundException('Doctor profile not found');
 

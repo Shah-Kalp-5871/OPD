@@ -47,7 +47,7 @@ export class PatientsController {
   }
 
   @Get('next-mrd')
-  @Roles(Role.ADMIN, Role.RECEPTION)
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR)
   async getNextMrd() {
     const nextMrd = await this.patientsService.generateMrdNumber();
     return { mrd: nextMrd };

@@ -181,7 +181,6 @@ const OpdQueueView = () => {
   useEffect(() => {
     fetchQueue();
     fetchStats();
-    fetchDoctors();
   }, [selectedDoctor, dateFilter]);
 
   const fetchQueue = async () => {
@@ -243,14 +242,6 @@ const OpdQueueView = () => {
     }
   };
 
-  const fetchDoctors = async () => {
-    try {
-      const response = await api.get('/doctors');
-      setDoctors(response.data);
-    } catch (error) {
-      console.error('Failed to fetch doctors', error);
-    }
-  };
 
   const toggleLegend = (legend: string) => {
     if (selectedLegends.includes(legend)) {

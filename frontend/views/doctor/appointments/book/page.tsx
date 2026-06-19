@@ -47,11 +47,16 @@ const BookAppointmentView = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const user = useAuthStore(state => state.user);
+  const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
+
   // Initial Loads
   useEffect(() => {
-    fetchDoctors();
+    if (user?.id) {
+      setSelectedDoctorId(user.id);
+    }
     fetchRecentPatients();
-  }, []);
+  }, [user]);
 
   // Auto-select patient from query param
   useEffect(() => {
@@ -83,24 +88,8 @@ const BookAppointmentView = () => {
     }
   }, [searchQuery]);
 
-  const user = useAuthStore(state => state.user);
-  const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
 
-  const fetchDoctors = async () => {
-    try {
-      const res = await api.get('/doctors');
-      let availableDocs = res.data;
-      if (isDoctor && user) {
-        availableDocs = availableDocs.filter((d: any) => d.id === user.id);
-      }
-      setDoctors(availableDocs);
-      if (availableDocs.length > 0) {
-        setSelectedDoctorId(availableDocs[0].doctorProfile?.id || availableDocs[0].id);
-      }
-    } catch (error) {
-      toast.error('Failed to load doctors');
-    }
-  };
+
 
   const fetchRecentPatients = async () => {
     setIsRecentLoading(true);

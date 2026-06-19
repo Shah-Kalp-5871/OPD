@@ -22,6 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
 
 const patientSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -56,15 +57,18 @@ const PatientRegistrationView = () => {
   const [mrError, setMrError] = useState<string | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
 
-  useEffect(() => { fetchDoctors(); }, []);
+  const user = useAuthStore(state => state.user);
 
-  const fetchDoctors = async () => {
-    try {
-      const res = await api.get('/doctors');
-      setDoctors(res.data);
-    } catch { toast.error('Failed to load doctors'); }
-  };
-
+  useEffect(() => {
+    if (user?.role?.toUpperCase() === 'DOCTOR') {
+      setDoctors([{
+        id: user.id,
+        name: user.name || 'Doctor',
+        doctorProfile: { id: user.id, specialization: 'General' }
+      }]);
+      setMrDoctorId(user.id);
+    }
+  }, [user]);
   useEffect(() => {
     if (mrDoctorId) fetchMrSlots(mrDoctorId);
     else { setMrAvailableSlots([]); setMrSelectedSlot(''); }
