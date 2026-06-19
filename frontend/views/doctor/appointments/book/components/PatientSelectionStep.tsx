@@ -145,7 +145,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                   <button
                     key={p.id}
                     onClick={() => handleSelect(p)}
-                    className="group flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-orange-300 hover:bg-white hover:shadow-sm transition-all duration-200 text-left w-full"
+                    className="group flex items-center gap-3 p-3.5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:border-sky-300 hover:bg-white hover:shadow-sm transition-all duration-200 text-left w-full"
                   >
                     {/* Avatar */}
                     <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center text-[11px] font-black uppercase ${colorClass}`}>

@@ -165,7 +165,7 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
       <div className="bg-white border-x border-b border-slate-200 rounded-b-3xl overflow-hidden shadow-sm">
 
         {/* === COLUMN LAYOUT === */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_auto_1fr] divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
           {/* ── LEFT: Doctor, Purpose, Remarks ── */}
           <div className="p-5 space-y-4">
@@ -203,14 +203,19 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
             </div>
 
             {/* Booking summary chip */}
-            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-              <CalendarIcon className="w-4 h-4 text-slate-300 shrink-0" />
-              <span className="text-[11px] font-bold text-slate-500">{format(selectedDate, 'dd MMM yyyy')}</span>
-              <div className="w-px h-3 bg-slate-200" />
-              <Clock className="w-4 h-4 text-slate-300 shrink-0" />
-              <span className={`text-[11px] font-black ${selectedSlot ? 'text-[#0d6282]' : 'text-slate-300'}`}>
-                {selectedSlot || 'No slot selected'}
-              </span>
+            <div className="mt-auto pt-4">
+              <div className="flex flex-col gap-2 p-3 bg-sky-50/50 rounded-2xl border border-sky-100">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4 text-[#107ca3] shrink-0" />
+                  <span className="text-[11px] font-bold text-[#0d6282]">{format(selectedDate, 'dd MMM yyyy')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#107ca3] shrink-0" />
+                  <span className={`text-[11px] font-black ${selectedSlot ? 'text-[#0d6282]' : 'text-slate-400'}`}>
+                    {selectedSlot || 'No slot selected'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
