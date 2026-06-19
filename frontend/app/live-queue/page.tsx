@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Play, AlertTriangle, RefreshCw, Smartphone, Award, Star } from 'lucide-react';
-import api from '@/lib/api';
+import axios from 'axios';
+import { APP_CONFIG } from '@/lib/config';
 
 export default function LiveQueuePage() {
   const [tokens, setTokens] = useState<any[]>([]);
@@ -11,7 +12,7 @@ export default function LiveQueuePage() {
 
   const fetchQueue = () => {
     setLoading(true);
-    api.get('/self-service/queue/status?patientId=patient-1')
+    axios.get(`${APP_CONFIG.API_BASE_URL}/api/self-service/queue/status?patientId=patient-1`)
       .then((res: any) => {
         setTokens(res.data || res || []);
       })

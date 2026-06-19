@@ -22,6 +22,7 @@ export interface Patient {
   vitals?: Vital[];
   cases?: Case[];
   documents?: PatientDocument[];
+  appointments?: any[];
   createdAt?: string;
 }
 

@@ -148,6 +148,21 @@ const StaticLoginView = () => {
                   <QuickAccessCard title="Doctor" roleName="Doctor" icon={Stethoscope} color="bg-emerald-600" />
                   <QuickAccessCard title="Nursing" roleName="Nursing" icon={Activity} color="bg-indigo-600" />
                   <QuickAccessCard title="Medical" roleName="Medical" icon={Pill} color="bg-teal-600" />
+                  
+                  <button 
+                    type="button"
+                    onClick={() => router.push(ROUTES.GLOBAL?.LIVE_QUEUE || '/live-queue')}
+                    className="group p-4 bg-white border border-slate-100 hover:border-amber-200 hover:shadow-xl rounded-2xl transition-all duration-300 text-left relative overflow-hidden"
+                  >
+                     <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <Users className="w-5 h-5 text-white" />
+                     </div>
+                     <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest leading-none">Live Queue</p>
+                     <div className="mt-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[9px] font-bold text-amber-600 uppercase tracking-tighter">View Board</span>
+                        <ArrowRight className="w-2.5 h-2.5 text-amber-600" />
+                     </div>
+                  </button>
                </div>
             </div>
 

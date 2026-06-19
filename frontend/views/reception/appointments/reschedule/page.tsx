@@ -136,7 +136,7 @@ export default function RescheduleAppointmentView({ appointmentId }: { appointme
 
   return (
     <ReceptionLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
           <button 

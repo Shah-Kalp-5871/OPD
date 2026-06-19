@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   }
 
   // 1. Define Public Routes (Internal pathnames relative to basePath)
-  const isPublicRoute = pathname === ROUTES.LOGIN || pathname === ROUTES.HOME;
+  const isPublicRoute = pathname === ROUTES.LOGIN || pathname === ROUTES.HOME || pathname === '/live-queue';
 
   // 2. If no token and trying to access protected route, redirect to login
   if (!token && !isPublicRoute) {

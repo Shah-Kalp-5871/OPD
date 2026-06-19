@@ -11,7 +11,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
   patient,
   hasOpenCase
 }) => {
-  // Combine cases and registration into a single clinical journey
+  // Combine cases, appointments, and registration into a single clinical journey
   const clinicalJourney = [
     ...(patient.cases || []).map(c => ({
       id: c.id,
@@ -23,6 +23,37 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
       icon: Stethoscope,
       details: c.complaint
     })),
+    ...(patient.appointments || []).flatMap(appt => {
+      const events = [
+        {
+          id: `appt-${appt.id}`,
+          date: new Date(appt.createdAt),
+          type: 'appointment',
+          title: `Appointment Booked`,
+          subtitle: `With Dr. ${appt.doctor?.user?.name || 'Unknown'}`,
+          status: appt.status === 'CANCELLED' ? 'CLOSED' : 'OPEN',
+          icon: Clock,
+          details: `Scheduled for: ${new Date(appt.appointmentDate).toLocaleDateString()} at ${new Date(appt.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        }
+      ];
+
+      if (appt.statusHistory && appt.statusHistory.length > 0) {
+        appt.statusHistory.forEach((sh: any) => {
+          events.push({
+            id: `sh-${sh.id}`,
+            date: new Date(sh.createdAt),
+            type: 'status_change',
+            title: `Appointment ${sh.status}`,
+            subtitle: `Status changed from ${sh.previousStatus}`,
+            status: sh.status === 'CANCELLED' ? 'CLOSED' : 'OPEN',
+            icon: Clock,
+            details: sh.remarks || ''
+          });
+        });
+      }
+
+      return events;
+    }),
     {
       id: 'reg',
       date: patient.createdAt ? new Date(patient.createdAt) : new Date(),

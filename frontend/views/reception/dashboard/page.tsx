@@ -576,7 +576,7 @@ const ReceptionDashboardView = () => {
                        return (
                          <tr 
                            key={entry.id || idx} 
-                           onClick={() => !isInSession && entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}`)}
+                           onClick={() => !isInSession && entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}/`)}
                            className={`${rowBg} transition-colors ${isInSession ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
                          >
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-800 border-r border-slate-50">

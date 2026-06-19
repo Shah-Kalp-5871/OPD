@@ -8,10 +8,12 @@ interface TopNavBarProps {
 
 const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }) => {
   const sections = [
+    // Global Sections
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'clinical_data', label: 'Clinical Data', icon: Activity },
     { id: 'cases', label: 'Clinical History', icon: History },
     { id: 'documents', label: 'Reports & Files', icon: FileText },
+    // Case-Specific Sections
+    { id: 'clinical_data', label: 'Complaints & Vitals', icon: Activity },
     { id: 'consent', label: 'Consent Forms', icon: FileSignature },
     { id: 'billing', label: 'Billing Records', icon: CreditCard },
   ];
@@ -23,8 +25,11 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }
       let currentActive = activeSection;
       for (const section of sections) {
         const el = document.getElementById(section.id);
-        if (el && el.offsetTop <= scrollPosition) {
-          currentActive = section.id;
+        if (el) {
+          const absoluteTop = el.getBoundingClientRect().top + window.pageYOffset;
+          if (absoluteTop <= scrollPosition) {
+            currentActive = section.id;
+          }
         }
       }
       

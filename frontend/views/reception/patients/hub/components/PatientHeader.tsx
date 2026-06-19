@@ -72,7 +72,7 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          {hasOpenCase ? (
+          {hasOpenCase && (
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 px-6 py-3 rounded-2xl flex flex-col items-end text-right" style={{boxShadow: '0 2px 8px rgba(249,115,22,0.15)'}}>
               <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-1.5 mb-1.5">
                 <Activity className="w-3.5 h-3.5" /> Active Consultation
@@ -80,15 +80,6 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
               <span className="text-sm font-black text-orange-900">Dr. {activeCase?.doctor?.name || 'Unassigned'}</span>
               <span className="text-[11px] font-bold text-orange-700/80">Case #{activeCase?.caseNumber}</span>
             </div>
-          ) : (
-            <button 
-              onClick={onCheckIn}
-              className="bg-orange-600 hover:bg-orange-700 text-white shadow-xl shadow-orange-600/20 border border-orange-600 px-6 py-4 rounded-2xl flex items-center justify-center transition-all"
-            >
-               <span className="text-[12px] font-black uppercase tracking-widest flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> New Consultation
-              </span>
-            </button>
           )}
           <button 
             onClick={() => window.print()}
