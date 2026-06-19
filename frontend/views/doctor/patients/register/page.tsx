@@ -158,7 +158,7 @@ const PatientRegistrationView = () => {
 
   return (
     <DoctorLayout>
-      <div className="w-full h-full flex flex-col font-sans p-4 md:p-6 bg-slate-50 gap-6">
+      <div className="w-full h-full flex flex-col font-sans gap-6">
 
         {/* ── HEADER WITH TABS ── */}
         <div className="flex items-center justify-between px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm shrink-0">
@@ -394,66 +394,35 @@ const PatientRegistrationView = () => {
                   </div>
                 </div>
 
-                {/* Doctor + Slot selection */}
+                {/* Slot Selection */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Appointment Details</p>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Doctor Selection */}
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Select Doctor *</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {doctors.map(doc => {
-                          const profileId = doc.doctorProfile?.id || doc.id;
-                          const name = doc.name || doc.user?.name || '';
-                          const spec = doc.doctorProfile?.specialization || doc.specialization || 'General';
-                          const isActive = mrDoctorId === profileId;
-                          return (
-                            <button key={doc.id} type="button" onClick={() => setMrDoctorId(profileId)}
-                              className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${isActive ? 'bg-sky-50 border-orange-300 ring-1 ring-[#107ca3]/20 shadow-sm' : 'bg-slate-50 border-slate-200 hover:border-orange-300 hover:bg-white'}`}>
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${isActive ? 'bg-[#0d6282] text-white' : 'bg-slate-200 text-slate-500'}`}>
-                                {name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <div className={`text-xs font-bold truncate ${isActive ? 'text-[#0a4b63]' : 'text-slate-700'}`}>Dr. {name}</div>
-                                <div className="text-[10px] text-slate-500 truncate">{spec}</div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Slot Selection */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Slots *</p>
-                        <span className="text-[9px] font-bold text-[#0d6282] bg-sky-50 px-2 py-1 rounded-full">{mrAvailableSlots.length} slots</span>
-                      </div>
-                      {isMrSlotsLoading ? (
-                        <div className="text-xs text-slate-400 py-3 flex items-center gap-2">
-                          <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
-                          Loading slots...
-                        </div>
-                      ) : !mrDoctorId ? (
-                        <div className="text-xs text-slate-400 py-3 italic bg-slate-50 rounded-xl px-4 border border-slate-100">Select a doctor to see slots</div>
-                      ) : mrAvailableSlots.length === 0 ? (
-                        <div className="text-xs text-slate-400 py-3 italic text-center border border-dashed border-slate-200 rounded-xl bg-slate-50">No slots today</div>
-                      ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {mrAvailableSlots.map((slot, i) => {
-                            const isBooked = slot.status === 'booked';
-                            const isSel = mrSelectedSlot === slot.time;
-                            return (
-                              <button key={i} type="button" disabled={isBooked} onClick={() => setMrSelectedSlot(slot.time)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' : isSel ? 'bg-[#0d6282] text-white shadow-md shadow-sky-100' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-sky-400 hover:bg-white hover:text-[#0d6282]'}`}>
-                                {slot.time}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Slots *</p>
+                    <span className="text-[9px] font-bold text-[#0d6282] bg-sky-50 px-2 py-1 rounded-full">{mrAvailableSlots.length} slots</span>
                   </div>
+                  {isMrSlotsLoading ? (
+                    <div className="text-xs text-slate-400 py-3 flex items-center gap-2">
+                      <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
+                      Loading slots...
+                    </div>
+                  ) : !mrDoctorId ? (
+                    <div className="text-xs text-slate-400 py-3 italic bg-slate-50 rounded-xl px-4 border border-slate-100">Select a doctor to see slots</div>
+                  ) : mrAvailableSlots.length === 0 ? (
+                    <div className="text-xs text-slate-400 py-3 italic text-center border border-dashed border-slate-200 rounded-xl bg-slate-50">No slots today</div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {mrAvailableSlots.map((slot, i) => {
+                        const isBooked = slot.status === 'booked';
+                        const isSel = mrSelectedSlot === slot.time;
+                        return (
+                          <button key={i} type="button" disabled={isBooked} onClick={() => setMrSelectedSlot(slot.time)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' : isSel ? 'bg-[#0d6282] text-white shadow-md shadow-sky-100' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-sky-400 hover:bg-white hover:text-[#0d6282]'}`}>
+                            {slot.time}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -486,7 +455,7 @@ const PatientRegistrationView = () => {
                       <div>
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Visiting Doctor</p>
                         <p className="text-xs font-black text-slate-800">
-                          {mrDoctorId ? `Dr. ${doctors.find(d => (d.doctorProfile?.id || d.id) === mrDoctorId)?.name || ''}` : '---'}
+                          {user?.name ? `Dr. ${user.name}` : '---'}
                         </p>
                       </div>
                       <div className="pt-3 border-t border-dashed border-slate-200 flex flex-col items-center gap-1.5">
