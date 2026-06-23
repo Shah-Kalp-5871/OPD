@@ -135,7 +135,10 @@ export class BillingService {
               paymentStatus: 'PENDING',
               paymentStatusEnum: BillStatus.PENDING,
               items: {
-                create: finalItems,
+                create: finalItems.map(item => ({
+                  ...item,
+                  branch: { connect: { id: branchId } },
+                })),
               },
             },
             include: {
