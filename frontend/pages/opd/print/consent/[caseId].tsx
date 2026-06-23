@@ -7,15 +7,22 @@ const PrintConsent = () => {
   const router = useRouter();
   const { caseId } = router.query;
   const [data, setData] = useState<any>(null);
+  const [consentData, setConsentData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!caseId) return;
     
-    // Fetch patient & case data to populate the consent form
-    api.get(`/reception/cases/${caseId}`)
-      .then(res => {
-        setData(res);
+    Promise.all([
+      api.get(`/reception/cases/${caseId}`),
+      api.get(`/consent/case/${caseId}`)
+    ])
+      .then(([caseRes, consentRes]) => {
+        setData(caseRes);
+        if (consentRes.data && consentRes.data.length > 0) {
+          // Use the most recent consent form
+          setConsentData(consentRes.data[consentRes.data.length - 1]);
+        }
         setLoading(false);
         // Automatically open print dialog after brief delay
         setTimeout(() => window.print(), 500);
@@ -74,6 +81,21 @@ const PrintConsent = () => {
           <p className="mb-4">
             I acknowledge that the nature of the procedure, its purpose, potential risks, and alternative treatments have been fully explained to me. I have had the opportunity to ask questions and all my questions have been answered to my satisfaction.
           </p>
+
+          {consentData?.customRisks && (
+            <div className="mb-4 p-4 border border-slate-300 bg-slate-50">
+              <p className="font-bold uppercase tracking-widest text-xs mb-2">Specific Risks & Complications</p>
+              <p className="text-sm whitespace-pre-wrap">{consentData.customRisks}</p>
+            </div>
+          )}
+
+          {consentData?.doctorNotes && (
+            <div className="mb-4 p-4 border border-slate-300 bg-slate-50">
+              <p className="font-bold uppercase tracking-widest text-xs mb-2">Doctor's Notes</p>
+              <p className="text-sm whitespace-pre-wrap">{consentData.doctorNotes}</p>
+            </div>
+          )}
+
           <p className="mb-4">
             I understand that the practice of medicine and surgery is not an exact science and I acknowledge that no guarantees or assurances have been made to me concerning the results of the procedure.
           </p>

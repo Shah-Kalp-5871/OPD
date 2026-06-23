@@ -25,8 +25,8 @@ import {
 const VitalsEntryContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const mrd = searchParams.get('mrd');
-  const caseId = searchParams.get('caseId');
+  const mrd = searchParams?.get('mrd');
+  const caseId = searchParams?.get('caseId');
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

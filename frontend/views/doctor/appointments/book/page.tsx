@@ -25,7 +25,7 @@ const BookAppointmentView = () => {
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const queryPatientId = searchParams.get('patientId');
+  const queryPatientId = searchParams?.get('patientId');
 
   // Shared Form & Query States
   const [searchQuery, setSearchQuery] = useState('');

@@ -7,7 +7,8 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function LabReportPrintPage() {
-  const { orderId } = useParams();
+  const params = useParams();
+  const orderId = params?.orderId as string;
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -21,7 +21,7 @@ const PatientHubView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const patientId = params.id as string;
-  const urlCaseId = searchParams.get('caseId');
+  const urlCaseId = searchParams?.get('caseId');
   
   const [patient, setPatient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);

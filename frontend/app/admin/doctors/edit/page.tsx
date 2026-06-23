@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 
 function EditDoctorContent() {
   const searchParams = useSearchParams();
-  const id = searchParams.get('id');
+  const id = searchParams?.get('id');
   const [doctor, setDoctor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

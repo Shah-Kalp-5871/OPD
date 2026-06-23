@@ -729,6 +729,23 @@ const ReceptionDashboardView = () => {
         </div>
       )}
 
+      {isCheckInModalOpen && (
+        <CheckInModal
+          isOpen={isCheckInModalOpen}
+          onClose={() => {
+            setIsCheckInModalOpen(false);
+            setSelectedAppointmentForCheckIn(undefined);
+            setSelectedPatientForCheckIn(undefined);
+          }}
+          appointmentId={selectedAppointmentForCheckIn || undefined}
+          patient={selectedPatientForCheckIn}
+          onSuccess={() => {
+            setIsCheckInModalOpen(false);
+            fetchQueue();
+          }}
+        />
+      )}
+
     </ReceptionLayout>
   );
 };

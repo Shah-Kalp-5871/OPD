@@ -54,7 +54,7 @@ const OpdQueueView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
-  const { entries: sseEntries, stats: sseStats, lastEvent } = useQueueSSE({
+  const { entries: sseEntries, stats: sseStats, lastEvent, refreshData: refreshSseData } = useQueueSSE({
     doctorId: selectedDoctor === 'all' ? undefined : selectedDoctor
   });
 
@@ -73,7 +73,7 @@ const OpdQueueView = () => {
       toast.success('Appointment cancelled successfully');
       setCancelApptId(null);
       setCancelReason('');
-      fetchQueue();
+      fetchAppointments();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel appointment');
     } finally {
@@ -154,22 +154,22 @@ const OpdQueueView = () => {
           duration: 5000,
           position: 'top-center'
         });
-        fetchQueue();
+        fetchAppointments();
+        refreshSseData();
       } else if (lastEvent.type === 'STATUS_CHANGED' && lastEvent.status === 'CALLING') {
         playCallingBellSound();
         toast.info(`Doctor is calling patient: ${lastEvent.patientName || 'Next Patient'}!`, {
           duration: 10000,
           position: 'top-center'
         });
-        fetchQueue();
+        fetchAppointments();
+        refreshSseData();
       }
     }
   }, [lastEvent]);
 
   useEffect(() => {
-    if (sseEntries.length > 0 || appointmentsQueue.length > 0) {
-      setQueue([...sseEntries, ...appointmentsQueue]);
-    }
+    setQueue([...sseEntries, ...appointmentsQueue]);
   }, [sseEntries, appointmentsQueue]);
 
   useEffect(() => {
@@ -179,22 +179,17 @@ const OpdQueueView = () => {
   }, [sseStats]);
 
   useEffect(() => {
-    fetchQueue();
+    fetchAppointments();
     fetchStats();
   }, [selectedDoctor, dateFilter]);
 
-  const fetchQueue = async () => {
+  const fetchAppointments = async () => {
     try {
       setIsLoading(true);
-      const queueUrl = selectedDoctor === 'all' ? '/queue/live' : `/queue/live?doctorId=${selectedDoctor}`;
       const apptUrl = `/appointments?date=${dateFilter}${selectedDoctor !== 'all' ? `&doctorId=${selectedDoctor}` : ''}`;
       
-      const [queueRes, apptRes] = await Promise.all([
-        api.get(queueUrl),
-        api.get(apptUrl)
-      ]);
-
-      const queueData = queueRes.data;
+      const apptRes = await api.get(apptUrl);
+      
       const apptData = (apptRes.data?.data || [])
         .filter((a: any) => a.status === 'SCHEDULED' || a.status === 'CONFIRMED')
         .map((a: any) => ({
@@ -212,9 +207,8 @@ const OpdQueueView = () => {
         }));
 
       setAppointmentsQueue(apptData);
-      setQueue([...queueData, ...apptData]);
     } catch (error) {
-      toast.error('Failed to refresh data');
+      toast.error('Failed to fetch appointments');
     } finally {
       setIsLoading(false);
     }
@@ -229,17 +223,14 @@ const OpdQueueView = () => {
     }
   };
 
-  const handleDirectCheckIn = async (appointmentId: string) => {
-    try {
-      setCheckingInApptId(appointmentId);
-      await api.post('/appointments/check-in', { appointmentId });
-      toast.success('Patient checked in successfully');
-      fetchQueue();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to check in patient');
-    } finally {
-      setCheckingInApptId(null);
-    }
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [selectedAppointmentForCheckIn, setSelectedAppointmentForCheckIn] = useState<string | null>(null);
+  const [selectedPatientForCheckIn, setSelectedPatientForCheckIn] = useState<any>(null);
+
+  const handleDirectCheckIn = (appointmentId: string, patient: any) => {
+    setSelectedAppointmentForCheckIn(appointmentId);
+    setSelectedPatientForCheckIn(patient);
+    setIsCheckInModalOpen(true);
   };
 
 
@@ -645,7 +636,7 @@ const OpdQueueView = () => {
                               <button 
                                 onClick={(e) => { 
                                    e.stopPropagation(); 
-                                   handleDirectCheckIn(entry.appointmentId);
+                                   handleDirectCheckIn(entry.appointmentId, entry.patient);
                                 }}
                                 disabled={checkingInApptId === entry.appointmentId}
                                 className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200 flex items-center justify-center min-w-[70px] mx-auto"
@@ -762,6 +753,23 @@ const OpdQueueView = () => {
         </div>
       )}
 
+      {isCheckInModalOpen && (
+        <CheckInModal
+          isOpen={isCheckInModalOpen}
+          onClose={() => {
+            setIsCheckInModalOpen(false);
+            setSelectedAppointmentForCheckIn(null);
+            setSelectedPatientForCheckIn(null);
+          }}
+          appointmentId={selectedAppointmentForCheckIn || undefined}
+          patient={selectedPatientForCheckIn}
+          onSuccess={() => {
+            setIsCheckInModalOpen(false);
+            fetchAppointments();
+            refreshSseData();
+          }}
+        />
+      )}
     </DoctorLayout>
   );
 };

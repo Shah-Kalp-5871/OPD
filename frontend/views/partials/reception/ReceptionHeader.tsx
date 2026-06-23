@@ -34,7 +34,7 @@ const ReceptionHeader = () => {
 
   // Simple breadcrumb logic based on pathname
   const getBreadcrumbs = () => {
-    const parts = pathname.split('/').filter(Boolean);
+    const parts = pathname?.split('/').filter(Boolean) || [];
     const mainSection = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Reception';
     const subSection = parts[1] ? parts[1].charAt(0).toUpperCase() + parts[1].replace('-', ' ').slice(1) : 'Dashboard';
     

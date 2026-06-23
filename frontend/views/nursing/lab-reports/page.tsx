@@ -23,7 +23,7 @@ import {
 
 const LabReportManagementView = () => {
   const searchParams = useSearchParams();
-  const caseId = searchParams.get('caseId');
+  const caseId = searchParams?.get('caseId');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);

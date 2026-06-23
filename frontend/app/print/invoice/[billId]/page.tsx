@@ -8,7 +8,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 
 export default function InvoicePrintPage() {
   const params = useParams();
-  const billId = params.billId as string;
+  const billId = params?.billId as string;
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

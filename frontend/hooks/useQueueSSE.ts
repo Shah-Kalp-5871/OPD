@@ -96,5 +96,19 @@ export const useQueueSSE = (options: QueueSSEOptions = {}) => {
     };
   }, [options.doctorId]);
 
-  return { entries, stats, lastEvent };
+  return { entries, stats, lastEvent, refreshData: async () => {
+    try {
+      const url = options.doctorId ? `/queue/live?doctorId=${options.doctorId}` : '/queue/live';
+      const [queueRes, statsRes] = await Promise.all([
+        api.get(url),
+        api.get('/queue/stats')
+      ]);
+      const queueData = queueRes.data || (Array.isArray(queueRes) ? queueRes : []);
+      const statsData = statsRes.data || statsRes;
+      setEntries(queueData);
+      setStats(statsData);
+    } catch (e) {
+      console.error('Manual refresh failed', e);
+    }
+  } };
 };

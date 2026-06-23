@@ -34,7 +34,7 @@ export function DeveloperShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="flex-1 space-y-1">
           {nav.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
+            const active = pathname === href || pathname?.startsWith(`${href}/`);
             return (
               <Link
                 key={href}

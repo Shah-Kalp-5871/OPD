@@ -7,7 +7,8 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function PrescriptionPrintPage() {
-  const { caseId } = useParams();
+  const params = useParams();
+  const caseId = params?.caseId as string;
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

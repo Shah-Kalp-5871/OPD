@@ -35,8 +35,8 @@ const CheckInView = () => {
   useEffect(() => {
     fetchDoctors();
     // Auto-load if coming from schedule
-    const mrdParam = searchParams.get('mrd');
-    const apptId = searchParams.get('appt');
+    const mrdParam = searchParams?.get('mrd');
+    const apptId = searchParams?.get('appt');
     
     if (mrdParam) {
       setSearchQuery(mrdParam);

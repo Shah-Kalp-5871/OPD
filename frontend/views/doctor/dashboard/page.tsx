@@ -10,6 +10,8 @@ import { useClinicalSSE } from '@/hooks/useClinicalSSE';
 import { useAuthStore } from '@/store/authStore';
 
 
+import CheckInModal from '@/views/reception/components/CheckInModal';
+
 import { 
   Users, 
   Clock, 
@@ -32,6 +34,7 @@ import ClinicalWorkflowWidget from '@/components/dashboard/ClinicalWorkflowWidge
 const DoctorDashboardView = () => {
   const router = useRouter();
   const [queue, setQueue] = useState<any[]>([]);
+  const [appointmentsQueue, setAppointmentsQueue] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,14 +43,12 @@ const DoctorDashboardView = () => {
   const user = useAuthStore(state => state.user);
   const doctorId = user?.id;
 
-  const { entries: sseEntries } = useQueueSSE({ doctorId });
+  const { entries: sseEntries, refreshData: refreshSseData } = useQueueSSE({ doctorId });
   const { lastEvent: clinicalEvent } = useClinicalSSE();
 
   useEffect(() => {
-    if (sseEntries.length > 0) {
-      setQueue(sseEntries);
-    }
-  }, [sseEntries]);
+    setQueue([...sseEntries, ...appointmentsQueue]);
+  }, [sseEntries, appointmentsQueue]);
 
   useEffect(() => {
     if (clinicalEvent?.type === 'VITALS_SAVED') {
@@ -64,14 +65,42 @@ const DoctorDashboardView = () => {
   const fetchMyQueue = async () => {
     try {
       if (!doctorId) return;
-      const url = `/queue/live?doctorId=${doctorId}`;
-      const response = await api.get(url);
-      setQueue(response.data);
+      const dateFilter = new Date().toISOString().split('T')[0];
+      const apptUrl = `/appointments?date=${dateFilter}&doctorId=${doctorId}`;
+      
+      const response = await api.get(apptUrl);
+      const apptData = (response.data?.data || [])
+        .filter((a: any) => a.status === 'SCHEDULED' || a.status === 'CONFIRMED')
+        .map((a: any) => ({
+          isAppointment: true,
+          appointmentId: a.id,
+          id: a.id,
+          status: 'SCHEDULED_APPOINTMENT',
+          tokenDisplay: 'APP-' + new Date(a.appointmentTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          tokenNumber: 9999,
+          patient: a.patient,
+          doctor: a.doctor,
+          case: { visitType: a.purpose, createdAt: a.appointmentTime },
+          checkInTime: null,
+          createdAt: a.createdAt,
+        }));
+        
+      setAppointmentsQueue(apptData);
     } catch (error) {
       console.error('Failed to fetch queue', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [selectedAppointmentForCheckIn, setSelectedAppointmentForCheckIn] = useState<string | null>(null);
+  const [selectedPatientForCheckIn, setSelectedPatientForCheckIn] = useState<any>(null);
+
+  const handleDirectCheckIn = (appointmentId: string, patient: any) => {
+    setSelectedAppointmentForCheckIn(appointmentId);
+    setSelectedPatientForCheckIn(patient);
+    setIsCheckInModalOpen(true);
   };
 
   const handleStartConsultation = async (caseId: string, patientId: string) => {
@@ -353,9 +382,22 @@ const DoctorDashboardView = () => {
                                           </div>
                                        </button>
                                      </div>
+                                   ) : entry.status === 'SCHEDULED_APPOINTMENT' ? (
+                                     <div className="flex items-center justify-center">
+                                       <button 
+                                         onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            handleDirectCheckIn(entry.appointmentId, entry.patient);
+                                         }}
+                                         className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm transition-all border border-indigo-200 flex items-center gap-1.5"
+                                       >
+                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                          ARRIVED
+                                       </button>
+                                     </div>
                                    ) : (
-                                     <div className="flex items-center justify-center gap-2 transition-all duration-300">
-                                        <button 
+                                     <div className="flex items-center justify-center gap-2.5">
+                                       <button 
                                           onClick={(e) => handleCallPatient(entry.id, e)}
                                           disabled={isSubmitting || hasActiveOrCalling}
                                           className="flex items-center gap-2 px-6 py-1.5 bg-white text-slate-700 hover:bg-[#107ca3] hover:text-white rounded-full transition-colors border border-slate-300 hover:border-[#107ca3] shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-slate-700 disabled:hover:border-slate-300 font-bold"
@@ -404,6 +446,23 @@ const DoctorDashboardView = () => {
 
         </div>
       </div>
+      {isCheckInModalOpen && (
+        <CheckInModal
+          isOpen={isCheckInModalOpen}
+          onClose={() => {
+            setIsCheckInModalOpen(false);
+            setSelectedAppointmentForCheckIn(null);
+            setSelectedPatientForCheckIn(null);
+          }}
+          appointmentId={selectedAppointmentForCheckIn || undefined}
+          patient={selectedPatientForCheckIn}
+          onSuccess={() => {
+            setIsCheckInModalOpen(false);
+            fetchMyQueue();
+            refreshSseData();
+          }}
+        />
+      )}
     </DoctorLayout>
   );
 };

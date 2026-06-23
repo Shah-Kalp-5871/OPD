@@ -163,7 +163,7 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
         {/* CENTER: DESKTOP NAVIGATION */}
         <nav className="hidden lg:flex flex-1 items-center justify-start xl:justify-center gap-1 px-8">
           {flattenedNav.slice(0, 6).map((item) => {
-            const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+            const cleanPathname = pathname?.endsWith('/') ? pathname.slice(0, -1) : pathname || '';
             const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
             const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
             const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
@@ -196,7 +196,7 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
               
               <div className="absolute top-full right-0 mt-0 w-64 bg-white border border-slate-200 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] rounded-b-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col py-2 z-50">
                 {flattenedNav.slice(6).map((item) => {
-                  const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+                  const cleanPathname = pathname?.endsWith('/') ? pathname.slice(0, -1) : pathname || '';
                   const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
                   const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
                   const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
@@ -296,7 +296,7 @@ const TopNavbar = ({ role }: TopNavbarProps) => {
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 bg-slate-50 px-4 py-4 space-y-2">
           {flattenedNav.map((item) => {
-            const cleanPathname = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+            const cleanPathname = pathname?.endsWith('/') ? pathname.slice(0, -1) : pathname || '';
             const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
             const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
             const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));

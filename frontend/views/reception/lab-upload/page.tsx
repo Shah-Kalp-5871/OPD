@@ -26,7 +26,7 @@ import {
 
 const LabUploadView = () => {
   const searchParams = useSearchParams();
-  const caseId = searchParams.get('caseId');
+  const caseId = searchParams?.get('caseId');
 
   const [loading, setLoading] = useState(true);
   const [patientData, setPatientData] = useState<any>(null);

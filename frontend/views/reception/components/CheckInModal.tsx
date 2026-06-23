@@ -31,6 +31,8 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
   
   const [paymentOption, setPaymentOption] = useState<'NOW' | 'LATER'>('NOW');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'UPI'>('CASH');
+  const [totalAmount, setTotalAmount] = useState<number>(500);
+  const [paymentAmount, setPaymentAmount] = useState<number>(500);
 
 
   useEffect(() => {
@@ -152,7 +154,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
           items: [{
             serviceName: 'Initial Consultation Fee',
             description: 'Standard Consultation',
-            unitPrice: 500,
+            unitPrice: totalAmount,
             quantity: 1,
             discount: 0
           }]
@@ -161,7 +163,7 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
         // If Pay Now, record payment
         if (paymentOption === 'NOW' && billRes.data?.id) {
           await api.post(`/billing/${billRes.data.id}/pay`, {
-            amount: 500,
+            amount: paymentAmount,
             paymentMethod: paymentMethod,
             notes: 'Paid at check-in'
           });
@@ -251,8 +253,17 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                 <p className="text-sm font-bold text-slate-800">Standard Consultation</p>
                 <p className="text-xs text-slate-500 mt-1">Due at check-in</p>
               </div>
-              <div className="text-right">
-                <span className="text-lg font-black text-slate-900">₹500</span>
+              <div className="text-right flex items-center gap-2">
+                <span className="text-lg font-black text-slate-900">₹</span>
+                <input 
+                  type="number"
+                  value={totalAmount}
+                  onChange={(e) => {
+                     setTotalAmount(Number(e.target.value));
+                     setPaymentAmount(Number(e.target.value));
+                  }}
+                  className="w-24 px-2 py-1 bg-white border border-slate-200 rounded-lg text-lg font-black text-right focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
               </div>
             </div>
 
@@ -270,15 +281,24 @@ const CheckInModal: React.FC<CheckInModalProps> = ({
                      <span className="text-sm font-bold text-slate-800">Pay Now</span>
                   </label>
                   {paymentOption === 'NOW' && (
-                     <select 
-                       value={paymentMethod} 
-                       onChange={(e) => setPaymentMethod(e.target.value as any)} 
-                       className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ml-7 w-[calc(100%-28px)]"
-                     >
-                       <option value="CASH">Cash</option>
-                       <option value="CARD">Card / POS</option>
-                       <option value="UPI">UPI / QR</option>
-                     </select>
+                     <div className="ml-7 flex flex-col sm:flex-row sm:items-center gap-2 w-[calc(100%-28px)]">
+                       <input 
+                         type="number"
+                         value={paymentAmount}
+                         onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                         className="w-20 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                         placeholder="Amt"
+                       />
+                       <select 
+                         value={paymentMethod} 
+                         onChange={(e) => setPaymentMethod(e.target.value as any)} 
+                         className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                       >
+                         <option value="CASH">Cash</option>
+                         <option value="CARD">Card / POS</option>
+                         <option value="UPI">UPI / QR</option>
+                       </select>
+                     </div>
                   )}
                </div>
                

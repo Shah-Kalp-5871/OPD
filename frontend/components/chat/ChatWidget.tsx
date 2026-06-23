@@ -27,7 +27,7 @@ export default function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const pathname = usePathname() || '';
-  const isDoctor = pathname.includes('/doctor');
+  const isDoctor = pathname?.includes('/doctor');
 
   const theme = isDoctor ? {
     btn: 'bg-[#107ca3] shadow-[#107ca3]/30 hover:bg-[#0d6282]',
