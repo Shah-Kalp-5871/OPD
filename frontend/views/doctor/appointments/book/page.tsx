@@ -235,7 +235,7 @@ const BookAppointmentView = () => {
         closeButtonHtml: '<span class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</span>'
       }).then(() => {
         if (selectedPatient) {
-          router.push(`/doctor/patients/${selectedPatient.id}`);
+          router.push(`/doctor/patients/hub/${selectedPatient.id}`);
         } else {
           // Reset flow
           setSelectedPatient(null);

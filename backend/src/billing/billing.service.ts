@@ -124,14 +124,14 @@ export class BillingService {
           const bill = await tx.bill.create({
             data: {
               billNumber,
-              caseId,
-              patientId: patientCase.patientId,
-              branchId,
+              case: { connect: { id: caseId } },
+              patient: { connect: { id: patientCase.patientId } },
+              branch: { connect: { id: branchId } },
               grossAmount,
               discountTotal,
               netAmount,
               balanceAmount: netAmount,
-              createdById,
+              ...(createdById ? { createdBy: { connect: { id: createdById } } } : {}),
               paymentStatus: 'PENDING',
               paymentStatusEnum: BillStatus.PENDING,
               items: {

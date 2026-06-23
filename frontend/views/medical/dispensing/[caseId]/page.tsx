@@ -29,7 +29,7 @@ import { toast } from 'sonner';
 const MedicalHubView = () => {
   const params = useParams();
   const router = useRouter();
-  const caseId = params.caseId as string;
+  const caseId = params?.caseId as string;
   
   const [patientData, setPatientData] = useState<any>(null);
   const [prescriptionItems, setPrescriptionItems] = useState<any[]>([]);

@@ -95,7 +95,7 @@ const PatientSearchView = () => {
             <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">Browse and manage all registered patients</p>
           </div>
           <button 
-            onClick={() => router.push('/reception/patients/register')}
+            onClick={() => router.push('/reception/register')}
             className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-orange-100"
           >
             <UserPlus className="w-4 h-4" />

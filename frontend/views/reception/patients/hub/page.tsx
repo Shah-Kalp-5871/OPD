@@ -20,7 +20,7 @@ const PatientHubView = () => {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const patientId = params.id as string;
+  const patientId = params?.id as string;
   const urlCaseId = searchParams?.get('caseId');
   
   const [patient, setPatient] = useState<any>(null);
@@ -29,7 +29,7 @@ const PatientHubView = () => {
   const [doctors, setDoctors] = useState<any[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(urlCaseId);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(urlCaseId || null);
 
   useEffect(() => {
     fetchPatientData();

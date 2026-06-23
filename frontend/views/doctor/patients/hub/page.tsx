@@ -11,7 +11,7 @@ import HistoryTab from './components/HistoryTab';
 const DoctorPatientHubView = () => {
   const params = useParams();
   const router = useRouter();
-  const patientId = params.id as string;
+  const patientId = params?.id as string;
   
   const [patient, setPatient] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);

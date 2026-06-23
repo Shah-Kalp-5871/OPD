@@ -99,7 +99,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
 
           {/* New Register button */}
           <button
-            onClick={() => router.push('/reception/patients/register')}
+            onClick={() => router.push('/reception/register')}
             className="flex items-center gap-2 px-5 py-4 text-[10px] font-black text-orange-600 uppercase tracking-[0.15em] hover:bg-orange-50 transition-colors"
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -176,7 +176,7 @@ export const PatientSelectionStep: React.FC<PatientSelectionStepProps> = ({
                 <p className="text-[10px] font-medium text-slate-300 mt-1">
                   Try a different search or{' '}
                   <button
-                    onClick={() => router.push('/reception/patients/register')}
+                    onClick={() => router.push('/reception/register')}
                     className="text-orange-500 hover:underline font-bold"
                   >
                     register a new patient

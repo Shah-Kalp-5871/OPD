@@ -95,7 +95,7 @@ const PatientSearchView = () => {
             <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">Browse and manage all registered patients</p>
           </div>
           <button 
-            onClick={() => router.push('/doctor/patients/register')}
+            onClick={() => router.push('/doctor/register')}
             className="flex items-center gap-2 bg-[#0d6282] hover:bg-[#0a4b63] text-white px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-sky-100"
           >
             <UserPlus className="w-4 h-4" />
@@ -146,7 +146,7 @@ const PatientSearchView = () => {
                     <tr 
                       key={p.id} 
                       className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                      onClick={() => router.push(`/doctor/patients/${p.id}`)}
+                      onClick={() => router.push(`/doctor/patients/hub/${p.id}`)}
                     >
                       <td className="px-5 py-3">
                         <span className="px-3 py-1 bg-sky-50 text-[#0a4b63] rounded-lg text-[10px] font-black tracking-widest border border-sky-100">
@@ -202,7 +202,7 @@ const PatientSearchView = () => {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(`/doctor/patients/${p.id}`);
+                              router.push(`/doctor/patients/hub/${p.id}`);
                             }}
                             className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-[#0d6282] hover:border-sky-200 hover:shadow-sm rounded-xl transition-all"
                             title="Open Patient File"

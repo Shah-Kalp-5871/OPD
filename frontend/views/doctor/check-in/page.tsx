@@ -202,7 +202,7 @@ const CheckInView = () => {
       
       // Redirect to patient hub
       setTimeout(() => {
-        router.push(`/doctor/patients/${selectedPatient.id}`);
+        router.push(`/doctor/patients/hub/${selectedPatient.id}`);
       }, 1500);
       
     } catch (error: any) {

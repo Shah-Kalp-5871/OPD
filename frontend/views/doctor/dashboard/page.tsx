@@ -204,7 +204,7 @@ const DoctorDashboardView = () => {
                 <button 
                   onClick={() => {
                     const target = activeSessionEntry || nextPatientEntry;
-                    router.push(`/reception/patients/${target.patientId}`);
+                    router.push(`/doctor/patients/hub/${target.patientId}`);
                   }}
                   className="bg-[#025674] hover:bg-[#01425a] text-white px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all border border-[#01425a] min-w-[120px] shadow-sm"
                 >

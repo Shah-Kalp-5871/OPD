@@ -577,7 +577,7 @@ const OpdQueueView = () => {
                       return (
                          <tr 
                            key={entry.id || idx} 
-                           onClick={() => !isInSession && entry.patient?.id && router.push(`/reception/patients/${entry.patient.id}/`)}
+                           onClick={() => !isInSession && entry.patient?.id && router.push(`/doctor/patients/hub/${entry.patient.id}/`)}
                            className={`${rowBg} transition-all duration-300 ${isInSession ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
                          >
                           <td className="px-4 py-4 border border-slate-200 text-center">
