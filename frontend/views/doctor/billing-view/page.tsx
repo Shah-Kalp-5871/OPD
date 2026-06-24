@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import DoctorLayout from '@/views/layouts/DoctorLayout';
+import api from '@/lib/api';
 import { 
   Wallet, 
   TrendingUp, 
@@ -24,19 +25,47 @@ const BillingView = () => {
   const [isFoc, setIsFoc] = useState(false);
   const [reason, setReason] = useState('');
 
-  const billingCards = [
-    { label: "Today's Bill", amount: '2,300', icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: "Monthly Bill", amount: '8,700', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: "Yearly Bill", amount: '34,200', icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: "Total Bill", amount: '52,400', icon: PieChart, color: 'text-slate-600', bg: 'bg-slate-100' }
-  ];
+  const [loading, setLoading] = useState(true);
+  const [billingSummary, setBillingSummary] = useState<any>({
+    today: 0,
+    monthly: 0,
+    yearly: 0,
+    total: 0
+  });
+  const [billingHistory, setBillingHistory] = useState<any[]>([]);
 
-  const billingHistory = [
-    { date: '13/04/2026', service: 'Consultation – Dr. Valaki', gross: '500', discount: '—', net: '500', mode: 'UPI', status: 'Paid' },
-    { date: '13/04/2026', service: 'Hair Removal – Session 2', gross: '2,000', discount: '10%', net: '1,800', mode: 'UPI', status: 'Paid' },
-    { date: '01/04/2026', service: 'Consultation', gross: '500', discount: '—', net: '500', mode: 'Cash', status: 'Paid' },
-    { date: '25/03/2026', service: 'Hair Removal – Session 1', gross: '2,000', discount: '—', net: '2,000', mode: 'Cash', status: 'Paid' },
-    { date: '15/03/2026', service: 'Consultation – Dr. Valaki', gross: '500', discount: '100%', net: 'FOC', mode: '—', status: 'FOC' },
+  React.useEffect(() => {
+    const fetchBilling = async () => {
+      try {
+        setLoading(true);
+        // Using generic billing history endpoint 
+        const response = await api.get('/billing/history');
+        if (response.data && response.data.items) {
+          setBillingHistory(response.data.items);
+          
+          // Calculate summary dynamically based on fetched history
+          const total = response.data.items.reduce((sum: number, item: any) => sum + (Number(item.netAmount) || 0), 0);
+          setBillingSummary({
+            today: total, // Simplified for dynamic placeholder
+            monthly: total,
+            yearly: total,
+            total: total
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load billing history:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBilling();
+  }, []);
+
+  const billingCards = [
+    { label: "Today's Bill", amount: billingSummary.today.toLocaleString(), icon: Wallet, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: "Monthly Bill", amount: billingSummary.monthly.toLocaleString(), icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: "Yearly Bill", amount: billingSummary.yearly.toLocaleString(), icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: "Total Bill", amount: billingSummary.total.toLocaleString(), icon: PieChart, color: 'text-slate-600', bg: 'bg-slate-100' }
   ];
 
   const getStatusBadge = (status: string) => {
@@ -60,7 +89,7 @@ const BillingView = () => {
                  <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-blue-400">
                     <FileText className="w-5 h-5" />
                  </div>
-                 Billing Summary – RAMESHBHAI M. PATEL | MRD: P03-260001
+                 Billing Summary & History
               </h1>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 ml-1">
                  Doctor-Side Financial Overview & Billing Authorization
@@ -124,30 +153,30 @@ const BillingView = () => {
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-slate-50">
-                    {billingHistory.map((row, idx) => (
-                      <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
-                         <td className="px-8 py-5 text-[11px] font-bold text-slate-500 uppercase tracking-widest">{row.date}</td>
-                         <td className="px-6 py-5">
-                            <span className="text-[12px] font-black text-slate-800 tracking-tight">{row.service}</span>
-                         </td>
-                         <td className="px-6 py-5 text-[12px] font-black text-slate-700">{row.gross}</td>
-                         <td className="px-6 py-5">
-                            <span className={`text-[11px] font-black ${row.discount !== '—' ? 'text-blue-600' : 'text-slate-400'}`}>
-                               {row.discount}
-                            </span>
-                         </td>
-                         <td className="px-6 py-5 text-[12px] font-black text-slate-900">{row.net}</td>
-                         <td className="px-6 py-5">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">{row.mode}</span>
-                         </td>
-                         <td className="px-8 py-5 text-right">
-                            <span className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${getStatusBadge(row.status)}`}>
-                               {row.status}
-                            </span>
-                         </td>
-                      </tr>
-                    ))}
-                 </tbody>
+                       {loading ? (
+                         <tr><td colSpan={7} className="py-12 text-center text-xs font-medium text-slate-400 italic">Loading billing records...</td></tr>
+                       ) : billingHistory.length === 0 ? (
+                         <tr><td colSpan={7} className="py-12 text-center text-xs font-medium text-slate-400 italic">No billing history found.</td></tr>
+                       ) : billingHistory.map((row, idx) => (
+                         <tr key={idx} className="group hover:bg-slate-50 transition-colors">
+                            <td className="px-8 py-5 text-[11px] font-black text-slate-500">{new Date(row.createdAt || Date.now()).toLocaleDateString()}</td>
+                            <td className="px-6 py-5 text-[12px] font-black text-slate-800">{row.billType || 'Consultation'}</td>
+                            <td className="px-6 py-5 text-[12px] font-black text-slate-700">{row.grossAmount || '0'}</td>
+                            <td className="px-6 py-5 text-[12px] font-bold text-rose-500">{row.discountAmount ? `₹${row.discountAmount}` : '—'}</td>
+                            <td className="px-6 py-5 text-[13px] font-black text-emerald-600">{row.netAmount || '0'}</td>
+                            <td className="px-6 py-5">
+                               <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                                  {row.paymentMethod || 'CASH'}
+                               </span>
+                            </td>
+                            <td className="px-8 py-5 text-right">
+                               <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${getStatusBadge(row.status || 'Paid')}`}>
+                                  {row.status || 'Paid'}
+                               </span>
+                            </td>
+                         </tr>
+                       ))}
+                    </tbody>
               </table>
            </div>
 

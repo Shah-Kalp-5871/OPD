@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import DoctorLayout from '@/views/layouts/DoctorLayout';
+import api from '@/lib/api';
 import { 
   Phone, 
   Calendar, 
@@ -34,63 +35,26 @@ const FollowUpCallListView = () => {
     "All F/U"
   ];
 
-  const followUpData = [
-    {
-      id: 1,
-      priority: 'High',
-      patient: 'Rameshbhai Patel',
-      mrd: 'P03-260001',
-      lastFu: '01/04/2026',
-      fuType: 'Consultation',
-      lastDrug: 'Not Taken: Dolo',
-      note: 'Check SGPT result',
-      status: 'Critical'
-    },
-    {
-      id: 2,
-      priority: 'Medium',
-      patient: 'Sneha Shah',
-      mrd: 'P03-260002',
-      lastFu: '08/04/2026',
-      fuType: 'Follow-Up',
-      lastDrug: 'Taken all',
-      note: '-',
-      status: 'Stable'
-    },
-    {
-      id: 3,
-      priority: 'High',
-      patient: 'Mahesh Kumar',
-      mrd: 'P03-260003',
-      lastFu: '13/04/2026',
-      fuType: 'Procedure',
-      lastDrug: 'Not Taken: Zylivo',
-      note: '-',
-      status: 'Pending'
-    },
-    {
-      id: 4,
-      priority: 'Low',
-      patient: 'Priya Desai',
-      mrd: 'P03-260004',
-      lastFu: '05/04/2026',
-      fuType: 'Missed F/U',
-      lastDrug: '-',
-      note: 'Procedure due',
-      status: 'Warning'
-    },
-    {
-      id: 5,
-      priority: 'High',
-      patient: 'Kishore Joshi',
-      mrd: 'P03-260010',
-      lastFu: '01/03/2026',
-      fuType: 'Consultation',
-      lastDrug: '3 missed F/Us',
-      note: 'Call not answered',
-      status: 'Error'
-    }
-  ];
+  const [followups, setFollowups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchFollowups = async () => {
+      try {
+        setLoading(true);
+        // Using /followups as the generic endpoint as defined in FollowupsController
+        const response = await api.get('/followups');
+        if (response.data) {
+          setFollowups(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to load followups:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFollowups();
+  }, []);
 
   const calendarLegend = [
     { label: 'C', desc: 'Consultation', color: 'bg-blue-500' },
@@ -175,7 +139,11 @@ const FollowUpCallListView = () => {
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                       {followUpData.map((row) => (
+                       {loading ? (
+                         <tr><td colSpan={7} className="py-12 text-center text-xs font-medium text-slate-400 italic">Loading follow-ups...</td></tr>
+                       ) : followups.length === 0 ? (
+                         <tr><td colSpan={7} className="py-12 text-center text-xs font-medium text-slate-400 italic">No follow-ups found.</td></tr>
+                       ) : followups.map((row) => (
                          <tr key={row.id} className="group hover:bg-slate-50/50 transition-colors">
                             <td className="px-8 py-6">
                                <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase border ${getPriorityColor(row.priority)}`}>
@@ -184,14 +152,14 @@ const FollowUpCallListView = () => {
                             </td>
                             <td className="px-6 py-6">
                                <div className="flex flex-col">
-                                  <span className="text-[13px] font-black text-slate-800 tracking-tight">{row.patient}</span>
-                                  <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{row.mrd}</span>
+                                  <span className="text-[13px] font-black text-slate-800 tracking-tight">{row.patient?.name || row.patientName || 'Unknown Patient'}</span>
+                                  <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{row.patient?.mrdNumber || row.mrd || 'No MRD'}</span>
                                </div>
                             </td>
                             <td className="px-6 py-6">
                                <div className="flex items-center gap-2">
                                   <Calendar className="w-3.5 h-3.5 text-slate-300" />
-                                  <span className="text-[11px] font-black text-slate-600">{row.lastFu}</span>
+                                  <span className="text-[11px] font-black text-slate-600">{row.lastFu || new Date(row.createdAt || Date.now()).toLocaleDateString()}</span>
                                </div>
                             </td>
                             <td className="px-6 py-6">
