@@ -31,7 +31,7 @@ import {
   Lock,
   Bell
 } from 'lucide-react';
-import CheckInModal from '../components/CheckInModal';
+import InitialConsultationPaymentModal from '../components/InitialConsultationPaymentModal';
 import { QueueStatusBadge } from '../components/QueueStatusBadge';
 
 const OpdQueueView = () => {
@@ -602,7 +602,7 @@ const OpdQueueView = () => {
                            {getVisitType(entry)}
                          </td>
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-700 border-r border-slate-50">
-                           {entry.case?.doctor?.user?.name || entry.doctor?.user?.name || entry.doctor?.name || 'Unassigned'}
+                           {entry.case?.doctor?.user?.name || entry.case?.doctor?.name || entry.doctor?.user?.name || entry.doctor?.name || 'Unassigned'}
                          </td>
                          <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-700 border-r border-slate-50">
                            {entry.mrId ? '--' : entry.patient?.profile?.age || '--'}
@@ -620,7 +620,7 @@ const OpdQueueView = () => {
                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
                            ) : (
                              (() => {
-                               const totalAmount = entry.case?.bill?.totalAmount || 0;
+                               const totalAmount = entry.case?.bill?.netAmount || 0;
                                const paidAmount = entry.case?.bill?.paidAmount || 0;
                                const progress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
                                const isFullyPaid = progress === 100;
@@ -772,7 +772,7 @@ const OpdQueueView = () => {
       )}
 
       {isCheckInModalOpen && (
-        <CheckInModal
+        <InitialConsultationPaymentModal
           isOpen={isCheckInModalOpen}
           onClose={() => {
             setIsCheckInModalOpen(false);

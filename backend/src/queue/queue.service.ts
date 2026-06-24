@@ -402,7 +402,17 @@ export class QueueService {
               orderBy: { takenAt: 'desc' },
             },
             visitComplaint: true,
+            doctor: {
+              select: {
+                name: true,
+              }
+            }
           },
+        },
+        doctor: {
+          select: {
+            name: true,
+          }
         },
         mr: {
           select: {

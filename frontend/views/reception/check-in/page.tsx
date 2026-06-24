@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Clock, Sunrise, Sun, Sunset, Stethoscope, Briefcase, User, Phone, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import CheckInModal from '../components/CheckInModal';
+import InitialConsultationPaymentModal from '../components/InitialConsultationPaymentModal';
 
 const CheckInView = () => {
   const router = useRouter();
@@ -133,7 +133,6 @@ const CheckInView = () => {
     setSearchResults([]);
     setCheckInResult(null);
     setSelectedAppointment(apptId ? { id: apptId } : null);
-    setIsCheckInModalOpen(true);
   };
 
   const fetchPatientAppointments = async (patientId: string, apptId?: string | null) => {
@@ -490,7 +489,13 @@ const CheckInView = () => {
             {/* Check-In Action */}
             <div className="flex items-center gap-4 py-1">
                <button 
-                 onClick={() => setIsCheckInModalOpen(true)}
+                 onClick={() => {
+                   if (!selectedAppointment && (!selectedDoctorId || !selectedSlot)) {
+                     toast.error('Please select a doctor and a time slot first.');
+                     return;
+                   }
+                   setIsCheckInModalOpen(true);
+                 }}
                  className="bg-orange-600 text-white font-bold py-3 px-10 text-sm rounded-xl hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20 flex items-center gap-2"
                >
                  Proceed to Payment & Check-In
@@ -502,14 +507,18 @@ const CheckInView = () => {
         </div>
       )}
     </div>
-    <CheckInModal 
+    <InitialConsultationPaymentModal 
        isOpen={isCheckInModalOpen}
        onClose={() => setIsCheckInModalOpen(false)}
        patient={selectedPatient}
        appointmentId={selectedAppointment?.id}
+       walkInDoctorId={selectedDoctorId}
+       walkInSlot={selectedSlot}
+       walkInVisitType={visitType}
+       walkInComplaint={complaint}
        onSuccess={() => {
          setIsCheckInModalOpen(false);
-         toast.success('Patient checked in successfully!');
+         // Router push is handled inside handleCheckIn success on the parent or we just reload
          setTimeout(() => {
            router.push(`/reception/patients/${selectedPatient?.id}`);
          }, 1500);
