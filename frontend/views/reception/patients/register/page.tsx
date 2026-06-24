@@ -324,7 +324,7 @@ const PatientRegistrationView = () => {
                 <div className="space-y-3">
                   <button type="submit" disabled={isSubmitting}
                     className="w-full flex items-center justify-center gap-2 py-4 bg-orange-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-md shadow-orange-100 disabled:opacity-50">
-                    {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CalendarCheck className="w-4 h-4" />Complete Registration &amp; Open File</>}
+                    {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CalendarCheck className="w-4 h-4" />Register &amp; Book Appointment</>}
                   </button>
                   <div className="grid grid-cols-2 gap-3">
                     <button type="button" onClick={() => router.back()}
@@ -436,7 +436,11 @@ const PatientRegistrationView = () => {
                         <div className="text-xs text-slate-400 py-3 italic text-center border border-dashed border-slate-200 rounded-xl bg-slate-50">No slots today</div>
                       ) : (
                         <div className="flex flex-wrap gap-2">
-                          {mrAvailableSlots.map((slot, i) => {
+                          {mrAvailableSlots.filter(slot => {
+                            const now = new Date();
+                            const [h, m] = slot.time.split(':').map(Number);
+                            return h > now.getHours() || (h === now.getHours() && m > now.getMinutes());
+                          }).map((slot, i) => {
                             const isBooked = slot.status === 'booked';
                             const isSel = mrSelectedSlot === slot.time;
                             return (

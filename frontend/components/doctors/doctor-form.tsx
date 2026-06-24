@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import ShiftBuilder from './shift-builder';
 
 interface DoctorFormProps {
   initialData?: any;
@@ -24,29 +25,10 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ initialData, mode = 'add' }) =>
       consultationFee: initialData?.doctorProfile?.consultationFee || 0,
       specialization: initialData?.doctorProfile?.specialization || 'General',
       licenseNumber: initialData?.doctorProfile?.licenseNumber || '',
-      morningStart: initialData?.doctorProfile?.morningStart || '10:00',
-      morningEnd: initialData?.doctorProfile?.morningEnd || '14:00',
-      eveningStart: initialData?.doctorProfile?.eveningStart || '17:00',
-      eveningEnd: initialData?.doctorProfile?.eveningEnd || '20:00',
-      appointmentGap: initialData?.doctorProfile?.appointmentGap || 10,
-      slotDuration: initialData?.doctorProfile?.slotDuration || 15,
       isActive: initialData?.isActive ?? true,
-      availableDays: initialData?.doctorProfile?.availableDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+      shifts: initialData?.doctorProfile?.shifts || []
     }
   });
-
-  const availableDays = watch('availableDays');
-
-  const toggleDay = (day: string) => {
-    const current = [...availableDays];
-    const index = current.indexOf(day);
-    if (index > -1) {
-      current.splice(index, 1);
-    } else {
-      current.push(day);
-    }
-    setValue('availableDays', current);
-  };
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
@@ -73,9 +55,6 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ initialData, mode = 'add' }) =>
       setIsSubmitting(false);
     }
   };
-
-  const daysMap = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const shortDaysMap = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mt-4 scroll-mt-24">
@@ -145,41 +124,16 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ initialData, mode = 'add' }) =>
           </div>
         </div>
 
-        {/* Row 2: Availability & Slots */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Available Days</label>
-            <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded-xl border border-slate-100">
-              {daysMap.map((day, i) => (
-                <button 
-                  key={i} 
-                  type="button"
-                  onClick={() => toggleDay(day)}
-                  className={`w-8 h-8 rounded-lg border text-[10px] font-black transition-all ${availableDays.includes(day) ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-400 hover:border-blue-500'}`}
-                >
-                  {shortDaysMap[i]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Morning Slot (Start–End)</label>
-            <div className="grid grid-cols-2 gap-3">
-              <input {...register('morningStart')} type="time" className="px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" />
-              <input {...register('morningEnd')} type="time" className="px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Evening Slot (Start–End)</label>
-            <div className="grid grid-cols-2 gap-3">
-              <input {...register('eveningStart')} type="time" className="px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" />
-              <input {...register('eveningEnd')} type="time" className="px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" />
-            </div>
-          </div>
+        {/* Row 2: Availability & Slots via Shift Builder */}
+        <div className="bg-white rounded-xl border border-slate-100 p-6">
+          <ShiftBuilder 
+            shifts={watch('shifts')} 
+            onChange={(s) => setValue('shifts', s, { shouldDirty: true })} 
+          />
         </div>
 
         {/* Row 3: Configurations */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-2">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Default Consult Fee (■) *</label>
             <input 
@@ -187,14 +141,6 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ initialData, mode = 'add' }) =>
               type="number" 
               className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-600 transition-all text-sm font-bold"
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Inter-Appt Gap (mins)</label>
-            <input {...register('appointmentGap', { valueAsNumber: true })} type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Appt Duration (mins)</label>
-            <input {...register('slotDuration', { valueAsNumber: true })} type="number" className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" />
           </div>
           <div className="space-y-2">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</label>

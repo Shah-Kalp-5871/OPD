@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Clock, Sunrise, Sun, Sunset, Stethoscope, Briefcase, User, Phone, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import CheckInModal from '../components/CheckInModal';
 
 const CheckInView = () => {
   const router = useRouter();
@@ -125,12 +126,14 @@ const CheckInView = () => {
     }
   };
 
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+
   const handleSelectPatient = (patient: any, apptId?: string | null) => {
     setSelectedPatient(patient);
     setSearchResults([]);
     setCheckInResult(null);
-    setSelectedAppointment(null);
-    fetchPatientAppointments(patient.id, apptId);
+    setSelectedAppointment(apptId ? { id: apptId } : null);
+    setIsCheckInModalOpen(true);
   };
 
   const fetchPatientAppointments = async (patientId: string, apptId?: string | null) => {
@@ -487,12 +490,11 @@ const CheckInView = () => {
             {/* Check-In Action */}
             <div className="flex items-center gap-4 py-1">
                <button 
-                 onClick={handleCheckIn}
-                 disabled={isSubmitting}
-                 className="bg-orange-600 text-white font-bold py-3 px-10 text-sm rounded-xl hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20 disabled:opacity-70 flex items-center gap-2"
+                 onClick={() => setIsCheckInModalOpen(true)}
+                 className="bg-orange-600 text-white font-bold py-3 px-10 text-sm rounded-xl hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20 flex items-center gap-2"
                >
-                 {isSubmitting ? 'Processing...' : 'Confirm Check-In'}
-                 {!isSubmitting && <span>&rarr;</span>}
+                 Proceed to Payment & Check-In
+                 <span>&rarr;</span>
                </button>
             </div>
 
@@ -500,6 +502,19 @@ const CheckInView = () => {
         </div>
       )}
     </div>
+    <CheckInModal 
+       isOpen={isCheckInModalOpen}
+       onClose={() => setIsCheckInModalOpen(false)}
+       patient={selectedPatient}
+       appointmentId={selectedAppointment?.id}
+       onSuccess={() => {
+         setIsCheckInModalOpen(false);
+         toast.success('Patient checked in successfully!');
+         setTimeout(() => {
+           router.push(`/reception/patients/${selectedPatient?.id}`);
+         }, 1500);
+       }}
+    />
   </ReceptionLayout>
   );
 };

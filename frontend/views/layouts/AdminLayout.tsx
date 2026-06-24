@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import TopNavbar from '@/components/ui/TopNavbar';
+import Sidebar from '@/components/ui/Sidebar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -9,14 +9,14 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNavbar role="admin" />
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar role="admin" />
 
       {/* Main Content Wrapper */}
-      <div className="flex flex-col min-h-screen transition-all duration-300">
+      <div className="flex-1 flex flex-col min-h-screen transition-all duration-300 lg:pl-64">
         
         {/* Content Area - Scrollable */}
-        <main className="flex-1 mt-16 p-4 md:p-8 overflow-y-auto custom-scrollbar scrollbar-stable">
+        <main className="flex-1 mt-16 lg:mt-0 p-4 md:p-8 overflow-y-auto custom-scrollbar scrollbar-stable">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

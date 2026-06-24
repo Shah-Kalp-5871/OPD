@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Phone, Activity, Stethoscope, Printer, Droplet, Calendar, Hash, ShieldAlert } from 'lucide-react';
 import { Patient } from '../types';
+import { toast } from 'sonner';
 
 interface PatientHeaderProps {
   patient: Patient;
@@ -28,6 +29,13 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
         return new Date(maxDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
       })()
     : '--';
+
+  const handlePrintSticker = () => {
+    const printWindow = window.open('about:blank', `pw_${Date.now()}`, 'left=50,top=50,width=400,height=400');
+    if (!printWindow) { toast.error('Allow popups to print.'); return; }
+    printWindow.document.write(`<html><head><title>Sticker</title><style>@page{size:80mm 50mm;margin:0}body{font-family:monospace;padding:10px;margin:0;width:80mm;height:50mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between}.t{font-size:8px;text-transform:uppercase;color:#666;margin-bottom:2px}.v{font-size:11px;font-weight:bold;margin-bottom:8px}.g{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bc{border-top:1px dashed #ccc;padding-top:6px;display:flex;flex-direction:column;align-items:center}.bl{display:flex;gap:1px;height:30px;align-items:flex-end;margin-bottom:2px}.bline{background:#000;height:100%}.bt{font-size:8px;letter-spacing:2px;color:#333}</style></head><body><div><div class="t">Patient Full Name</div><div class="v">${patient.firstName || '---'} ${patient.lastName || '---'}</div><div class="g"><div><div class="t">MRD Number</div><div class="v" style="color:#0d9488">${patient.mrdNumber}</div></div><div><div class="t">Gender | Age</div><div class="v">${patient.gender === 'M' ? 'Male' : patient.gender === 'F' ? 'Female' : patient.gender} | ${patient.profile?.age ? patient.profile.age + ' Yrs' : '-- Yrs'}</div></div></div></div><div class="bc"><div class="bl">${[2,4,1,3,2,5,2,4,1,6,2,4,2,3,1,5,2,4].map(w=>`<div class="bline" style="width:${w}px"></div>`).join('')}</div><div class="bt">${patient.mrdNumber}</div></div><script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}</script></body></html>`);
+    printWindow.document.close();
+  };
 
   return (
     <div className="bg-white border border-orange-100 rounded-[2rem] relative z-10 overflow-hidden" style={{boxShadow: '0 4px 6px -1px rgba(249,115,22,0.08), 0 10px 30px -5px rgba(249,115,22,0.12), 0 2px 0 0 rgba(249,115,22,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'}}>
@@ -82,7 +90,7 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
             </div>
           )}
           <button 
-            onClick={() => window.print()}
+            onClick={handlePrintSticker}
             className="p-4 bg-white border border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300 rounded-2xl transition-all shadow-sm h-full print:hidden"
           >
             <Printer className="w-4 h-4" />

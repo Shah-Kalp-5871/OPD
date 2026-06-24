@@ -126,6 +126,7 @@ export class PatientsService {
           { mrdNumber: { contains: q, mode: 'insensitive' } },
           { mobile: { contains: q, mode: 'insensitive' } },
           { firstName: { contains: q, mode: 'insensitive' } },
+          { middleName: { contains: q, mode: 'insensitive' } },
           { lastName: { contains: q, mode: 'insensitive' } },
         ],
       });

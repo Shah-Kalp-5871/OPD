@@ -8,7 +8,37 @@ import {
   MinLength,
   IsInt,
   IsBoolean,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ShiftDto {
+  @IsString()
+  @IsOptional()
+  id?: string;
+
+  @IsString()
+  @IsOptional()
+  doctorId?: string;
+
+  @IsInt()
+  dayOfWeek: number;
+
+  @IsString()
+  @IsNotEmpty()
+  startTime: string;
+
+  @IsString()
+  @IsNotEmpty()
+  endTime: string;
+
+  @IsInt()
+  slotDuration: number;
+
+  @IsInt()
+  @IsOptional()
+  appointmentGap?: number;
+}
 
 export class CreateDoctorDto {
   @IsString()
@@ -36,30 +66,10 @@ export class CreateDoctorDto {
   licenseNumber?: string;
 
   @IsArray()
-  @IsString({ each: true })
-  availableDays: string[];
-
-  @IsString()
+  @ValidateNested({ each: true })
+  @Type(() => ShiftDto)
   @IsOptional()
-  morningStart?: string;
-
-  @IsString()
-  @IsOptional()
-  morningEnd?: string;
-
-  @IsString()
-  @IsOptional()
-  eveningStart?: string;
-
-  @IsString()
-  @IsOptional()
-  eveningEnd?: string;
-
-  @IsInt()
-  appointmentGap: number;
-
-  @IsInt()
-  slotDuration: number;
+  shifts?: ShiftDto[];
 
   @IsBoolean()
   @IsOptional()
@@ -93,33 +103,10 @@ export class UpdateDoctorDto {
   licenseNumber?: string;
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => ShiftDto)
   @IsOptional()
-  availableDays?: string[];
-
-  @IsString()
-  @IsOptional()
-  morningStart?: string;
-
-  @IsString()
-  @IsOptional()
-  morningEnd?: string;
-
-  @IsString()
-  @IsOptional()
-  eveningStart?: string;
-
-  @IsString()
-  @IsOptional()
-  eveningEnd?: string;
-
-  @IsInt()
-  @IsOptional()
-  appointmentGap?: number;
-
-  @IsInt()
-  @IsOptional()
-  slotDuration?: number;
+  shifts?: ShiftDto[];
 
   @IsBoolean()
   @IsOptional()

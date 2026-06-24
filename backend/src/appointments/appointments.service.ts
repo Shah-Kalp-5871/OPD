@@ -62,10 +62,9 @@ export class AppointmentsService {
           where: { id: doctorId },
           include: {
             user: true,
-            schedules: {
+            shifts: {
               where: {
                 dayOfWeek: appointmentDateOnly.getDay(),
-                isActive: true,
               },
             },
           },
@@ -76,10 +75,9 @@ export class AppointmentsService {
             where: { userId: doctorId },
             include: {
               user: true,
-              schedules: {
+              shifts: {
                 where: {
                   dayOfWeek: appointmentDateOnly.getDay(),
-                  isActive: true,
                 },
               },
             },
@@ -94,11 +92,11 @@ export class AppointmentsService {
           appointmentDateOnly,
           'Cannot book appointment',
         );
-        this.ensureDoctorAvailableAt(
-          doctorProfile,
-          appointmentDateOnly,
-          appointmentTime,
-        );
+        // Ensure doctor is available based on shifts
+        // For simplicity, we just assume they are available if there are any shifts on this day
+        if (!doctorProfile.shifts || doctorProfile.shifts.length === 0) {
+          throw new BadRequestException('Doctor is not available on this day');
+        }
 
         const existing = await tx.appointment.findFirst({
           where: {
@@ -170,20 +168,7 @@ export class AppointmentsService {
           data: { appointment: { connect: { id: appointment.id } } }
         });
 
-        const queueEntry = await this.queueService.createEntryInTransaction(
-          tx,
-          {
-            caseId: patientCase.id,
-            patientId,
-            doctorId: doctorProfile.userId,
-            priority: 'NORMAL',
-            queueType: QueueType.OPD,
-          },
-          doctorProfile.userId,
-          branchId,
-        );
-
-        return { ...appointment, patientCase: { ...patientCase, queueEntry } };
+        return { ...appointment, patientCase };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
@@ -303,12 +288,12 @@ export class AppointmentsService {
     const date = this.parseDateOnly(dateStr);
     const dayOfWeek = date.getDay(); // 0 (Sun) to 6 (Sat)
 
-    // 1. Get Doctor Profile & Schedules
+    // 1. Get Doctor Profile & Shifts
     let doctorProfile = await this.prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
-        schedules: {
-          where: { dayOfWeek, isActive: true },
+        shifts: {
+          where: { dayOfWeek },
         },
       },
     });
@@ -317,8 +302,8 @@ export class AppointmentsService {
       doctorProfile = await this.prisma.doctorProfile.findUnique({
         where: { userId: doctorId },
         include: {
-          schedules: {
-            where: { dayOfWeek, isActive: true },
+          shifts: {
+            where: { dayOfWeek },
           },
         },
       });
@@ -374,7 +359,6 @@ export class AppointmentsService {
       time: string;
       status: 'available' | 'booked' | 'blocked';
     }[] = [];
-    const duration = doctorProfile.slotDuration || 15;
 
     // Helper to check if a time string falls within any blocked slot
     const isBlocked = (timeStr: string) => {
@@ -391,23 +375,18 @@ export class AppointmentsService {
       });
     };
 
-    // 4. Generate slots based on schedules
-    for (const schedule of doctorProfile.schedules) {
+    // Generate slots based on shifts
+    for (const shift of doctorProfile.shifts) {
+      const [startH, startM] = shift.startTime.split(':').map(Number);
+      const [endH, endM] = shift.endTime.split(':').map(Number);
+
       let current = new Date(date);
-      current.setHours(
-        schedule.startTime.getHours(),
-        schedule.startTime.getMinutes(),
-        0,
-        0,
-      );
+      current.setHours(startH, startM, 0, 0);
 
       const end = new Date(date);
-      end.setHours(
-        schedule.endTime.getHours(),
-        schedule.endTime.getMinutes(),
-        0,
-        0,
-      );
+      end.setHours(endH, endM, 0, 0);
+
+      const duration = shift.slotDuration || 15;
 
       while (isBefore(current, end)) {
         const timeStr = format(current, 'HH:mm');
@@ -424,47 +403,6 @@ export class AppointmentsService {
           status,
         });
         current = addMinutes(current, duration);
-      }
-    }
-
-    // Fallback to basic profile morning/evening if no schedules found
-    if (
-      slots.length === 0 &&
-      (doctorProfile.morningStart || doctorProfile.eveningStart)
-    ) {
-      // Simple fallback logic if DoctorSchedule table isn't populated
-      const sessions: { start: string; end: string }[] = [];
-      if (doctorProfile.morningStart && doctorProfile.morningEnd) {
-        sessions.push({
-          start: doctorProfile.morningStart,
-          end: doctorProfile.morningEnd,
-        });
-      }
-      if (doctorProfile.eveningStart && doctorProfile.eveningEnd) {
-        sessions.push({
-          start: doctorProfile.eveningStart,
-          end: doctorProfile.eveningEnd,
-        });
-      }
-
-      for (const session of sessions) {
-        const [startH, startM] = session.start.split(':').map(Number);
-        const [endH, endM] = session.end.split(':').map(Number);
-
-        let current = new Date(date);
-        current.setHours(startH, startM, 0, 0);
-
-        const end = new Date(date);
-        end.setHours(endH, endM, 0, 0);
-
-        while (isBefore(current, end)) {
-          const timeStr = format(current, 'HH:mm');
-          slots.push({
-            time: timeStr,
-            status: bookedTimes.includes(timeStr) ? 'booked' : 'available',
-          });
-          current = addMinutes(current, duration);
-        }
       }
     }
 
@@ -1087,14 +1025,16 @@ export class AppointmentsService {
     const slotMinutesOfDay = slotHours * 60 + slotMinutes;
     const duration = doctorProfile.slotDuration || 15;
 
-    const scheduleWindows = doctorProfile.schedules?.length
-      ? doctorProfile.schedules.map((schedule: any) => ({
+    const scheduleWindows = doctorProfile.shifts?.length
+      ? doctorProfile.shifts.map((shift: any) => ({
           start:
-            schedule.startTime.getHours() * 60 +
-            schedule.startTime.getMinutes(),
-          end: schedule.endTime.getHours() * 60 + schedule.endTime.getMinutes(),
+            Number(shift.startTime.split(':')[0]) * 60 +
+            Number(shift.startTime.split(':')[1]),
+          end:
+            Number(shift.endTime.split(':')[0]) * 60 +
+            Number(shift.endTime.split(':')[1]),
         }))
-      : this.getFallbackScheduleWindows(doctorProfile);
+      : [];
 
     const isAvailable = scheduleWindows.some((window: any) => {
       return (

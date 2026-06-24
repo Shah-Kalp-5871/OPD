@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDoctorDto, UpdateDoctorDto, CreateDoctorLeaveDto } from './dto/doctor.dto';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { Role, AppointmentStatus } from '@prisma/client';
 import { SmsWhatsappService } from '../communications/sms-whatsapp.service';
 
 @Injectable()
@@ -38,18 +38,24 @@ export class DoctorsService {
             consultationFee: createDoctorDto.consultationFee,
             specialization: createDoctorDto.specialization,
             licenseNumber: createDoctorDto.licenseNumber,
-            availableDays: createDoctorDto.availableDays,
-            morningStart: createDoctorDto.morningStart,
-            morningEnd: createDoctorDto.morningEnd,
-            eveningStart: createDoctorDto.eveningStart,
-            eveningEnd: createDoctorDto.eveningEnd,
-            appointmentGap: createDoctorDto.appointmentGap,
-            slotDuration: createDoctorDto.slotDuration,
+            shifts: {
+              create: createDoctorDto.shifts?.map(s => ({
+                dayOfWeek: s.dayOfWeek,
+                startTime: s.startTime,
+                endTime: s.endTime,
+                slotDuration: s.slotDuration,
+                appointmentGap: s.appointmentGap ?? 0,
+              })) || [],
+            },
           },
         },
       },
       include: {
-        doctorProfile: true,
+        doctorProfile: {
+          include: {
+            shifts: true,
+          }
+        },
       },
     });
 
@@ -61,7 +67,11 @@ export class DoctorsService {
     const doctors = await this.prisma.user.findMany({
       where: { role: Role.DOCTOR },
       include: {
-        doctorProfile: true,
+        doctorProfile: {
+          include: {
+            shifts: true,
+          }
+        },
       },
     });
 
@@ -72,7 +82,12 @@ export class DoctorsService {
     const doctor = await this.prisma.user.findFirst({
       where: { id, role: Role.DOCTOR },
       include: {
-        doctorProfile: true,
+        doctorProfile: {
+          include: {
+            shifts: true,
+            shiftOverrides: true,
+          }
+        },
       },
     });
 
@@ -112,13 +127,6 @@ export class DoctorsService {
             consultationFee: updateDoctorDto.consultationFee,
             specialization: updateDoctorDto.specialization,
             licenseNumber: updateDoctorDto.licenseNumber,
-            availableDays: updateDoctorDto.availableDays,
-            morningStart: updateDoctorDto.morningStart,
-            morningEnd: updateDoctorDto.morningEnd,
-            eveningStart: updateDoctorDto.eveningStart,
-            eveningEnd: updateDoctorDto.eveningEnd,
-            appointmentGap: updateDoctorDto.appointmentGap,
-            slotDuration: updateDoctorDto.slotDuration,
           },
         },
       },
@@ -127,8 +135,168 @@ export class DoctorsService {
       },
     });
 
-    const { password, ...result } = updatedUser;
+    if (updateDoctorDto.shifts && updatedUser.doctorProfile) {
+      await this.prisma.doctorShift.deleteMany({
+        where: { doctorId: updatedUser.doctorProfile.id }
+      });
+      if (updateDoctorDto.shifts.length > 0) {
+        await this.prisma.doctorShift.createMany({
+          data: updateDoctorDto.shifts.map(s => ({
+            doctorId: updatedUser.doctorProfile!.id,
+            dayOfWeek: s.dayOfWeek,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            slotDuration: s.slotDuration,
+            appointmentGap: s.appointmentGap ?? 0,
+          }))
+        });
+      }
+
+      // TODO: Here we should call the conflict resolution shifting engine
+      await this.resolveScheduleConflicts(updatedUser.doctorProfile.id);
+    }
+
+    const finalUser = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        doctorProfile: {
+          include: {
+            shifts: true,
+          }
+        }
+      }
+    });
+
+    const { password: _, ...result } = finalUser!;
     return result;
+  }
+
+  private generateSlotsForShifts(shifts: any[]): string[] {
+    const validSlots: string[] = [];
+    shifts.forEach(shift => {
+      if (!shift.startTime || !shift.endTime || !shift.slotDuration) return;
+
+      const [startHour, startMin] = shift.startTime.split(':').map(Number);
+      const [endHour, endMin] = shift.endTime.split(':').map(Number);
+
+      if (isNaN(startHour) || isNaN(endHour) || shift.slotDuration <= 0) return;
+
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+
+      let currentMinutes = startMinutes;
+      while (currentMinutes + shift.slotDuration <= endMinutes) {
+        const h = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+        const m = (currentMinutes % 60).toString().padStart(2, '0');
+        validSlots.push(`${h}:${m}`);
+        currentMinutes += shift.slotDuration;
+      }
+    });
+    return validSlots;
+  }
+
+  private async findNextAvailableSlot(doctorId: string, startDate: Date, allShifts: any[]) {
+    const currentDate = new Date(startDate);
+    
+    // Look up to 30 days ahead to prevent infinite loops
+    for (let i = 0; i < 30; i++) {
+      const dayOfWeek = currentDate.getDay();
+      const shiftsForDay = allShifts.filter(s => s.dayOfWeek === dayOfWeek);
+
+      if (shiftsForDay.length > 0) {
+        const possibleSlots = this.generateSlotsForShifts(shiftsForDay);
+        
+        // Find booked slots for this date
+        const bookedAppointments = await this.prisma.appointment.findMany({
+          where: {
+            doctorId,
+            appointmentDate: currentDate,
+            status: { notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED, AppointmentStatus.NO_SHOW] }
+          }
+        });
+        const bookedTimes = bookedAppointments.map(a => {
+          const h = a.appointmentTime.getUTCHours().toString().padStart(2, '0');
+          const m = a.appointmentTime.getUTCMinutes().toString().padStart(2, '0');
+          return `${h}:${m}`;
+        });
+        
+        // Find the first slot that isn't booked
+        const availableSlot = possibleSlots.find(slot => !bookedTimes.includes(slot));
+        
+        if (availableSlot) {
+          return { date: new Date(currentDate), time: availableSlot };
+        }
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return null; // Could not find an available slot in the next 30 days
+  }
+
+  private async resolveScheduleConflicts(doctorProfileId: string) {
+    const futureAppointments = await this.prisma.appointment.findMany({
+      where: {
+        doctorId: doctorProfileId,
+        status: 'SCHEDULED',
+        appointmentDate: {
+          gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        }
+      },
+      include: { patient: true }
+    });
+
+    if (futureAppointments.length === 0) return;
+
+    const allShifts = await this.prisma.doctorShift.findMany({
+      where: { doctorId: doctorProfileId }
+    });
+
+    console.log(`Checking ${futureAppointments.length} future appointments for conflicts...`);
+
+    for (const appt of futureAppointments) {
+      const dayOfWeek = appt.appointmentDate.getDay();
+      const shiftsForDay = allShifts.filter(s => s.dayOfWeek === dayOfWeek);
+      const validSlots = this.generateSlotsForShifts(shiftsForDay);
+
+      const apptTimeStr = `${appt.appointmentTime.getUTCHours().toString().padStart(2, '0')}:${appt.appointmentTime.getUTCMinutes().toString().padStart(2, '0')}`;
+
+      if (!validSlots.includes(apptTimeStr)) {
+        console.log(`Conflict detected for appointment ID: ${appt.id} on ${appt.appointmentDate.toLocaleDateString()} at ${apptTimeStr}`);
+        
+        const newSlot = await this.findNextAvailableSlot(doctorProfileId, appt.appointmentDate, allShifts);
+        
+        if (newSlot) {
+          await this.prisma.appointment.update({
+            where: { id: appt.id },
+            data: {
+              appointmentDate: newSlot.date,
+              appointmentTime: new Date(`1970-01-01T${newSlot.time}:00.000Z`)
+            }
+          });
+
+          if (appt.patient.mobile) {
+            await this.smsWhatsappService.sendSms({
+              recipient: appt.patient.mobile,
+              content: `Alert: Your appointment originally on ${appt.appointmentDate.toLocaleDateString()} at ${apptTimeStr} has been automatically rescheduled to ${newSlot.date.toLocaleDateString()} at ${newSlot.time} due to a change in the doctor's schedule. Please contact us if you need to change this time.`,
+              patientId: appt.patient.id,
+            });
+          }
+        } else {
+          // Fallback: Cancel if no slot found
+          await this.prisma.appointment.update({
+            where: { id: appt.id },
+            data: { status: 'CANCELLED' }
+          });
+
+          if (appt.patient.mobile) {
+            await this.smsWhatsappService.sendSms({
+              recipient: appt.patient.mobile,
+              content: `Alert: Your appointment on ${appt.appointmentDate.toLocaleDateString()} at ${apptTimeStr} has been cancelled due to a change in the doctor's schedule and no available slots within 30 days. Please contact us to re-book.`,
+              patientId: appt.patient.id,
+            });
+          }
+        }
+      }
+    }
   }
 
   async getLeaves(id: string) {

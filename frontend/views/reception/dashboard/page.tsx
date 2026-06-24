@@ -265,8 +265,8 @@ const ReceptionDashboardView = () => {
   };
 
   let filteredQueue = queue.filter(entry => {
-    // Exclude completed/ended sessions from the Dashboard View
-    if (entry.status === 'COMPLETED' || entry.status === 'SESSION_ENDED') {
+    // Exclude completed/ended/cancelled sessions from the Dashboard View
+    if (entry.status === 'COMPLETED' || entry.status === 'SESSION_ENDED' || entry.status === 'CANCELLED') {
       return false;
     }
 
@@ -518,6 +518,7 @@ const ReceptionDashboardView = () => {
                      <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('checkInTime')}>Check In <SortIcon columnKey="checkInTime" /></th>
                      <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patientName')}>Patient Name <SortIcon columnKey="patientName" /></th>
                      <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('case.visitType')}>Visit For <SortIcon columnKey="case.visitType" /></th>
+                     <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('doctorName')}>Doctor <SortIcon columnKey="doctorName" /></th>
                      <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('age')}>Age <SortIcon columnKey="age" /></th>
                      <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.gender')}>Sex <SortIcon columnKey="patient.gender" /></th>
                      <th className="px-2 lg:px-3 py-3 cursor-pointer hover:bg-slate-100 transition-colors whitespace-nowrap border-r border-slate-100 last:border-0" onClick={() => handleSort('patient.address.city')}>Address <SortIcon columnKey="patient.address.city" /></th>
@@ -582,6 +583,9 @@ const ReceptionDashboardView = () => {
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[10px] font-bold text-slate-600 uppercase border-r border-slate-50">
                              {getVisitType(entry)}
                            </td>
+                           <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-bold text-slate-700 border-r border-slate-50">
+                             {entry.case?.doctor?.user?.name || entry.doctor?.user?.name || entry.doctor?.name || 'Unassigned'}
+                           </td>
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap text-[11px] font-black text-slate-700 border-r border-slate-50">
                              {entry.mrId ? '--' : entry.patient?.profile?.age || '--'}
                            </td>
@@ -596,10 +600,32 @@ const ReceptionDashboardView = () => {
                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">N/A</span>
                              ) : billing === 'FOC' ? (
                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-black uppercase tracking-widest border border-blue-200">FOC</span>
-                             ) : billing === 'PAID' ? (
-                               <span className="text-[10px] font-black text-slate-600 uppercase">PAID</span>
                              ) : (
-                               <span className="text-[10px] font-black text-rose-600 uppercase">PENDING</span>
+                               (() => {
+                                 const totalAmount = entry.case?.bill?.totalAmount || 0;
+                                 const paidAmount = entry.case?.bill?.paidAmount || 0;
+                                 const progress = totalAmount > 0 ? Math.min(100, Math.round((paidAmount / totalAmount) * 100)) : 0;
+                                 const isFullyPaid = progress === 100;
+                                 const isPartiallyPaid = progress > 0 && progress < 100;
+                                 
+                                 return (
+                                   <div className="flex flex-col gap-1 items-center justify-center w-[80px] mx-auto">
+                                     <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden flex">
+                                       <div 
+                                         className={`h-full ${isFullyPaid ? 'bg-green-500' : isPartiallyPaid ? 'bg-orange-500' : 'bg-transparent'}`} 
+                                         style={{ width: `${progress}%` }} 
+                                       />
+                                       <div 
+                                         className={`h-full ${!isFullyPaid ? 'bg-red-500' : 'bg-transparent'}`} 
+                                         style={{ width: `${100 - progress}%` }} 
+                                       />
+                                     </div>
+                                     <div className={`text-[9px] font-black tracking-widest uppercase ${isFullyPaid ? 'text-green-600' : isPartiallyPaid ? 'text-orange-600' : 'text-red-600'}`}>
+                                       {isFullyPaid ? 'PAID' : isPartiallyPaid ? 'PARTIAL' : 'PENDING'}
+                                     </div>
+                                   </div>
+                                 );
+                               })()
                              )}
                            </td>
                            <td className="px-2 lg:px-3 py-2.5 whitespace-nowrap border-r border-slate-50">

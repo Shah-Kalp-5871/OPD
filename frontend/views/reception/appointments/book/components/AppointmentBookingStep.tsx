@@ -68,6 +68,7 @@ const SlotGroup = ({
   selectedSlot,
   onSelect,
   isSubmitting,
+  emptyMessage,
 }: {
   label: string;
   icon: React.ReactNode;
@@ -75,6 +76,7 @@ const SlotGroup = ({
   selectedSlot: string | null;
   onSelect: (t: string) => void;
   isSubmitting: boolean;
+  emptyMessage?: string;
 }) => (
   <div className="space-y-2">
     <div className="flex items-center gap-2">
@@ -83,7 +85,7 @@ const SlotGroup = ({
       <span className="text-[8px] font-bold text-slate-300 ml-auto">{slots.length} slots</span>
     </div>
     {slots.length === 0 ? (
-      <p className="text-[10px] text-slate-300 italic pl-1">None available</p>
+      <p className="text-[10px] text-slate-300 italic pl-1">{emptyMessage || 'None available'}</p>
     ) : (
       <div className="flex flex-wrap gap-1.5">
         {slots.map((slot, i) => (
@@ -128,9 +130,27 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
   // Weekday offset so calendar grid aligns correctly (Mon = 0)
   const startOffset = (getDay(monthStart) + 6) % 7;
 
-  const morningSlots   = availableSlots.filter(s => parseInt(s.time, 10) < 12);
-  const afternoonSlots = availableSlots.filter(s => { const h = parseInt(s.time, 10); return h >= 12 && h < 16; });
-  const eveningSlots   = availableSlots.filter(s => parseInt(s.time, 10) >= 16);
+  // Filter out past slots if selectedDate is today
+  let filteredSlots = availableSlots;
+  if (isToday(selectedDate)) {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    filteredSlots = availableSlots.filter(s => {
+      const parts = s.time.split(':');
+      const slotHour = parseInt(parts[0], 10);
+      const slotMinute = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+      
+      if (slotHour > currentHour) return true;
+      if (slotHour === currentHour && slotMinute > currentMinute) return true;
+      return false; // Slot has passed
+    });
+  }
+
+  const morningSlots   = filteredSlots.filter(s => parseInt(s.time, 10) < 12);
+  const afternoonSlots = filteredSlots.filter(s => { const h = parseInt(s.time, 10); return h >= 12 && h < 16; });
+  const eveningSlots   = filteredSlots.filter(s => parseInt(s.time, 10) >= 16);
 
   const canBook = !!selectedSlot && !!selectedPatient && !isSubmitting;
 
@@ -342,27 +362,30 @@ export const AppointmentBookingStep: React.FC<AppointmentBookingStepProps> = ({
                 <div className="space-y-4">
                   <SlotGroup
                     label="Morning"
-                    icon={<Sunrise className="w-3.5 h-3.5 text-amber-400" />}
+                    icon={<Sunrise className="w-4 h-4 text-orange-400" />}
                     slots={morningSlots}
                     selectedSlot={selectedSlot}
                     onSelect={setSelectedSlot}
                     isSubmitting={isSubmitting}
+                    emptyMessage={isToday(selectedDate) ? 'Time passed' : 'None available'}
                   />
                   <SlotGroup
                     label="Afternoon"
-                    icon={<Sun className="w-3.5 h-3.5 text-orange-400" />}
+                    icon={<Sun className="w-4 h-4 text-orange-500" />}
                     slots={afternoonSlots}
                     selectedSlot={selectedSlot}
                     onSelect={setSelectedSlot}
                     isSubmitting={isSubmitting}
+                    emptyMessage={isToday(selectedDate) ? 'Time passed' : 'None available'}
                   />
                   <SlotGroup
                     label="Evening"
-                    icon={<Sunset className="w-3.5 h-3.5 text-indigo-400" />}
+                    icon={<Sunset className="w-4 h-4 text-indigo-400" />}
                     slots={eveningSlots}
                     selectedSlot={selectedSlot}
                     onSelect={setSelectedSlot}
                     isSubmitting={isSubmitting}
+                    emptyMessage={isToday(selectedDate) ? 'Time passed' : 'None available'}
                   />
                 </div>
               )}

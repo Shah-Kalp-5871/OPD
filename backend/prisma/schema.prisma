@@ -97,18 +97,12 @@ model DoctorProfile {
   specialization  String?
   consultationFee Decimal             @default(0.0) @db.Decimal(10, 2)
   licenseNumber   String?             @unique
-  appointmentGap  Int                 @default(10)
-  availableDays   String[]            @default([])
-  eveningEnd      String?
-  eveningStart    String?
-  morningEnd      String?
-  morningStart    String?
-  slotDuration    Int                 @default(15)
   departmentId    String?
   appointments    Appointment[]
   department      Department?         @relation(fields: [departmentId], references: [id])
   user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  schedules       DoctorSchedule[]
+  shifts          DoctorShift[]
+  shiftOverrides  DoctorShiftOverride[]
   leaves          DoctorLeave[]
   blockedSlots    DoctorBlockedSlot[]
 }
@@ -624,7 +618,6 @@ model Branch {
   consultations        ConsultationRecord[]  @relation("BranchConsultations")
   inventory            DrugInventory[]       @relation("BranchInventory")
   movements            StockMovement[]       @relation("BranchMovements")
-  schedules            DoctorSchedule[]      @relation("BranchSchedules")
   transfersOut         StockTransfer[]       @relation("TransfersOut")
   transfersIn          StockTransfer[]       @relation("TransfersIn")
   prescriptions        Prescription[]        @relation("BranchPrescriptions")
@@ -675,19 +668,31 @@ model Room {
   branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
 }
 
-model DoctorSchedule {
-  id        String        @id @default(uuid())
-  doctorId  String
-  branchId  String
-  dayOfWeek Int
-  startTime DateTime      @db.Time(6)
-  endTime   DateTime      @db.Time(6)
-  shiftType String
-  isActive  Boolean       @default(true)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  branch    Branch        @relation("BranchSchedules", fields: [branchId], references: [id])
+model DoctorShift {
+  id             String        @id @default(uuid())
+  doctorId       String
+  dayOfWeek      Int           // 0 (Sun) to 6 (Sat)
+  startTime      String        // e.g. "09:00"
+  endTime        String        // e.g. "13:00"
+  slotDuration   Int           @default(15)
+  appointmentGap Int           @default(0)
+  doctor         DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, dayOfWeek])
+}
+
+model DoctorShiftOverride {
+  id             String        @id @default(uuid())
+  doctorId       String
+  date           DateTime      @db.Date
+  startTime      String        // e.g. "09:00"
+  endTime        String        // e.g. "13:00"
+  slotDuration   Int           @default(15)
+  appointmentGap Int           @default(0)
+  isDeleted      Boolean       @default(false)
+  doctor         DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, date])
 }
 
 model ClinicSetting {

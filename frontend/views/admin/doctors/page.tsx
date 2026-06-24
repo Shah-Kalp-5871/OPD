@@ -102,11 +102,11 @@ const DoctorManagementView = () => {
                       <td className="px-8 py-5">
                         <div className="flex flex-col gap-1">
                           <span className="text-xs font-black text-slate-600">
-                            {doc.doctorProfile?.morningStart || '--:--'} - {doc.doctorProfile?.morningEnd || '--:--'}
+                            {doc.doctorProfile?.shifts?.length || 0} Active Shifts
                           </span>
-                          <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-amber-50 text-amber-600 px-2 py-0.5 rounded border border-amber-100/50 w-fit">
-                            <AlertCircle className="w-2.5 h-2.5" />
-                            Future Appointments Only
+                          <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 text-slate-500 px-2 py-0.5 rounded border border-slate-200/50 w-fit">
+                            <Clock className="w-2.5 h-2.5" />
+                            Custom Scheduled
                           </div>
                         </div>
                       </td>

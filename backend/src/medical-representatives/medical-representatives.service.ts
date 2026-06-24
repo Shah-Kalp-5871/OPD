@@ -68,7 +68,7 @@ export class MedicalRepresentativesService {
       
       const expectedTime = new Date();
       expectedTime.setHours(hours, minutes, 0, 0);
-      const duration = doctorProfile.slotDuration || 15;
+      const duration = 15; // default slot duration for MR
       const endTime = new Date(startTime.getTime() + duration * 60000);
 
       await tx.doctorBlockedSlot.create({

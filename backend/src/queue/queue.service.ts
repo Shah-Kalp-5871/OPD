@@ -393,6 +393,8 @@ export class QueueService {
             bill: {
               select: {
                 paymentStatus: true,
+                netAmount: true,
+                paidAmount: true,
               },
             },
             vitalsList: {

@@ -125,11 +125,21 @@ async function main() {
           specialization: 'General Physician',
           consultationFee: 500,
           licenseNumber: 'GMC-12345',
-          availableDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'],
-          morningStart: '09:00',
-          morningEnd: '13:00',
-          eveningStart: '17:00',
-          eveningEnd: '21:00',
+          shifts: {
+            create: [
+              { dayOfWeek: 1, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 1, startTime: '17:00', endTime: '21:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 2, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 2, startTime: '17:00', endTime: '21:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 3, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 3, startTime: '17:00', endTime: '21:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 4, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 4, startTime: '17:00', endTime: '21:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 5, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 5, startTime: '17:00', endTime: '21:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 6, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+            ]
+          }
         },
       },
     },
@@ -145,12 +155,23 @@ async function main() {
       role: Role.DOCTOR,
       doctorProfile: {
         create: {
-          specialization: 'Dermatologist',
-          consultationFee: 800,
-          licenseNumber: 'GMC-67890',
-          availableDays: ['MONDAY', 'WEDNESDAY', 'FRIDAY'],
-          morningStart: '10:00',
-          morningEnd: '14:00',
+            specialization: 'Cardiologist',
+            consultationFee: 500,
+            licenseNumber: 'LIC-12345',
+            shifts: {
+              create: [
+                { dayOfWeek: 1, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 1, startTime: '15:00', endTime: '18:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 2, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 2, startTime: '15:00', endTime: '18:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 3, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 3, startTime: '15:00', endTime: '18:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 4, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 4, startTime: '15:00', endTime: '18:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 5, startTime: '09:00', endTime: '13:00', slotDuration: 15, appointmentGap: 0 },
+                { dayOfWeek: 5, startTime: '15:00', endTime: '18:00', slotDuration: 15, appointmentGap: 0 },
+              ]
+            }
         },
       },
     },
@@ -183,9 +204,17 @@ async function main() {
           specialization: 'General Practice',
           consultationFee: 300,
           licenseNumber: 'GMC-TEST',
-          availableDays: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
-          morningStart: '08:00',
-          morningEnd: '20:00',
+          shifts: {
+            create: [
+              { dayOfWeek: 1, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 2, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 3, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 4, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 5, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 6, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+              { dayOfWeek: 0, startTime: '08:00', endTime: '20:00', slotDuration: 15, appointmentGap: 0 },
+            ]
+          }
         },
       },
     },
@@ -293,129 +322,7 @@ async function main() {
     });
   }
 
-  // 2. Create Sample Patients
-  console.log('Creating sample patients...');
-  const patient1 = await prisma.patient.upsert({
-    where: { mrdNumber: 'MRD-001' },
-    update: {},
-    create: {
-      mrdNumber: 'MRD-001',
-      firstName: 'Rajesh',
-      lastName: 'Kumar',
-      mobile: '9876543210',
-      gender: 'MALE',
-      profileCompletionStatus: 100,
-      profile: {
-        create: {
-          age: 45,
-          bloodGroup: 'O+',
-          address: '123, Lotus Valley',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-        },
-      },
-    },
-  });
-
-  const patient2 = await prisma.patient.upsert({
-    where: { mrdNumber: 'MRD-002' },
-    update: {},
-    create: {
-      mrdNumber: 'MRD-002',
-      firstName: 'Priya',
-      lastName: 'Sharma',
-      mobile: '9123456789',
-      gender: 'FEMALE',
-      profileCompletionStatus: 80,
-      profile: {
-        create: {
-          age: 32,
-          bloodGroup: 'B+',
-          address: 'Apartment 4B, Green Heights',
-          city: 'Pune',
-          state: 'Maharashtra',
-        },
-      },
-    },
-  });
-
-  // 3. Create Sample Cases
-  console.log('Creating sample clinical cases...');
-  
-  // Active Case for Rajesh with Dr. Shah
-  await prisma.patientCase.upsert({
-    where: { caseNumber_branchId: { caseNumber: 'CASE-2024-001', branchId } },
-    update: {},
-    create: {
-      caseNumber: 'CASE-2024-001',
-      patientId: patient1.id,
-      doctorId: drShah.id,
-      visitType: 'CONSULTATION',
-      priority: 'NORMAL',
-      complaint: 'Fever and cold since 2 days',
-      status: 'OPEN',
-      stage: CaseStage.NURSING,
-      branchId,
-      queueEntry: {
-        create: {
-          tokenDisplay: 'DR-SHAH-001',
-          tokenNumber: 1,
-          queueType: QueueType.OPD,
-          status: QueueStatus.WAITING,
-          patientId: patient1.id,
-          doctorId: drShah.id,
-          branchId,
-        }
-      }
-    }
-  });
-
-  // Completed Case for Priya with Dr. Mehta
-  const case2 = await prisma.patientCase.upsert({
-    where: { caseNumber_branchId: { caseNumber: 'CASE-2024-002', branchId } },
-    update: {},
-    create: {
-      caseNumber: 'CASE-2024-002',
-      patientId: patient2.id,
-      doctorId: drMehta.id,
-      visitType: 'CONSULTATION',
-      priority: 'NORMAL',
-      complaint: 'Skin rash on arm',
-      status: 'CLOSED',
-      stage: CaseStage.COMPLETED,
-      branchId,
-    }
-  });
-
-  // Add a bill for the completed case
-  await prisma.bill.upsert({
-    where: { caseId: case2.id },
-    update: {},
-    create: {
-      billNumber: 'BILL-2024-001',
-      caseId: case2.id,
-      patientId: patient2.id,
-      grossAmount: 800,
-      netAmount: 800,
-      paidAmount: 800,
-      balanceAmount: 0,
-      paymentStatus: 'PAID',
-      paymentMode: 'CASH',
-      branchId,
-      items: {
-        create: [
-          {
-            serviceName: 'Consultation Fee',
-            quantity: 1,
-            unitPrice: 800,
-            totalPrice: 800,
-            branchId,
-          }
-        ]
-      }
-    }
-  });
-
+  // No sample patients or cases. Clean slate for manual testing.
   // 4. Create Lab Masters
   console.log('Creating lab masters...');
   const hematology = await prisma.labCategory.upsert({
