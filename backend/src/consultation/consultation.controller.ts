@@ -126,6 +126,10 @@ export class ConsultationController {
       caseId,
       dto.procedureId,
       dto.notes || '',
+      dto.scheduledDate,
+      dto.scheduledTime,
+      dto.sessions,
+      dto.isCompletedByDoctor,
       req.user.id,
       branchId,
     );
@@ -215,6 +219,40 @@ export class ConsultationController {
     return this.consultationService.processInvestigationUpload(
       orderId,
       file,
+      req.user.id,
+      branchId,
+    );
+  }
+
+  @Get(':caseId/documents')
+  @Roles('DOCTOR', 'ADMIN', 'NURSING')
+  async getPatientDocuments(
+    @Param('caseId') caseId: string,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.getPatientDocuments(caseId, branchId);
+  }
+
+  @Post(':caseId/documents')
+  @Roles('DOCTOR', 'ADMIN', 'NURSING')
+  @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_MULTER_OPTIONS))
+  async uploadPatientDocument(
+    @Param('caseId') caseId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { documentType?: string; labName?: string; reportDate?: string },
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Document file is required');
+    }
+
+    return this.consultationService.uploadPatientDocument(
+      caseId,
+      file,
+      body.documentType,
+      body.labName,
+      body.reportDate,
       req.user.id,
       branchId,
     );

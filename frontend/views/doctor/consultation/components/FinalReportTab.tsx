@@ -132,10 +132,14 @@ const FinalReportTab: React.FC<FinalReportTabProps> = ({ caseId, data, onFinaliz
                    <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
                       <Heart className="w-6 h-6 text-white fill-white" />
                    </div>
-                   <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">MedFlow <span className="font-light">Clinic</span></h1>
+                   <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">{data?.case?.branch?.name || 'MedFlow Clinic'}</h1>
                 </div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reg No: MH/2026/001452</p>
-                <p className="text-[10px] font-medium text-slate-400 max-w-[200px]">123 Healthcare Boulevard, Medical District, City Center</p>
+                {data?.case?.branch?.registrationNumber && (
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reg No: {data?.case?.branch?.registrationNumber}</p>
+                )}
+                {data?.case?.branch?.address && (
+                  <p className="text-[10px] font-medium text-slate-400 max-w-[200px]">{data?.case?.branch?.address}</p>
+                )}
               </div>
               <div className="text-right">
                 <Badge variant="blue" className="mb-2 uppercase tracking-widest text-[9px] px-3">Discharge Summary</Badge>

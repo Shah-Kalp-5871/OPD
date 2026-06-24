@@ -20,6 +20,10 @@ Based on the updated requirements in `OPD-NEW-06042026-3.pdf` and its extracted 
     *   Always active for Doctor-Nursing messaging.
     *   Shows Payment Received (Patient name + amount), Return Amount.
     *   Clicking it opens Daily Payment History.
+*   **Payment & Check-in Flow:**
+    *   Payment module opens during check-in or when the patient is marked 'Arrived'.
+    *   Receptionist can choose to take payment or click "Pay Later", which leaves the unpaid balance on the patient's file.
+    *   System supports highly flexible custom payments (e.g., pay for 1 session, 2 sessions, all at once, or all at the last session).
 *   **Next Patient Indicator:**
     *   When the current patient is IN, the Next Patient's name blinks until selected.
     *   Shows: Case No | Time | Patient Name | Visit For | Age | Gender | Address | Payment Status | Mobile No.
@@ -114,11 +118,12 @@ Based on the updated requirements in `OPD-NEW-06042026-3.pdf` and its extracted 
     *   Payment Status.
 *   **Consent Form Integration:**
     *   Auto-selects Consent Form based on procedure.
-    *   Auto-populates: Patient Name, M/F, Age, Place, IPD No, MRD No, Procedure Name, Date.
-    *   Doctor can edit, swap templates, or generate copies for Reception/Nursing.
+    *   Doctor is provided with simple text box inputs to fill out (e.g., specific risks, notes).
+    *   These text box values automatically set into the final consent form template.
+    *   System provides options for both Print buttons (e.g., printing different formats or versions).
 *   **Notes & Workflow:**
     *   Pre-Procedure Notes & Post-Procedure Notes (Auto-added from template, editable).
-    *   **Payment & Approval Workflow:** If payment is made but doctor approval is pending, it flags as "Approval Pending". Remaining payment updates automatically after approval.
+    *   **Payment & Approval Workflow:** System supports fully flexible custom session payments. Patients can pay for 1 session, multiple sessions, or all sessions at once or later. Unpaid balances remain on the patient's file.
     *   **Missed Procedures:** If a patient is advised a procedure but doesn't take it, it saves to "Special Note". If they return later, the doctor can add it directly from the Previous Procedure List.
 
 ---

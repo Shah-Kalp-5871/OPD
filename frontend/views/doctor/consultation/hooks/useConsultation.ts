@@ -40,7 +40,13 @@ export const useConsultation = (caseId: string) => {
            surgicalHistory: fetchedData.case.visitComplaint.pastSurgical || '',
            obstetricHistory: fetchedData.case.visitComplaint.obstetricHistory || '',
            allergies: fetchedData.case.visitComplaint.allergies || '',
+           patientFeedback: fetchedData.case.visitComplaint.patientFeedback || '',
          };
+      }
+
+      // Merge vitals
+      if (!fetchedData.vitals && fetchedData?.case?.vitalsList?.[0]) {
+        fetchedData.vitals = { ...fetchedData.case.vitalsList[0] };
       }
 
       setData(fetchedData);
@@ -98,6 +104,14 @@ export const useConsultation = (caseId: string) => {
     setDirty(true);
   };
 
+  const updateVitals = (field: string, value: any) => {
+    setData((prev: any) => ({
+      ...prev,
+      vitals: { ...prev.vitals, [field]: value }
+    }));
+    setDirty(true);
+  };
+
   const saveManually = async () => {
     if (!data) return;
     const payload = {
@@ -106,6 +120,7 @@ export const useConsultation = (caseId: string) => {
         duration: data.complaint.duration ? parseInt(data.complaint.duration) : null
       } : undefined,
       history: data.history,
+      vitals: data.vitals,
       provisionalDiagnosis: data.consultation?.provisionalDiagnosis,
       finalDiagnosis: data.consultation?.finalDiagnosis,
       treatmentPlan: data.consultation?.treatmentPlan,
@@ -126,6 +141,7 @@ export const useConsultation = (caseId: string) => {
             duration: data.complaint.duration ? parseInt(data.complaint.duration) : null
           } : undefined,
           history: data.history,
+          vitals: data.vitals,
           provisionalDiagnosis: data.consultation?.provisionalDiagnosis,
           finalDiagnosis: data.consultation?.finalDiagnosis,
           treatmentPlan: data.consultation?.treatmentPlan,
@@ -147,6 +163,7 @@ export const useConsultation = (caseId: string) => {
     updateComplaint,
     updateHistory,
     updateConsultation,
+    updateVitals,
     saveManually,
     refresh: fetchData
   };

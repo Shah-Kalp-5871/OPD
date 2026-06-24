@@ -42,6 +42,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
   const [frequency, setFrequency] = useState('1-0-1');
   const [duration, setDuration] = useState(5);
   const [instructions, setInstructions] = useState('After Food');
+  const [route, setRoute] = useState('Oral');
   const [isSimple, setIsSimple] = useState(false);
 
   const [aiSafetyReport, setAiSafetyReport] = useState<any>(null);
@@ -111,8 +112,10 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       frequency,
       duration,
       instructions,
+      route,
       formulation: currentDrug.formulation,
       isSimple,
+      unitPrice: Number(currentDrug.unitPrice) || 0,
       totalQty: qty
     };
 
@@ -123,6 +126,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     setFrequency('1-0-1');
     setDuration(5);
     setInstructions('After Food');
+    setRoute('Oral');
     setIsSimple(false);
   };
 
@@ -231,8 +235,16 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                       </div>
                       <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight italic">{drug.genericName}</p>
                       <div className="flex items-center gap-3 mt-2">
+                        {drug.schedule && (
+                          <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100/50">
+                            <AlertTriangle className="w-3 h-3" /> {drug.schedule}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100/50">
                           <CheckCircle2 className="w-3 h-3" /> {drug.inventory?.totalStock || 0} In Stock
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500">
+                          ₹{Number(drug.unitPrice || 0).toFixed(2)} / unit
                         </span>
                       </div>
                     </div>
@@ -291,6 +303,16 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                 </div>
               </div>
 
+              {currentDrug.schedule && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-amber-900 font-bold text-xs uppercase tracking-wider mb-1">Restricted Drug ({currentDrug.schedule})</h4>
+                    <p className="text-[10px] text-amber-700 font-medium">This drug falls under a restricted schedule. Please ensure appropriate consent and diagnosis before prescribing.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input 
@@ -304,7 +326,10 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                 
                 <div className="text-right">
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Qty: </span>
-                   <span className="text-lg font-black text-blue-600">{calculateQty(frequency, duration)}</span>
+                   <span className="text-lg font-black text-blue-600 mr-4">{calculateQty(frequency, duration)}</span>
+                   
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Est Cost: </span>
+                   <span className="text-lg font-black text-emerald-600">₹{((Number(calculateQty(frequency, duration)) || 0) * (Number(currentDrug.unitPrice) || 0)).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -329,7 +354,23 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
               </div>
 
               <div className="space-y-4">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Clinical Instructions</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Route & Instructions</label>
+                <div className="flex flex-wrap gap-2.5 mb-2">
+                  {['Oral', 'IV', 'IM', 'Topical', 'Subcutaneous', 'Inhalation'].map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setRoute(r)}
+                      className={`
+                        px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border
+                        ${route === r 
+                          ? 'bg-blue-100 text-blue-700 border-blue-200' 
+                          : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}
+                      `}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex flex-wrap gap-2.5 mb-3">
                   {['After Food', 'Before Food', 'Empty Stomach', 'With Milk', 'SOS'].map(inst => (
                     <button
@@ -376,7 +417,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
               </div>
               <div>
                 <h2 className="text-slate-900 font-black text-base leading-none mb-1">Prescription Hub</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedItems.length} Items Selected</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedItems.length} Items • Est Total: ₹{selectedItems.reduce((acc, curr) => acc + ((curr.totalQty || 0) * (curr.unitPrice || 0)), 0).toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -458,7 +499,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 uppercase tracking-tighter">
-                          {item.dosage}
+                          {item.dosage} {item.route ? `(${item.route})` : ''}
                         </span>
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                           {item.frequency} • {item.duration} Days

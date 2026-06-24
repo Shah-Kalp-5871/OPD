@@ -452,6 +452,7 @@ model ConsultationRecord {
   updatedAt            DateTime           @updatedAt
   statusEnum           ConsultationStatus @default(DRAFT)
   provisionalDiagnosis String?
+  differentialDiagnosis String?
   finalDiagnosis       String?
   treatmentPlan        String?
   advice               String?
@@ -1139,6 +1140,7 @@ model PrescriptionItem {
   dosage         String
   frequency      String
   duration       Int
+  route          String?
   instructions   String?
   isDispensed    Boolean      @default(false)
   createdAt      DateTime     @default(now())

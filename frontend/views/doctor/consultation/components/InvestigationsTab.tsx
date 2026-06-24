@@ -42,10 +42,23 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
   const [submitting, setSubmitting] = useState(false);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const [activeSubTab, setActiveSubTab] = useState<'ORDER' | 'RESULTS'>('ORDER');
+  
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+    fetchDocuments();
+  }, [caseId]);
+
+  const fetchDocuments = async () => {
+    try {
+      const res = await api.get(`/consultation/${caseId}/documents`);
+      setDocuments(res.data);
+    } catch (error) {
+      console.error('Failed to fetch documents', error);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -96,6 +109,31 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
       toast.error('Failed to place investigation orders');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    try {
+      setUploadingDoc(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', 'LAB_REPORT');
+      
+      await api.post(`/consultation/${caseId}/documents`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Document uploaded successfully');
+      fetchDocuments();
+    } catch (error) {
+      console.error('Upload failed', error);
+      toast.error('Failed to upload document');
+    } finally {
+      setUploadingDoc(false);
+      // reset file input
+      e.target.value = '';
     }
   };
 
@@ -373,30 +411,25 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
               <History className="w-5 h-5 text-indigo-500" /> Previous Reports
             </h3>
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
-              <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-                    <FileText className="w-5 h-5" />
+              {documents.map(doc => (
+                <div key={doc.id} onClick={() => window.open(doc.fileUrl, '_blank')} className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300 transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900">{doc.documentType || 'Lab Report'}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{new Date(doc.createdAt).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-black text-slate-900">Complete Blood Count (CBC)</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">12 May 2026</p>
-                  </div>
+                  <Badge variant="slate" className="text-[8px]">{doc.fileUrl?.split('.').pop()?.toUpperCase() || 'FILE'}</Badge>
                 </div>
-                <Badge variant="slate" className="text-[8px]">PDF</Badge>
-              </div>
-              <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black text-slate-900">Liver Function Test (LFT)</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">01 Mar 2026</p>
-                  </div>
+              ))}
+              {documents.length === 0 && (
+                <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest">
+                  No previous reports found
                 </div>
-                <Badge variant="slate" className="text-[8px]">PDF</Badge>
-              </div>
+              )}
             </div>
           </div>
 
@@ -406,7 +439,17 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
               <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest flex items-center gap-2">
                 <Activity className="w-5 h-5 text-emerald-500" /> Enter Lab Values
               </h3>
-              <Button size="sm" variant="secondary" icon={<Plus className="w-4 h-4"/>}>Upload New Report</Button>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                  onChange={handleFileUpload} 
+                  accept=".pdf,image/*" 
+                />
+                <Button size="sm" variant="secondary" icon={uploadingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4"/>}>
+                  {uploadingDoc ? 'Uploading...' : 'Upload New Report'}
+                </Button>
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin">
@@ -419,31 +462,19 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  <tr>
-                    <td className="py-4 px-4 text-xs font-bold text-slate-700">Hemoglobin (Hb)</td>
-                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
-                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">13.8 - 17.2 g/dL</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 px-4 text-xs font-bold text-slate-700">Total WBC Count</td>
-                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
-                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">4,500 - 11,000 /mcL</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 px-4 text-xs font-bold text-slate-700">ESR</td>
-                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
-                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">0 - 22 mm/hr</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 px-4 text-xs font-bold text-slate-700">Fasting Blood Sugar</td>
-                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24 border-rose-300 bg-rose-50 text-rose-700" defaultValue="140" /></td>
-                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">70 - 100 mg/dL</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 px-4 text-xs font-bold text-slate-700">SGPT (ALT)</td>
-                    <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
-                    <td className="py-4 px-4 text-[10px] font-medium text-slate-500">7 - 56 U/L</td>
-                  </tr>
+                  {data?.investigationOrders?.length > 0 ? (
+                    data.investigationOrders.map((order: any) => (
+                      <tr key={order.id}>
+                        <td className="py-4 px-4 text-xs font-bold text-slate-700">{order.results?.[0]?.parameter?.name || order.labParameter?.name || 'Unknown Test'}</td>
+                        <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
+                        <td className="py-4 px-4 text-[10px] font-medium text-slate-500">{order.results?.[0]?.parameter?.normalRange || order.labParameter?.normalRange || 'N/A'}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-xs font-medium text-slate-400 italic">No lab parameters ordered yet.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

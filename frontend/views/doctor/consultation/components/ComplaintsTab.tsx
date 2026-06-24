@@ -19,6 +19,7 @@ interface ComplaintsTabProps {
   data: any;
   updateComplaint: (field: string, value: any) => void;
   updateHistory: (field: string, value: any) => void;
+  updateVitals: (field: string, value: any) => void;
   patientGender: string;
 }
 
@@ -26,13 +27,31 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
   data, 
   updateComplaint, 
   updateHistory,
+  updateVitals,
   patientGender 
 }) => {
   const complaint = data?.complaint || {};
   const history = data?.history || {};
+  const vitals = data?.vitals || {};
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Vitals Section */}
+      <Card 
+        title="Patient Vitals" 
+        subtitle="Editable vitals taken during this session."
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <Input label="Height (cm)" type="number" value={vitals.height || ''} onChange={(e) => updateVitals('height', parseFloat(e.target.value))} placeholder="cm" />
+          <Input label="Weight (kg)" type="number" value={vitals.weight || ''} onChange={(e) => updateVitals('weight', parseFloat(e.target.value))} placeholder="kg" />
+          <Input label="BMI" type="number" value={vitals.bmi || ''} onChange={(e) => updateVitals('bmi', parseFloat(e.target.value))} placeholder="Auto" disabled />
+          <Input label="Temp (°F)" type="number" value={vitals.temperature || ''} onChange={(e) => updateVitals('temperature', parseFloat(e.target.value))} placeholder="°F" />
+          <Input label="Pulse (bpm)" type="number" value={vitals.pulse || ''} onChange={(e) => updateVitals('pulse', parseInt(e.target.value))} placeholder="bpm" />
+          <Input label="BP (mmHg)" value={vitals.bloodPressure || ''} onChange={(e) => updateVitals('bloodPressure', e.target.value)} placeholder="120/80" />
+          <Input label="SpO2 (%)" type="number" value={vitals.spo2 || ''} onChange={(e) => updateVitals('spo2', parseInt(e.target.value))} placeholder="%" />
+        </div>
+      </Card>
+
       {/* Chief Complaints Section */}
       <Card 
         title="Chief Complaints & Present Illness" 
@@ -203,6 +222,13 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
           value={history.nursingNotes} 
           onChange={(val) => updateHistory('nursingNotes', val)}
           placeholder="Nursing-specific observation notes..."
+        />
+        <HistoryCard 
+          icon={<FileText className="w-4 h-4" />} 
+          label="Patient Feedback" 
+          value={history.patientFeedback} 
+          onChange={(val) => updateHistory('patientFeedback', val)}
+          placeholder="Pre typing by nursing..."
         />
       </div>
     </div>

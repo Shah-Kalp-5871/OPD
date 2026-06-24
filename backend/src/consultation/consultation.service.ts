@@ -304,7 +304,9 @@ export class ConsultationService {
               dosage: item.dosage,
               frequency: item.frequency,
               duration: item.duration,
+              route: item.route,
               instructions: item.instructions,
+              isDispensed: false,
               branch: { connect: { id: branchId } },
             })),
           },
@@ -340,6 +342,10 @@ export class ConsultationService {
     caseId: string,
     procedureId: string,
     notes: string,
+    scheduledDate: string | undefined,
+    scheduledTime: string | undefined,
+    sessions: number | undefined,
+    isCompletedByDoctor: boolean | undefined,
     doctorId: string,
     branchId: string,
   ) {
@@ -353,14 +359,33 @@ export class ConsultationService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const actualSessions = sessions || 1;
+      let status: any = 'SCHEDULED';
+      
+      // Check if requires consent and consent not yet done (this is a simplified check, adjust if needed)
+      // Usually if the bill is > 5000, we mark as APPROVAL_PENDING.
+      const procedure = await tx.procedure.findUnique({ where: { id: procedureId } });
+      const estCost = (Number(procedure?.basePrice) || 0) * actualSessions;
+      
+      if (estCost > 5000) {
+        status = 'APPROVAL_PENDING';
+      }
+      
+      if (isCompletedByDoctor) {
+        status = 'COMPLETED';
+      }
+      
+      const sessionDate = scheduledDate ? new Date(`${scheduledDate}T${scheduledTime || '00:00:00'}`) : null;
+
       const session = await tx.procedureSession.create({
         data: {
           caseId,
           procedureId,
           doctorId,
           branchId,
-          status: 'SCHEDULED',
+          status,
           notes,
+          ...(isCompletedByDoctor ? { startTime: new Date(), endTime: new Date() } : {}),
         },
         include: { procedure: true },
       });
@@ -384,7 +409,7 @@ export class ConsultationService {
         [
           {
             serviceName: session.procedure.name,
-            quantity: 1,
+            quantity: actualSessions,
             unitPrice: session.procedure.basePrice,
             discount: 0,
             itemType: 'PROCEDURE',
@@ -604,10 +629,12 @@ export class ConsultationService {
       complaint,
       history,
       provisionalDiagnosis,
+      differentialDiagnosis,
       finalDiagnosis,
       treatmentPlan,
       advice,
       nextVisitDate,
+      vitals,
     } = dto;
 
     return this.prisma.$transaction(async (tx) => {
@@ -642,12 +669,71 @@ export class ConsultationService {
             updatedAt: new Date(),
           },
         });
+        
+        // Update nursing notes and patient feedback on VisitComplaint if present
+        if (history.nursingNotes !== undefined || history.patientFeedback !== undefined) {
+          const visitComplaint = await tx.visitComplaint.findUnique({
+            where: { caseId: consultation.caseId }
+          });
+          if (visitComplaint) {
+            await tx.visitComplaint.update({
+              where: { id: visitComplaint.id },
+              data: {
+                nursingNotes: history.nursingNotes !== undefined ? history.nursingNotes : visitComplaint.nursingNotes,
+                patientFeedback: history.patientFeedback !== undefined ? history.patientFeedback : visitComplaint.patientFeedback,
+              }
+            });
+          }
+        }
+      }
+
+      if (vitals) {
+        const existingVitals = await tx.patientVitals.findFirst({
+          where: { caseId: consultation.caseId },
+          orderBy: { takenAt: 'desc' }
+        });
+
+        if (existingVitals) {
+          await tx.patientVitals.update({
+            where: { id: existingVitals.id },
+            data: {
+              height: vitals.height,
+              weight: vitals.weight,
+              bmi: vitals.bmi,
+              bloodPressure: vitals.bloodPressure,
+              pulse: vitals.pulse,
+              temperature: vitals.temperature,
+              spo2: vitals.spo2,
+            }
+          });
+        } else {
+          // fetch patientId
+          const patientCase = await tx.patientCase.findUnique({ where: { id: consultation.caseId }});
+          if (patientCase) {
+             await tx.patientVitals.create({
+               data: {
+                 patientId: patientCase.patientId,
+                 caseId: patientCase.id,
+                 branchId: branchId,
+                 takenById: userId,
+                 height: vitals.height,
+                 weight: vitals.weight,
+                 bmi: vitals.bmi,
+                 bloodPressure: vitals.bloodPressure,
+                 pulse: vitals.pulse,
+                 temperature: vitals.temperature,
+                 spo2: vitals.spo2,
+               }
+             });
+          }
+        }
       }
 
       const result = await tx.consultationRecord.update({
         where: { id: consultation.id },
         data: {
           provisionalDiagnosis,
+          differentialDiagnosis,
           finalDiagnosis,
           treatmentPlan,
           advice,
@@ -775,6 +861,49 @@ export class ConsultationService {
       });
 
       return file;
+    });
+  }
+
+  async getPatientDocuments(caseId: string, branchId: string) {
+    const patientCase = await this.prisma.patientCase.findFirst({
+      where: { id: caseId, branchId },
+    });
+    if (!patientCase) {
+      throw new NotFoundException(`Patient Case not found`);
+    }
+
+    return this.prisma.patientDocument.findMany({
+      where: { patientId: patientCase.patientId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async uploadPatientDocument(
+    caseId: string,
+    file: Express.Multer.File,
+    documentType: string | undefined,
+    labName: string | undefined,
+    reportDate: string | undefined,
+    userId: string,
+    branchId: string,
+  ) {
+    const patientCase = await this.prisma.patientCase.findFirst({
+      where: { id: caseId, branchId },
+    });
+    if (!patientCase) {
+      throw new NotFoundException(`Patient Case not found`);
+    }
+
+    const savedFile = await this.fileStorage.saveFile(file, 'lab', userId);
+
+    return this.prisma.patientDocument.create({
+      data: {
+        patientId: patientCase.patientId,
+        documentType: documentType || 'LAB_REPORT',
+        labName,
+        reportDate: reportDate ? new Date(reportDate) : new Date(),
+        fileUrl: savedFile.url,
+      },
     });
   }
 }

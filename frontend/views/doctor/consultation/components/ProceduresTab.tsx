@@ -24,6 +24,7 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
   const [scheduledDate, setScheduledDate] = useState<string>('');
   const [scheduledTime, setScheduledTime] = useState<string>('');
   const [sessionsCount, setSessionsCount] = useState<number>(1);
+  const [isCompletedByDoctor, setIsCompletedByDoctor] = useState<boolean>(false);
   
   // Consent Modal State
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
@@ -46,7 +47,8 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
         notes,
         scheduledDate,
         scheduledTime,
-        sessions: sessionsCount
+        sessions: sessionsCount,
+        isCompletedByDoctor
       });
       toast.success(`Procedure "${selectedProcedure.name}" scheduled successfully`);
       setSelectedProcedure(null);
@@ -54,6 +56,7 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
       setScheduledDate('');
       setScheduledTime('');
       setSessionsCount(1);
+      setIsCompletedByDoctor(false);
       if (onProcedureAdded) onProcedureAdded(true);
     } catch (error) {
       console.error('Failed to schedule procedure', error);
@@ -319,6 +322,24 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
                       className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-blue-600 cursor-pointer"
                     />
                   </div>
+
+                  <div className="mt-5 bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="completedByDoctor"
+                      checked={isCompletedByDoctor}
+                      onChange={(e) => setIsCompletedByDoctor(e.target.checked)}
+                      className="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                    />
+                    <div>
+                      <label htmlFor="completedByDoctor" className="text-sm font-bold text-slate-800 cursor-pointer">
+                        Mark as "Done by Doctor"
+                      </label>
+                      <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                        Skip nursing queue. The procedure will be marked as COMPLETED instantly and billed.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className={`${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'} border rounded-2xl p-5 flex gap-4 transition-colors`}>
@@ -392,7 +413,7 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
                   <tr key={order.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="py-4 px-6">
                       <div className="font-bold text-slate-900">{order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'}</div>
-                      <div className="text-[10px] text-slate-400 font-medium">Dr. Valaki (Auto)</div>
+                      <div className="text-[10px] text-slate-400 font-medium">Dr. {data?.doctor?.name} (Auto)</div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">

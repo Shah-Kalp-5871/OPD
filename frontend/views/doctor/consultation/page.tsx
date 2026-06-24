@@ -47,6 +47,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
     lastSaved, 
     updateComplaint, 
     updateHistory,
+    updateVitals,
     refresh
   } = useConsultation(caseId);
   
@@ -87,6 +88,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             data={data} 
             updateComplaint={updateComplaint} 
             updateHistory={updateHistory}
+            updateVitals={updateVitals}
             patientGender={patient?.gender}
           />
         );

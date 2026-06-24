@@ -51,6 +51,10 @@ export class PrescriptionItemDto {
 
   @IsString()
   @IsOptional()
+  route?: string;
+
+  @IsString()
+  @IsOptional()
   instructions?: string;
 }
 
@@ -72,6 +76,22 @@ export class CreateProcedureSessionDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isCompletedByDoctor?: boolean;
+
+  @IsString()
+  @IsOptional()
+  scheduledDate?: string;
+
+  @IsString()
+  @IsOptional()
+  scheduledTime?: string;
+
+  @IsNumber()
+  @IsOptional()
+  sessions?: number;
 }
 
 export class ComplaintUpdateDto {
@@ -136,6 +156,44 @@ export class ClinicalHistoryUpdateDto {
   @IsString()
   @IsOptional()
   chronicDiseases?: string;
+
+  @IsString()
+  @IsOptional()
+  nursingNotes?: string;
+
+  @IsString()
+  @IsOptional()
+  patientFeedback?: string;
+}
+
+export class VitalsUpdateDto {
+  @IsNumber()
+  @IsOptional()
+  height?: number;
+
+  @IsNumber()
+  @IsOptional()
+  weight?: number;
+
+  @IsNumber()
+  @IsOptional()
+  bmi?: number;
+
+  @IsString()
+  @IsOptional()
+  bloodPressure?: string;
+
+  @IsNumber()
+  @IsOptional()
+  pulse?: number;
+
+  @IsNumber()
+  @IsOptional()
+  temperature?: number;
+
+  @IsNumber()
+  @IsOptional()
+  spo2?: number;
 }
 
 export class UpdateConsultationDto {
@@ -155,6 +213,10 @@ export class UpdateConsultationDto {
 
   @IsString()
   @IsOptional()
+  differentialDiagnosis?: string;
+
+  @IsString()
+  @IsOptional()
   finalDiagnosis?: string;
 
   @IsString()
@@ -168,6 +230,11 @@ export class UpdateConsultationDto {
   @IsString()
   @IsOptional()
   nextVisitDate?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VitalsUpdateDto)
+  vitals?: VitalsUpdateDto;
 }
 
 export class FinalizeConsultationDto {
