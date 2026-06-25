@@ -10,7 +10,7 @@ import { useClinicalSSE } from '@/hooks/useClinicalSSE';
 import { useAuthStore } from '@/store/authStore';
 
 
-import CheckInModal from '@/views/reception/components/CheckInModal';
+import InitialConsultationPaymentModal from '@/views/reception/components/InitialConsultationPaymentModal';
 
 import { 
   Users, 
@@ -447,7 +447,7 @@ const DoctorDashboardView = () => {
         </div>
       </div>
       {isCheckInModalOpen && (
-        <CheckInModal
+        <InitialConsultationPaymentModal
           isOpen={isCheckInModalOpen}
           onClose={() => {
             setIsCheckInModalOpen(false);

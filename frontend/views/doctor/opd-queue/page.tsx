@@ -21,7 +21,7 @@ import {
   Lock,
   Bell
 } from 'lucide-react';
-import CheckInModal from '@/views/reception/components/CheckInModal';
+import InitialConsultationPaymentModal from '@/views/reception/components/InitialConsultationPaymentModal';
 import { QueueStatusBadge } from '@/views/reception/components/QueueStatusBadge';
 import { useAuthStore } from '@/store/authStore';
 
@@ -754,7 +754,7 @@ const OpdQueueView = () => {
       )}
 
       {isCheckInModalOpen && (
-        <CheckInModal
+        <InitialConsultationPaymentModal
           isOpen={isCheckInModalOpen}
           onClose={() => {
             setIsCheckInModalOpen(false);
