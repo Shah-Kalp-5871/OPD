@@ -38,6 +38,20 @@ cd backend
 npm run seed:daily
 ```
 
+### 5. (Optional) Clear Queue Data
+If you need to completely clear the queue, appointments, and patient cases from the database, you can run this script:
+```bash
+cd backend
+node clear.js
+```
+
+### 6. (Optional) Clear All Patients
+If you need to completely delete all patients and their related records (bills, cases, appointments, etc.) from the database, you can run this script:
+```bash
+cd backend
+node clear-patients.js
+```
+
 ---
 
 ## 🛠 Troubleshooting Common Issues
