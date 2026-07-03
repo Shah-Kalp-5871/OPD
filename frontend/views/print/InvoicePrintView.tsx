@@ -215,8 +215,12 @@ const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ data }) => {
                   </h4>
                   <div className="space-y-2">
                     {payments.map((p: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center text-[10px] border-b border-slate-50 pb-1">
-                        <span className="font-bold text-slate-500 uppercase">{p.paymentMode} • {new Date(p.paymentDate).toLocaleDateString()}</span>
+                      <div key={idx} className="flex justify-between items-start text-[10px] border-b border-slate-50 pb-2">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-500 uppercase">{p.paymentMode}</span>
+                          <span className="font-medium text-slate-400 text-[8px] mt-0.5">{new Date(p.paymentDate || p.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                          {p.transactionId && <span className="font-medium text-slate-400 text-[8px]">Txn: {p.transactionId}</span>}
+                        </div>
                         <span className="font-black text-slate-900">{formatCurrency(p.amount)}</span>
                       </div>
                     ))}

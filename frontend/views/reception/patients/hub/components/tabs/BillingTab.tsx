@@ -443,7 +443,38 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
               </div>
 
               {/* PAYMENT HISTORY */}
-              {bill.paidAmount > 0 && (
+              {bill.payments && bill.payments.length > 0 ? (
+                <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl space-y-4">
+                   <h4 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Payment History
+                   </h4>
+                   <div className="space-y-3">
+                     {bill.payments.map((p: any, idx: number) => (
+                       <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-emerald-200/50 shadow-sm">
+                          <div>
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount Received</p>
+                             <p className="text-sm font-black text-slate-800">₹ {p.amount.toLocaleString()}</p>
+                             {p.transactionId && <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Txn: {p.transactionId}</p>}
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Date & Time</p>
+                             <p className="text-[10px] font-bold text-slate-600 mb-1.5">
+                                {new Date(p.paymentDate || p.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                             </p>
+                             <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded uppercase tracking-widest">{p.paymentMode}</span>
+                          </div>
+                       </div>
+                     ))}
+                   </div>
+                   {bill.payments.length > 1 && (
+                     <div className="pt-3 border-t border-emerald-200/50 flex justify-between items-center">
+                       <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Total Paid</span>
+                       <span className="text-sm font-black text-emerald-700">₹ {bill.paidAmount.toLocaleString()}</span>
+                     </div>
+                   )}
+                </div>
+              ) : bill.paidAmount > 0 && (
                 <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl space-y-4">
                    <h4 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -484,9 +515,17 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                        <span>Discount:</span>
                        <span>{bill.discountTotal.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between font-bold text-slate-900 pb-4 border-b border-dashed border-slate-300">
-                       <span>Net Paid:</span>
-                       <span>{bill.netAmount.toLocaleString()} — {bill.paidAmount > 0 ? bill.paymentMode : (splits[0]?.paymentMode || 'CASH')}</span>
+                    <div className="flex justify-between font-bold text-slate-900 mb-2">
+                       <span>Net Payable:</span>
+                       <span>{bill.netAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-emerald-600 mb-2">
+                       <span>Total Paid:</span>
+                       <span>{bill.paidAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-rose-500 pb-4 border-b border-dashed border-slate-300">
+                       <span>Balance Due:</span>
+                       <span>{(bill.netAmount - bill.paidAmount).toLocaleString()}</span>
                     </div>
                     
                     <div className="mt-4 text-slate-500 text-[10px] flex justify-between">
