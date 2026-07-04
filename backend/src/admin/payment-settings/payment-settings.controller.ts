@@ -20,7 +20,7 @@ export class PaymentSettingsController {
   constructor(private readonly paymentSettingsService: PaymentSettingsService) {}
 
   @Get()
-  @Roles('ADMIN', 'SUPERADMIN', 'RECEPTION')
+  @Roles('ADMIN', 'SUPERADMIN', 'RECEPTION', 'DOCTOR')
   getSettings() {
     return this.paymentSettingsService.getSettings();
   }

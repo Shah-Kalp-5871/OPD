@@ -32,7 +32,7 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  @Roles(Role.RECEPTION, Role.ADMIN)
+  @Roles(Role.RECEPTION, Role.ADMIN, Role.DOCTOR)
   create(
     @Body() createAppointmentDto: CreateAppointmentDto,
     @BranchId() branchId: string,
@@ -108,7 +108,7 @@ export class AppointmentsController {
   }
 
   @Patch(':id/cancel')
-  @Roles(Role.ADMIN, Role.RECEPTION)
+  @Roles(Role.ADMIN, Role.RECEPTION, Role.DOCTOR)
   cancel(
     @Param('id') id: string,
     @Body() dto: CancelAppointmentDto,
@@ -140,7 +140,7 @@ export class AppointmentsController {
   }
 
   @Post('check-in')
-  @Roles(Role.RECEPTION, Role.ADMIN)
+  @Roles(Role.RECEPTION, Role.ADMIN, Role.DOCTOR)
   checkIn(
     @Body() dto: CheckInAppointmentDto,
     @Req() req: any,

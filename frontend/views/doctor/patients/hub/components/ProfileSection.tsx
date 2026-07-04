@@ -70,7 +70,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({ patient, onSaveProfile 
 
         <div>
           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
             Extended Demographics
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

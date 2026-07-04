@@ -137,7 +137,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({
       <div className="p-6 bg-slate-900 rounded-xl flex items-center justify-between text-white">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
-            <Activity className="w-5 h-5 text-orange-400" />
+            <Activity className="w-5 h-5 text-sky-400" />
           </div>
           <div className="space-y-0.5">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none">Journey Summary</p>

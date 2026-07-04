@@ -51,7 +51,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
       case 'Prescription': return 'bg-sky-50 text-[#0d6282] border-sky-100';
       case 'Lab Report': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
       case 'Scan/X-Ray': return 'bg-violet-50 text-violet-600 border-violet-100';
-      case 'Discharge Summary': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'Discharge Summary': return 'bg-sky-50 text-sky-600 border-sky-100';
       case 'Consent Form': return 'bg-blue-50 text-blue-600 border-blue-100';
       default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
@@ -485,7 +485,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ patient, onRefresh }) => {
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 className="w-4 h-4 text-orange-400" />
+                      <CheckCircle2 className="w-4 h-4 text-sky-400" />
                       Save Document
                     </>
                   )}

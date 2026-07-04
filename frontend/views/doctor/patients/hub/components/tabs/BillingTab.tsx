@@ -274,7 +274,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
   };
 
   const paymentModes = [
-    { id: 'CASH', label: 'Cash', icon: Banknote, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+    { id: 'CASH', label: 'Cash', icon: Banknote, color: 'bg-sky-50 text-sky-600 border-sky-100' },
     { id: 'CREDIT_CARD', label: 'Card', icon: CreditCard, color: 'bg-blue-50 text-blue-600 border-blue-100' },
     { id: 'UPI_QR', label: 'UPI QR', icon: QrCode, color: 'bg-violet-50 text-violet-600 border-violet-100' },
     { id: 'BANK_TRANSFER', label: 'Razorpay', icon: Globe, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' }
@@ -285,7 +285,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
       <div className="w-full">
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
-           <div className="w-10 h-10 border-4 border-slate-100 border-t-orange-600 rounded-full animate-spin"></div>
+           <div className="w-10 h-10 border-4 border-slate-100 border-t-sky-600 rounded-full animate-spin"></div>
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Loading Financial Records...</p>
         </div>
       </div>
@@ -371,20 +371,20 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                     </h3>
                     <div className="flex items-center gap-4">
                        <div className="group relative">
-                          <ShieldAlert className="w-4 h-4 text-amber-500 cursor-help" />
+                          <ShieldAlert className="w-4 h-4 text-sky-500 cursor-help" />
                           <div className="absolute right-0 top-full mt-2 w-64 bg-slate-900 text-white p-3 rounded-xl text-[9px] font-bold leading-relaxed opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-10 shadow-xl">
                              Discount field is restricted. Only authorized personnel can apply discounts.
                           </div>
                        </div>
                        {bill.isFinalized ? (
-                         <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-emerald-100">
+                         <div className="bg-sky-50 text-sky-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-sky-100">
                             <ShieldCheck className="w-3.5 h-3.5" /> Finalized
                          </div>
                        ) : (
                          <button 
                            onClick={handleFinalize}
                            disabled={isSubmitting}
-                           className="bg-amber-50 text-amber-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-amber-100 hover:bg-amber-100 transition-all"
+                           className="bg-sky-50 text-sky-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border border-sky-100 hover:bg-sky-100 transition-all"
                          >
                             <Lock className="w-3.5 h-3.5" /> Finalize Bill
                          </button>
@@ -444,14 +444,14 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
 
               {/* PAYMENT HISTORY */}
               {bill.payments && bill.payments.length > 0 ? (
-                <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl space-y-4">
-                   <h4 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                <div className="p-6 bg-sky-50 border border-sky-100 rounded-3xl space-y-4">
+                   <h4 className="text-[10px] font-black text-sky-700 uppercase tracking-widest flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Payment History
                    </h4>
                    <div className="space-y-3">
                      {bill.payments.map((p: any, idx: number) => (
-                       <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-emerald-200/50 shadow-sm">
+                       <div key={idx} className="flex justify-between items-center bg-white p-4 rounded-xl border border-sky-200/50 shadow-sm">
                           <div>
                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount Received</p>
                              <p className="text-sm font-black text-slate-800">₹ {p.amount.toLocaleString()}</p>
@@ -462,32 +462,32 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                              <p className="text-[10px] font-bold text-slate-600 mb-1.5">
                                 {new Date(p.paymentDate || p.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                              </p>
-                             <span className="text-[8px] font-black bg-emerald-100 text-emerald-700 px-2 py-1 rounded uppercase tracking-widest">{p.paymentMode}</span>
+                             <span className="text-[8px] font-black bg-sky-100 text-sky-700 px-2 py-1 rounded uppercase tracking-widest">{p.paymentMode}</span>
                           </div>
                        </div>
                      ))}
                    </div>
                    {bill.payments.length > 1 && (
-                     <div className="pt-3 border-t border-emerald-200/50 flex justify-between items-center">
-                       <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Total Paid</span>
-                       <span className="text-sm font-black text-emerald-700">₹ {bill.paidAmount.toLocaleString()}</span>
+                     <div className="pt-3 border-t border-sky-200/50 flex justify-between items-center">
+                       <span className="text-[10px] font-black text-sky-700 uppercase tracking-widest">Total Paid</span>
+                       <span className="text-sm font-black text-sky-700">₹ {bill.paidAmount.toLocaleString()}</span>
                      </div>
                    )}
                 </div>
               ) : bill.paidAmount > 0 && (
-                <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-3xl space-y-4">
-                   <h4 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
+                <div className="p-6 bg-sky-50 border border-sky-100 rounded-3xl space-y-4">
+                   <h4 className="text-[10px] font-black text-sky-700 uppercase tracking-widest flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Payment History
                    </h4>
-                   <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-emerald-200/50">
+                   <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-sky-200/50">
                       <div>
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Amount Received</p>
                          <p className="text-sm font-black text-slate-800">₹ {bill.paidAmount.toLocaleString()}</p>
                       </div>
                       <div className="text-right">
                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Method</p>
-                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{bill.paymentMode}</p>
+                         <p className="text-[10px] font-black text-sky-600 uppercase tracking-widest">{bill.paymentMode}</p>
                       </div>
                    </div>
                 </div>
@@ -519,7 +519,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                        <span>Net Payable:</span>
                        <span>{bill.netAmount.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between font-bold text-emerald-600 mb-2">
+                    <div className="flex justify-between font-bold text-sky-600 mb-2">
                        <span>Total Paid:</span>
                        <span>{bill.paidAmount.toLocaleString()}</span>
                     </div>
@@ -623,7 +623,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                   
                   {bill.paymentStatus === 'PAID' ? (
                      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[400px]">
-                        <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mb-6 border-8 border-emerald-50/50">
+                        <div className="w-20 h-20 bg-sky-50 text-sky-500 rounded-full flex items-center justify-center mb-6 border-8 border-sky-50/50">
                            <CheckCircle2 className="w-10 h-10" />
                         </div>
                         <h4 className="text-lg font-black text-slate-800 uppercase tracking-widest mb-2">Payment Settled</h4>
@@ -639,21 +639,21 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                      <div className="flex flex-col flex-1">
                         <div className="p-6 space-y-8 flex-1">
                            {isFoc ? (
-                              <div className="p-6 bg-amber-50/50 border border-amber-200 rounded-2xl text-xs space-y-4">
-                                 <p className="font-black text-amber-800 uppercase tracking-widest flex items-center gap-2">
+                              <div className="p-6 bg-sky-50/50 border border-sky-200 rounded-2xl text-xs space-y-4">
+                                 <p className="font-black text-sky-800 uppercase tracking-widest flex items-center gap-2">
                                    <AlertCircle className="w-4 h-4" />
                                    Free of Charge (FOC) Justification
                                  </p>
-                                 <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Standard billing fields are hidden. An internal note is required to process this waiver.</p>
+                                 <p className="text-[10px] font-bold text-sky-600 uppercase tracking-widest">Standard billing fields are hidden. An internal note is required to process this waiver.</p>
                                  <textarea 
-                                   className="w-full p-4 bg-white border border-amber-200 rounded-xl outline-none h-32 resize-none font-medium text-slate-700 placeholder:text-slate-300 focus:border-amber-400 transition-all"
+                                   className="w-full p-4 bg-white border border-sky-200 rounded-xl outline-none h-32 resize-none font-medium text-slate-700 placeholder:text-slate-300 focus:border-sky-400 transition-all"
                                    placeholder="ENTER JUSTIFICATION HERE..."
                                    value={focReason} onChange={(e) => setFocReason(e.target.value)} disabled={isSubmitting}
                                  />
                                  <input 
                                    type="password"
                                    placeholder="AUTHORIZATION PIN"
-                                   className="w-full p-4 bg-white border border-amber-200 rounded-xl outline-none font-bold text-slate-800 focus:border-amber-400 transition-all text-center tracking-[0.5em]"
+                                   className="w-full p-4 bg-white border border-sky-200 rounded-xl outline-none font-bold text-slate-800 focus:border-sky-400 transition-all text-center tracking-[0.5em]"
                                    value={focPin} onChange={(e) => setFocPin(e.target.value)} disabled={isSubmitting}
                                  />
                               </div>

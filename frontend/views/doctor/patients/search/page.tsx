@@ -116,7 +116,7 @@ const PatientSearchView = () => {
             />
             {isLoading && (
               <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 border-2 border-sky-600/20 border-t-orange-600 rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-sky-600/20 border-t-sky-600 rounded-full animate-spin"></div>
               </div>
             )}
           </div>

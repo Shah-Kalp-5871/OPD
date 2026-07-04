@@ -36,6 +36,7 @@ const InitialConsultationPaymentModal: React.FC<InitialConsultationPaymentModalP
 
   const [upiId, setUpiId] = useState('');
   const [upiPayeeName, setUpiPayeeName] = useState('');
+  const [showLargeQR, setShowLargeQR] = useState(false);
 
   useEffect(() => {
     api.get('/admin/payment-settings').then(res => {
@@ -230,15 +231,47 @@ const InitialConsultationPaymentModal: React.FC<InitialConsultationPaymentModalP
                          </div>
                          
                          {paymentMethod === 'UPI' && upiString && (
-                           <div className="mt-4 p-4 bg-white border border-slate-200 rounded-xl flex flex-col items-center justify-center gap-3 shadow-sm">
-                             <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
-                               <QRCodeCanvas value={upiString} size={140} level="H" className="rounded-lg" />
+                           <>
+                             <div 
+                               className="mt-4 p-4 bg-white border border-slate-200 rounded-xl flex flex-col items-center justify-center gap-3 shadow-sm cursor-pointer hover:border-[#107ca3] transition-colors"
+                               onClick={() => setShowLargeQR(true)}
+                             >
+                               <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
+                                 <QRCodeCanvas value={upiString} size={140} level="H" className="rounded-lg" />
+                               </div>
+                               <div className="text-center">
+                                 <p className="text-xs font-black text-slate-800">Scan to pay ₹{paymentAmount}</p>
+                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Click to enlarge</p>
+                               </div>
                              </div>
-                             <div className="text-center">
-                               <p className="text-xs font-black text-slate-800">Scan to pay ₹{paymentAmount}</p>
-                               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{upiId}</p>
-                             </div>
-                           </div>
+
+                             {showLargeQR && (
+                               <div className="fixed inset-0 z-[70] bg-slate-900/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-in fade-in duration-200">
+                                 <div className="absolute top-6 right-6">
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); setShowLargeQR(false); }}
+                                     className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                                   >
+                                     <X className="w-8 h-8" />
+                                   </button>
+                                 </div>
+                                 
+                                 <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-md w-full">
+                                   <h3 className="text-2xl font-black text-slate-800 mb-2">{upiPayeeName || 'Clinic Payment'}</h3>
+                                   <p className="text-sm font-bold text-slate-500 mb-8">{upiId}</p>
+                                   
+                                   <div className="p-4 bg-white rounded-2xl shadow-inner border border-slate-100 mb-8">
+                                     <QRCodeCanvas value={upiString} size={280} level="H" className="rounded-xl" />
+                                   </div>
+                                   
+                                   <div className="w-full bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
+                                     <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">Amount to Pay</p>
+                                     <p className="text-4xl font-black text-[#107ca3]">₹{paymentAmount}</p>
+                                   </div>
+                                 </div>
+                               </div>
+                             )}
+                           </>
                          )}
                        </div>
                     )}

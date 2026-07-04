@@ -169,7 +169,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
   if (!activeCase) {
     return (
       <div className="h-[40vh] flex flex-col items-center justify-center gap-4 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center">
-        <AlertCircle className="w-12 h-12 text-amber-500" />
+        <AlertCircle className="w-12 h-12 text-sky-500" />
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">No Active Case Found</h2>
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest max-w-md">Please start a new visit for this patient to generate and record consent forms.</p>
       </div>
@@ -278,7 +278,7 @@ const ConsentTab: React.FC<ConsentTabProps> = ({ patient, activeCase }) => {
                   className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${selectedLanguage === lang ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-100 hover:border-slate-200 text-slate-600'}`}
                 >
                   <span className="text-[10px] font-black uppercase tracking-widest">{lang}</span>
-                  {selectedLanguage === lang && <CheckCircle2 className="w-4 h-4 text-orange-400" />}
+                  {selectedLanguage === lang && <CheckCircle2 className="w-4 h-4 text-sky-400" />}
                 </button>
               ))}
             </div>

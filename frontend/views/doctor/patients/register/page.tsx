@@ -65,6 +65,7 @@ const PatientRegistrationView = () => {
       if (user?.role?.toUpperCase() === 'DOCTOR') {
         const docId = user.doctorProfile?.id || user.id;
         setDoctors([{ id: docId, name: user.name, doctorProfile: { id: docId } }]);
+        setMrDoctorId(docId);
         return;
       }
       const res = await api.get('/doctors');
@@ -282,9 +283,9 @@ const PatientRegistrationView = () => {
                     <Lock className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                     <p className="text-xs text-blue-700 leading-relaxed font-medium">Extended history and allergies can be completed from patient's file after registration.</p>
                   </div>
-                  <div className="bg-amber-50 rounded-2xl border border-amber-100 p-4 flex gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700 leading-relaxed font-medium">MRD is permanent. Verify contact number before saving to avoid duplicate records.</p>
+                  <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4 flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-sky-700 leading-relaxed font-medium">MRD is permanent. Verify contact number before saving to avoid duplicate records.</p>
                   </div>
                 </div>
               </div>
@@ -295,7 +296,7 @@ const PatientRegistrationView = () => {
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sticker Preview</p>
-                    <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase">Live</span>
+                    <span className="text-[9px] font-black text-sky-600 bg-sky-50 px-2 py-1 rounded-full uppercase">Live</span>
                   </div>
                   <div id="patient-sticker-card" className="bg-slate-50 rounded-xl p-4 border border-slate-200 font-mono">
                     <div className="space-y-3">

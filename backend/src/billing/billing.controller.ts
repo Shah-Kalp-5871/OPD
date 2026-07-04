@@ -88,7 +88,7 @@ export class BillingController {
   }
 
   @Post(':id/pay')
-  @Roles(Role.RECEPTION, Role.ADMIN)
+  @Roles(Role.RECEPTION, Role.ADMIN, Role.DOCTOR)
   @HipaaAudit({ actionType: 'UPDATED_PATIENT', module: 'PATIENTS' })
   async payBill(
     @Param('id') id: string,

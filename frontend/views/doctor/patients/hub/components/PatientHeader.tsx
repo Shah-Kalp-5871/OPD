@@ -38,13 +38,13 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
   };
 
   return (
-    <div className="bg-white border border-sky-100 rounded-[2rem] relative z-10 overflow-hidden" style={{boxShadow: '0 4px 6px -1px rgba(249,115,22,0.08), 0 10px 30px -5px rgba(249,115,22,0.12), 0 2px 0 0 rgba(249,115,22,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'}}>
-      {/* Orange accent top strip */}
-      <div className="h-1 w-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400" />
+    <div className="bg-white border border-sky-100 rounded-[2rem] relative z-10 overflow-hidden" style={{boxShadow: '0 4px 6px -1px rgba(13,98,130,0.08), 0 10px 30px -5px rgba(13,98,130,0.12), 0 2px 0 0 rgba(13,98,130,0.2), inset 0 1px 0 rgba(255,255,255,0.9)'}}>
+      {/* sky accent top strip */}
+      <div className="h-1 w-full bg-gradient-to-r from-sky-400 via-sky-500 to-sky-400" />
       {/* Top Identity Block */}
       <div className="px-8 py-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl border border-sky-100 shadow-[0_4px_12px_rgba(249,115,22,0.15)] flex items-center justify-center text-orange-300">
+          <div className="w-24 h-24 bg-gradient-to-br from-sky-50 to-sky-50 rounded-3xl border border-sky-100 shadow-[0_4px_12px_rgba(13,98,130,0.15)] flex items-center justify-center text-sky-300">
             <User className="w-12 h-12" />
           </div>
           
@@ -81,7 +81,7 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
           {hasOpenCase && (
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-sky-200 px-6 py-3 rounded-2xl flex flex-col items-end text-right" style={{boxShadow: '0 2px 8px rgba(249,115,22,0.15)'}}>
+            <div className="bg-gradient-to-br from-sky-50 to-sky-50 border border-sky-200 px-6 py-3 rounded-2xl flex flex-col items-end text-right" style={{boxShadow: '0 2px 8px rgba(13,98,130,0.15)'}}>
               <span className="text-[10px] font-black text-[#0d6282] uppercase tracking-widest flex items-center gap-1.5 mb-1.5">
                 <Activity className="w-3.5 h-3.5" /> Active Consultation
               </span>
@@ -99,7 +99,7 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
       </div>
 
       {/* Secondary Meta Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-5 bg-gradient-to-r from-orange-50/60 to-amber-50/40 border-t border-sky-100 divide-x divide-orange-100">
+      <div className="grid grid-cols-2 md:grid-cols-5 bg-gradient-to-r from-sky-50/60 to-sky-50/40 border-t border-sky-100 divide-x divide-sky-100">
         <div className="px-6 py-4 space-y-1">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Blood Group</p>
           <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -125,7 +125,7 @@ const PatientHeader: React.FC<PatientHeaderProps> = ({
           </div>
           <div className="w-full bg-sky-100/60 rounded-full h-1 overflow-hidden">
             <div 
-              className="bg-gradient-to-r from-orange-400 to-amber-400 h-full transition-all duration-1000 shadow-sm" 
+              className="bg-gradient-to-r from-sky-400 to-sky-400 h-full transition-all duration-1000 shadow-sm" 
               style={{ width: `${completion}%` }}
             ></div>
           </div>

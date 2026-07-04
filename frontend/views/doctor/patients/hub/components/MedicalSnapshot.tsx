@@ -17,7 +17,7 @@ const MedicalSnapshot: React.FC<MedicalSnapshotProps> = ({ patient, latestVitals
         </div>
         <div className="flex justify-between items-center">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">BMI Status</span>
-          <span className="text-sm font-black text-orange-400">{latestVitals?.bmi || '--'}</span>
+          <span className="text-sm font-black text-sky-400">{latestVitals?.bmi || '--'}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Allergies</span>

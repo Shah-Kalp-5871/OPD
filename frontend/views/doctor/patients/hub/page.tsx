@@ -76,6 +76,11 @@ const PatientHubView = () => {
 
   const fetchDoctors = async () => {
     try {
+      if (user?.role?.toUpperCase() === 'DOCTOR') {
+        const docId = user.doctorProfile?.id || user.id;
+        setDoctors([{ id: docId, name: user.name, doctorProfile: { id: docId } }]);
+        return;
+      }
       const response = await api.get('/doctors');
       setDoctors(response.data);
     } catch (error) {

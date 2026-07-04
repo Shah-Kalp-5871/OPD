@@ -100,7 +100,7 @@ export class AppointmentsService {
 
         const existing = await tx.appointment.findFirst({
           where: {
-            doctorId,
+            doctorId: doctorProfile.id,
             appointmentDate: appointmentDateOnly,
             appointmentTime: fullAppointmentDateTime,
             status: { notIn: [AppointmentStatus.CANCELLED] },
@@ -143,7 +143,7 @@ export class AppointmentsService {
         const appointment = await tx.appointment.create({
           data: {
             patientId,
-            doctorId,
+            doctorId: doctorProfile.id,
             branchId,
             appointmentDate: appointmentDateOnly,
             appointmentTime: fullAppointmentDateTime,

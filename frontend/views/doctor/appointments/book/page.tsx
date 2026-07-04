@@ -91,6 +91,7 @@ const BookAppointmentView = () => {
       if (user?.role?.toUpperCase() === 'DOCTOR') {
         const docId = user.doctorProfile?.id || user.id;
         setDoctors([{ id: docId, name: user.name, doctorProfile: { id: docId } }]);
+        setSelectedDoctorId(docId);
         return;
       }
       const res = await api.get('/doctors');

@@ -61,7 +61,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }
               }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-[0_4px_12px_rgba(249,115,22,0.35)]'
+                  ? 'bg-gradient-to-r from-sky-500 to-sky-500 text-white shadow-[0_4px_12px_rgba(13,98,130,0.35)]'
                   : 'text-slate-500 hover:text-[#0d6282] hover:bg-sky-50'
               }`}
             >
