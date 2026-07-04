@@ -411,7 +411,7 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
               <div className="flex items-center justify-between px-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Estimated Total</span>
                 <span className="text-2xl font-black text-slate-900 italic tracking-tighter">
-                  ₹{pendingOrders.reduce((sum, o) => sum + o.basePrice, 0)}
+                  ₹{pendingOrders.reduce((sum, o) => sum + Number(o.basePrice), 0)}
                 </span>
               </div>
 
@@ -440,8 +440,8 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
         />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data?.investigationOrders?.length > 0 ? (
-            data.investigationOrders.map((order: any) => (
+          {data?.case?.investigationOrders?.length > 0 ? (
+            data.case.investigationOrders.map((order: any) => (
               <div key={order.id} className="bg-white border border-slate-200 rounded-[2rem] p-6 flex flex-col gap-6 hover:shadow-xl hover:shadow-slate-100 transition-all group">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
@@ -449,7 +449,7 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                       <Dna className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{order.labParameter?.name}</h4>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-tight">{order.results?.[0]?.parameter?.name || 'Unknown Test'}</h4>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
                         Ordered: {new Date(order.createdAt).toLocaleDateString()}
                       </p>

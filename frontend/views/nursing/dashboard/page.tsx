@@ -180,10 +180,13 @@ const NursingDashboard = () => {
                                     Enter Vitals
                                  </Link>
                                ) : (
-                                 <button className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2">
+                                 <Link 
+                                   href={`/nursing/lab-reports?caseId=${patient.caseId}`}
+                                   className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2"
+                                 >
                                     <FileUp className="w-3.5 h-3.5" />
                                     Upload
-                                 </button>
+                                 </Link>
                                )}
                                <button className="p-2.5 bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-slate-900 hover:text-blue-400 transition-all group/btn">
                                   <MoreHorizontal className="w-4 h-4 transition-transform group-hover/btn:scale-110" />

@@ -90,7 +90,7 @@ export class QueueController {
   }
 
   @Get('live')
-  @Roles('RECEPTION', 'DOCTOR', 'ADMIN')
+  @Roles('RECEPTION', 'DOCTOR', 'ADMIN', 'NURSING')
   async getLiveQueue(
     @Query('doctorId') doctorId: string | undefined,
     @BranchId() branchId: string,
@@ -99,7 +99,7 @@ export class QueueController {
   }
 
   @Get('stats')
-  @Roles('RECEPTION', 'DOCTOR', 'ADMIN')
+  @Roles('RECEPTION', 'DOCTOR', 'ADMIN', 'NURSING')
   async getStats(@BranchId() branchId: string) {
     return this.queueService.getStats(branchId);
   }
