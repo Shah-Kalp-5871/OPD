@@ -69,6 +69,7 @@ model User {
   primaryBranchId         String?
   branchAccess            UserBranchAccess[]
   telemedicineSessionLogs TelemedicineSessionLog[]
+  collectedSamples        InvestigationOrder[]     @relation("SampleCollectedBy")
   deviceTokens            DeviceToken[]
   notificationLogs        NotificationLog[]
   notificationPreference  NotificationPreference?
@@ -1310,16 +1311,21 @@ model InvestigationOrder {
   id          String                @id @default(uuid())
   caseId      String
   doctorId    String
-  status      InvestigationStatus   @default(ORDERED)
-  priority    CasePriority          @default(NORMAL)
-  notes       String?
-  createdAt   DateTime              @default(now())
+  status              InvestigationStatus   @default(ORDERED)
+  priority            CasePriority          @default(NORMAL)
+  notes               String?
+  labCost             Decimal               @default(0) @db.Decimal(10, 2)
+  sampleCollectedById String?
+  sampleCollectedAt   DateTime?
+  resultEntryTime     DateTime?
+  createdAt           DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
   branchId    String
   branch      Branch                @relation("BranchInvestigations", fields: [branchId], references: [id])
-  files       InvestigationFile[]
-  patientCase PatientCase           @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  results     InvestigationResult[]
+  files               InvestigationFile[]
+  patientCase         PatientCase           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  results             InvestigationResult[]
+  sampleCollectedBy   User?                 @relation("SampleCollectedBy", fields: [sampleCollectedById], references: [id])
 
   @@index([caseId, status])
 }

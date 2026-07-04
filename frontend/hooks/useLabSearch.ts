@@ -8,14 +8,15 @@ export function useLabSearch(limit = 20) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!query && !categoryId) {
-      setResults([]);
-      setIsLoading(false);
-      return;
-    }
+    // Remove arbitrary block so it loads all tests initially
+    // if (!query && !categoryId) {
+    //   setResults([]);
+    //   setIsLoading(false);
+    //   return;
+    // }
 
     // Small query (1 char) only if no category is selected
-    if (query.trim().length < 2 && !categoryId) {
+    if (query && query.trim().length < 2 && !categoryId) {
       setResults([]);
       setIsLoading(false);
       return;

@@ -425,6 +425,85 @@ async function main() {
     });
   }
 
+  // 6. Seed Lab Categories and Parameters
+  console.log('Seeding Lab Categories and Parameters...');
+  const cbcCategory = await prisma.labCategory.upsert({
+    where: { code: 'CBC' },
+    update: {},
+    create: {
+      name: 'Complete Blood Count (CBC)',
+      code: 'CBC',
+      description: 'Standard CBC panel',
+    },
+  });
+
+  await prisma.labParameter.upsert({
+    where: { code: 'HB' },
+    update: {},
+    create: {
+      categoryId: cbcCategory.id,
+      name: 'Hemoglobin (Hb)',
+      code: 'HB',
+      unit: 'g/dL',
+      basePrice: 150.0,
+      criticalLow: 7.0,
+      criticalHigh: 20.0,
+      referenceRanges: {
+        create: [
+          { gender: 'MALE', minValue: 13.8, maxValue: 17.2 },
+          { gender: 'FEMALE', minValue: 12.1, maxValue: 15.1 },
+        ],
+      },
+    },
+  });
+
+  await prisma.labParameter.upsert({
+    where: { code: 'WBC' },
+    update: {},
+    create: {
+      categoryId: cbcCategory.id,
+      name: 'White Blood Cells (WBC)',
+      code: 'WBC',
+      unit: 'thou/uL',
+      basePrice: 100.0,
+      criticalLow: 2.0,
+      criticalHigh: 30.0,
+      referenceRanges: {
+        create: [
+          { minValue: 4.5, maxValue: 11.0 },
+        ],
+      },
+    },
+  });
+
+  const lftCategory = await prisma.labCategory.upsert({
+    where: { code: 'LFT' },
+    update: {},
+    create: {
+      name: 'Liver Function Test (LFT)',
+      code: 'LFT',
+      description: 'Standard LFT panel',
+    },
+  });
+
+  await prisma.labParameter.upsert({
+    where: { code: 'BIL_T' },
+    update: {},
+    create: {
+      categoryId: lftCategory.id,
+      name: 'Bilirubin, Total',
+      code: 'BIL_T',
+      unit: 'mg/dL',
+      basePrice: 200.0,
+      criticalHigh: 2.5,
+      referenceRanges: {
+        create: [
+          { minValue: 0.1, maxValue: 1.2 },
+        ],
+      },
+    },
+  });
+
   console.log('Seeding completed successfully!');
 }
 

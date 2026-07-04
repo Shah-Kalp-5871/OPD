@@ -33,6 +33,9 @@ const LabReportManagementView = () => {
   const [patientData, setPatientData] = useState<any>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
+  const [labValues, setLabValues] = useState<Record<string, { orderId: string, parameterId: string, value: string }>>({});
+  const [savingResults, setSavingResults] = useState(false);
+
   useEffect(() => {
     if (caseId) {
       fetchCaseDetails();
@@ -106,6 +109,71 @@ const LabReportManagementView = () => {
       setIsUploading(false);
       e.target.value = '';
     }
+  };
+
+  const handleValueChange = (orderId: string, parameterId: string, value: string) => {
+    setLabValues(prev => ({
+      ...prev,
+      [orderId]: { orderId, parameterId, value }
+    }));
+  };
+
+  const handleSaveResults = async () => {
+    const resultsToSave = Object.values(labValues).filter(v => v.value.trim() !== '');
+    if (resultsToSave.length === 0) return;
+    
+    try {
+      setSavingResults(true);
+      // Group by orderId
+      const byOrder = resultsToSave.reduce((acc, curr) => {
+        if (!acc[curr.orderId]) acc[curr.orderId] = [];
+        acc[curr.orderId].push({ parameterId: curr.parameterId, value: curr.value });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      for (const [orderId, results] of Object.entries(byOrder)) {
+        await api.post(`/consultation/investigations/${orderId}/results`, { results });
+      }
+
+      toast.success('Lab results saved successfully');
+      setLabValues({});
+      fetchCaseDetails();
+    } catch (error) {
+      console.error('Failed to save results', error);
+      toast.error('Failed to save lab results');
+    } finally {
+      setSavingResults(false);
+    }
+  };
+
+  const isAbnormal = (value: string, parameter: any) => {
+    if (!value || isNaN(Number(value)) || !parameter) return false;
+    const num = Number(value);
+    
+    if (parameter.criticalHigh && num > parameter.criticalHigh) return true;
+    if (parameter.criticalLow && num < parameter.criticalLow) return true;
+
+    if (parameter.referenceRanges && parameter.referenceRanges.length > 0) {
+      const patientGender = patientData?.gender;
+      const matchingRange = parameter.referenceRanges.find((r: any) => !r.gender || r.gender === patientGender) || parameter.referenceRanges[0];
+      
+      if (matchingRange) {
+        if (matchingRange.minValue && num < matchingRange.minValue) return true;
+        if (matchingRange.maxValue && num > matchingRange.maxValue) return true;
+      }
+    }
+    
+    return false;
+  };
+
+  const getNormalRangeString = (parameter: any) => {
+    if (!parameter) return 'N/A';
+    const patientGender = patientData?.gender;
+    const range = parameter.referenceRanges?.find((r: any) => !r.gender || r.gender === patientGender) || parameter.referenceRanges?.[0];
+    if (range && (range.minValue || range.maxValue)) {
+      return `${range.minValue || 0} - ${range.maxValue || '∞'} ${parameter.unit || ''}`;
+    }
+    return parameter.normalRange || 'N/A';
   };
 
   if (isLoading && caseId) {
@@ -273,6 +341,71 @@ const LabReportManagementView = () => {
                           </div>
                        </div>
                     </div>
+
+                    {/* ENTER LAB VALUES */}
+                     {(() => {
+                        const order = orders.find(o => o.id === selectedOrderId);
+                        if (!order || order.status === 'COMPLETED') return null;
+                        const param = order.results?.[0]?.parameter;
+                        if (!param) return null;
+                        
+                        const currentVal = labValues[order.id]?.value || '';
+                        const abnormal = isAbnormal(currentVal, param);
+
+                        return (
+                           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mt-8">
+                              <div className="p-8 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                                 <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-3">
+                                    <Activity className="w-5 h-5 text-indigo-600" />
+                                    Enter Lab Values Manually
+                                 </h2>
+                              </div>
+                              <div className="p-10">
+                                 <table className="w-full text-left">
+                                    <thead>
+                                       <tr className="border-b border-slate-100">
+                                          <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Parameter</th>
+                                          <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Value</th>
+                                          <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Master Range</th>
+                                       </tr>
+                                    </thead>
+                                    <tbody>
+                                       <tr>
+                                          <td className="py-6 px-4 text-xs font-bold text-slate-700">{param.name}</td>
+                                          <td className="py-6 px-4 relative">
+                                             <input 
+                                                type="text"
+                                                placeholder="Value" 
+                                                className={`h-10 px-3 border rounded-xl text-xs w-32 pr-8 transition-colors outline-none focus:ring-2 ${abnormal ? 'border-rose-300 text-rose-700 bg-rose-50 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'}`} 
+                                                value={currentVal}
+                                                onChange={(e) => handleValueChange(order.id, param.id, e.target.value)}
+                                             />
+                                             {abnormal && (
+                                                <div className="absolute right-8 top-1/2 -translate-y-1/2 text-rose-500" title="Abnormal value">
+                                                   <AlertCircle className="w-4 h-4" />
+                                                </div>
+                                             )}
+                                          </td>
+                                          <td className="py-6 px-4 text-[10px] font-medium text-slate-500 whitespace-nowrap">
+                                             {getNormalRangeString(param)}
+                                          </td>
+                                       </tr>
+                                    </tbody>
+                                 </table>
+                                 <div className="mt-6 flex justify-end">
+                                    <button 
+                                       onClick={handleSaveResults} 
+                                       disabled={!currentVal.trim() || savingResults}
+                                       className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                       {savingResults ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                       Save Values
+                                    </button>
+                                 </div>
+                              </div>
+                           </div>
+                        );
+                     })()}
 
                     {/* ATTACHED FILES LIST */}
                     {orders.find(o => o.id === selectedOrderId)?.files?.length > 0 && (

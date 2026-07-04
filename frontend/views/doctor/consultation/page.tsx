@@ -152,7 +152,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             updateVitals={updateVitals}
             patientGender={patient?.gender}
             saving={saving}
-            onSaveAndNext={() => handleSaveAndNext('diagnosis')}
+            onSaveAndNext={() => handleSaveAndNext('investigation')}
           />
         );
       case 'investigation':
@@ -161,6 +161,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             caseId={caseId}
             data={data}
             onOrderAdded={refresh}
+            onSaveAndNext={() => handleSaveAndNext('prescription')}
           />
         );
       case 'prescription':

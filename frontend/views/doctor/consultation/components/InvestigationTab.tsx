@@ -14,7 +14,8 @@ import {
   Dna,
   Activity,
   FileText,
-  History
+  History,
+  AlertCircle
 } from 'lucide-react';
 import api from '@/lib/api';
 import { labApi, LabCategory, LabParameter } from '@/lib/api/lab';
@@ -26,9 +27,10 @@ interface InvestigationsTabProps {
   caseId: string;
   data: any;
   onOrderAdded?: (order: any) => void;
+  onSaveAndNext?: () => void;
 }
 
-const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onOrderAdded }) => {
+const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onOrderAdded, onSaveAndNext }) => {
   const [categories, setCategories] = useState<LabCategory[]>([]);
   const { 
     query, 
@@ -46,10 +48,25 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
+  // Results State
+  const [labValues, setLabValues] = useState<Record<string, { value: string, parameterId: string, orderId: string }>>({});
+  const [savingResults, setSavingResults] = useState(false);
+  const [historicalReports, setHistoricalReports] = useState<any[]>([]);
+
   useEffect(() => {
     fetchCategories();
     fetchDocuments();
+    fetchHistoricalReports();
   }, [caseId]);
+
+  const fetchHistoricalReports = async () => {
+    try {
+      const res = await api.get(`/consultation/${caseId}/investigations/history`);
+      setHistoricalReports(res.data);
+    } catch (error) {
+      console.error('Failed to fetch historical reports', error);
+    }
+  };
 
   const fetchDocuments = async () => {
     try {
@@ -137,6 +154,71 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
     }
   };
 
+  const handleValueChange = (orderId: string, parameterId: string, value: string) => {
+    setLabValues(prev => ({
+      ...prev,
+      [orderId]: { orderId, parameterId, value }
+    }));
+  };
+
+  const handleSaveResults = async () => {
+    const resultsToSave = Object.values(labValues).filter(v => v.value.trim() !== '');
+    if (resultsToSave.length === 0) return;
+    
+    try {
+      setSavingResults(true);
+      // Group by orderId
+      const byOrder = resultsToSave.reduce((acc, curr) => {
+        if (!acc[curr.orderId]) acc[curr.orderId] = [];
+        acc[curr.orderId].push({ parameterId: curr.parameterId, value: curr.value });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      for (const [orderId, results] of Object.entries(byOrder)) {
+        await api.post(`/consultation/investigations/${orderId}/results`, { results });
+      }
+
+      toast.success('Lab results saved successfully');
+      setLabValues({});
+      if (onOrderAdded) onOrderAdded(true);
+    } catch (error) {
+      console.error('Failed to save results', error);
+      toast.error('Failed to save lab results');
+    } finally {
+      setSavingResults(false);
+    }
+  };
+
+  const isAbnormal = (value: string, parameter: any) => {
+    if (!value || isNaN(Number(value)) || !parameter) return false;
+    const num = Number(value);
+    
+    if (parameter.criticalHigh && num > parameter.criticalHigh) return true;
+    if (parameter.criticalLow && num < parameter.criticalLow) return true;
+
+    if (parameter.referenceRanges && parameter.referenceRanges.length > 0) {
+      const patientGender = data?.patientCase?.patient?.gender;
+      const matchingRange = parameter.referenceRanges.find((r: any) => !r.gender || r.gender === patientGender) || parameter.referenceRanges[0];
+      
+      if (matchingRange) {
+        if (matchingRange.minValue && num < matchingRange.minValue) return true;
+        if (matchingRange.maxValue && num > matchingRange.maxValue) return true;
+      }
+    }
+    
+    return false;
+  };
+
+  const getNormalRangeString = (parameter: any) => {
+    if (!parameter) return 'N/A';
+    const patientGender = data?.patientCase?.patient?.gender;
+    const range = parameter.referenceRanges?.find((r: any) => !r.gender || r.gender === patientGender) || parameter.referenceRanges?.[0];
+    if (range && (range.minValue || range.maxValue)) {
+      return `${range.minValue || 0} - ${range.maxValue || '∞'} ${parameter.unit || ''}`;
+    }
+    return parameter.normalRange || 'N/A';
+  };
+
   return (
     <div className="flex flex-col space-y-8 pb-24">
       {/* Sub-Tabs for Investigation */}
@@ -221,26 +303,37 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                     key={item.id}
                     onClick={() => toggleOrder(item)}
                     className={`
-                      p-5 rounded-2xl border transition-all cursor-pointer group relative flex items-center justify-between
+                      p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative flex flex-col justify-between min-h-[120px]
                       ${isSelected 
-                        ? 'bg-indigo-50/50 border-indigo-400 ring-2 ring-indigo-500/10' 
-                        : 'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-xl hover:shadow-slate-100'}
+                        ? 'bg-gradient-to-br from-indigo-50 to-white border-indigo-300 ring-4 ring-indigo-500/10 shadow-md shadow-indigo-500/10' 
+                        : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10'}
                     `}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
-                        <FlaskConical className="w-6 h-6" />
+                    <div className="flex items-start gap-3">
+                      <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+                        <FlaskConical className="w-5 h-5" />
                       </div>
-                      <div className="overflow-hidden">
-                        <h3 className={`text-xs font-black uppercase tracking-tight leading-none mb-1.5 truncate ${isSelected ? 'text-indigo-900' : 'text-slate-800'}`}>{item.name}</h3>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="slate" className="bg-slate-100 text-[8px] tracking-widest truncate max-w-[80px]">{item.category?.name}</Badge>
-                          <span className="text-[11px] font-black text-indigo-600 italic">₹{item.basePrice}</span>
-                        </div>
+                      <div>
+                        <Badge variant="slate" className="bg-slate-100 text-slate-500 text-[9px] tracking-widest uppercase mb-1.5 border-none px-2 py-0.5 inline-block">
+                          {item.category?.name || 'TEST'}
+                        </Badge>
+                        <h3 className={`text-sm font-black uppercase tracking-tight leading-snug line-clamp-2 ${isSelected ? 'text-indigo-950' : 'text-slate-800 group-hover:text-indigo-900'}`}>
+                          {item.name}
+                        </h3>
                       </div>
                     </div>
-                    <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 text-white scale-110 shadow-lg shadow-indigo-500/30' : 'bg-slate-50 text-slate-300 group-hover:bg-indigo-600 group-hover:text-white'}`}>
-                      {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <Plus className="w-4 h-4" />}
+                    
+                    <div className="flex items-end justify-between mt-4">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Base Price</span>
+                        <span className={`text-lg font-black tracking-tight leading-none ${isSelected ? 'text-indigo-600' : 'text-slate-700'}`}>
+                          ₹{item.basePrice}
+                        </span>
+                      </div>
+                      
+                      <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 text-white scale-110 shadow-lg shadow-indigo-500/30' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-indigo-500/20'}`}>
+                        {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                      </div>
                     </div>
                   </div>
                 );
@@ -410,26 +503,71 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
             <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
               <History className="w-5 h-5 text-indigo-500" /> Previous Reports
             </h3>
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin">
-              {documents.map(doc => (
-                <div key={doc.id} onClick={() => window.open(doc.fileUrl, '_blank')} className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900">{doc.documentType || 'Lab Report'}</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{new Date(doc.createdAt).toLocaleDateString()}</p>
-                    </div>
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-thin">
+              {/* Historical Data Section */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Lab History</h4>
+                {historicalReports.length > 0 ? (
+                  <div className="space-y-4">
+                    {historicalReports.map((report: any) => {
+                      const param = report.results?.[0]?.parameter;
+                      return (
+                      <div key={report.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-indigo-200 transition-colors">
+                        <div className="flex justify-between items-center mb-3 border-b border-slate-50 pb-2">
+                          <span className="text-xs font-black text-slate-800">{param?.name || 'Unknown Lab'}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(report.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {report.results?.map((res: any) => {
+                            const val = res.numericValue ?? res.textValue;
+                            const abnormal = isAbnormal(val, param);
+                            return (
+                              <div key={res.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
+                                <span className="text-[10px] text-slate-500 font-medium">Recorded Value</span>
+                                <span className={`text-xs font-black flex items-center gap-1.5 ${abnormal ? 'text-rose-600' : 'text-slate-700'}`}>
+                                  {val} <span className="text-[9px] text-slate-400 font-normal">{param?.unit}</span>
+                                  {abnormal && <AlertCircle className="w-3 h-3 text-rose-500" />}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )})}
                   </div>
-                  <Badge variant="slate" className="text-[8px]">{doc.fileUrl?.split('.').pop()?.toUpperCase() || 'FILE'}</Badge>
-                </div>
-              ))}
-              {documents.length === 0 && (
-                <div className="text-center py-10 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                  No previous reports found
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-6 text-slate-400 text-xs font-bold uppercase tracking-widest border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                    No historical data
+                  </div>
+                )}
+              </div>
+
+              {/* Uploaded Documents Section */}
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2 pt-4">Uploaded Files</h4>
+                {documents.length > 0 ? (
+                  <div className="space-y-3">
+                    {documents.map(doc => (
+                      <div key={doc.id} onClick={() => window.open(doc.fileUrl, '_blank')} className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300 transition-all shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-black text-slate-900">{doc.documentType || 'Lab Report'}</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(doc.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <Badge variant="slate" className="text-[8px]">{doc.fileUrl?.split('.').pop()?.toUpperCase() || 'FILE'}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-slate-400 text-xs font-bold uppercase tracking-widest border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                    No files uploaded
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -462,25 +600,59 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {data?.investigationOrders?.length > 0 ? (
-                    data.investigationOrders.map((order: any) => (
-                      <tr key={order.id}>
-                        <td className="py-4 px-4 text-xs font-bold text-slate-700">{order.results?.[0]?.parameter?.name || order.labParameter?.name || 'Unknown Test'}</td>
-                        <td className="py-4 px-4"><Input placeholder="Value" className="h-8 text-xs w-24" /></td>
-                        <td className="py-4 px-4 text-[10px] font-medium text-slate-500">{order.results?.[0]?.parameter?.normalRange || order.labParameter?.normalRange || 'N/A'}</td>
-                      </tr>
-                    ))
+                  {data?.investigationOrders?.filter((o: any) => o.status !== 'COMPLETED').length > 0 ? (
+                    data.investigationOrders.filter((o: any) => o.status !== 'COMPLETED').map((order: any) => {
+                      const param = order.results?.[0]?.parameter;
+                      const currentVal = labValues[order.id]?.value || '';
+                      const abnormal = isAbnormal(currentVal, param);
+
+                      return (
+                        <tr key={order.id} className="group">
+                          <td className="py-4 px-4 text-xs font-bold text-slate-700">{param?.name || 'Unknown Test'}</td>
+                          <td className="py-4 px-4 relative">
+                            <Input 
+                              placeholder="Value" 
+                              className={`h-8 text-xs w-28 pr-8 transition-colors ${abnormal ? 'border-rose-300 text-rose-700 bg-rose-50 focus:border-rose-500 focus:ring-rose-200' : ''}`} 
+                              value={currentVal}
+                              onChange={(e) => handleValueChange(order.id, param?.id, e.target.value)}
+                            />
+                            {abnormal && (
+                              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-rose-500" title="Abnormal value">
+                                <AlertCircle className="w-4 h-4" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-[10px] font-medium text-slate-500 whitespace-nowrap">
+                            {getNormalRangeString(param)}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={3} className="py-8 text-center text-xs font-medium text-slate-400 italic">No lab parameters ordered yet.</td>
+                      <td colSpan={3} className="py-12 text-center text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 rounded-2xl border border-dashed border-slate-200 mt-4">
+                        No pending lab orders
+                      </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
             
-            <div className="pt-4 border-t border-slate-100 flex justify-end">
-              <Button icon={<CheckCircle2 className="w-4 h-4" />}>Save Values</Button>
+            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+              <Button 
+                onClick={handleSaveResults} 
+                disabled={Object.values(labValues).filter(v => v.value.trim() !== '').length === 0 || savingResults}
+                loading={savingResults}
+                icon={<CheckCircle2 className="w-4 h-4" />}
+              >
+                Save Values
+              </Button>
+              {onSaveAndNext && (
+                <Button variant="primary" onClick={onSaveAndNext}>
+                  Save & Next
+                </Button>
+              )}
             </div>
           </div>
         </div>

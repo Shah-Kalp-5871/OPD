@@ -224,6 +224,31 @@ export class ConsultationController {
     );
   }
 
+  @Get(':caseId/investigations/history')
+  @Roles('DOCTOR', 'ADMIN', 'NURSING', 'LAB_TECHNICIAN')
+  async getInvestigationHistory(
+    @Param('caseId') caseId: string,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.getPatientLabHistory(caseId, branchId);
+  }
+
+  @Post('investigations/:orderId/results')
+  @Roles('DOCTOR', 'ADMIN', 'LAB_TECHNICIAN', 'NURSING')
+  async saveInvestigationResults(
+    @Param('orderId') orderId: string,
+    @Body('results') results: any[],
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.saveInvestigationResults(
+      orderId,
+      results,
+      req.user.id,
+      branchId,
+    );
+  }
+
   @Get(':caseId/documents')
   @Roles('DOCTOR', 'ADMIN', 'NURSING')
   async getPatientDocuments(

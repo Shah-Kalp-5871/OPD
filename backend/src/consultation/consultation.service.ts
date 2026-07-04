@@ -50,6 +50,99 @@ export class ConsultationService {
     );
   }
 
+  async getPatientLabHistory(caseId: string, branchId: string) {
+    const patientCase = await this.prisma.patientCase.findUnique({
+      where: { id: caseId, branchId },
+      select: { patientId: true }
+    });
+
+    if (!patientCase) {
+      throw new NotFoundException('Patient case not found');
+    }
+
+    // Get all completed lab results for this patient, ordered by date descending
+    const history = await this.prisma.investigationOrder.findMany({
+      where: {
+        patientCase: { patientId: patientCase.patientId },
+        status: 'COMPLETED',
+        results: { some: {} }
+      },
+      include: {
+        results: {
+          include: {
+            parameter: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return history;
+  }
+
+  async saveInvestigationResults(
+    orderId: string,
+    resultsData: { parameterId: string, value: string, notes?: string }[],
+    userId: string,
+    branchId: string,
+  ) {
+    const order = await this.prisma.investigationOrder.findFirst({
+      where: { id: orderId, patientCase: { branchId } }
+    });
+
+    if (!order) {
+      throw new NotFoundException('Investigation order not found');
+    }
+
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      // Create/update results for this order
+      for (const res of resultsData) {
+        const numVal = !isNaN(Number(res.value)) && res.value.trim() !== '' ? Number(res.value) : null;
+        
+        const existing = await tx.investigationResult.findFirst({
+          where: { orderId, parameterId: res.parameterId }
+        });
+        if (existing) {
+          await tx.investigationResult.update({
+            where: { id: existing.id },
+            data: { 
+              numericValue: numVal, 
+              textValue: numVal === null ? res.value : null,
+              notes: res.notes 
+            }
+          });
+        } else {
+          await tx.investigationResult.create({
+            data: {
+              orderId,
+              parameterId: res.parameterId,
+              numericValue: numVal,
+              textValue: numVal === null ? res.value : null,
+              notes: res.notes,
+              enteredById: userId,
+              branchId: branchId,
+            }
+          });
+        }
+      }
+
+      // Mark the order as completed
+      const updated = await tx.investigationOrder.update({
+        where: { id: orderId },
+        data: { status: 'COMPLETED', resultEntryTime: new Date() },
+        include: {
+          results: {
+            include: { parameter: true }
+          }
+        }
+      });
+
+      return updated;
+    });
+
+    return updatedOrder;
+  }
+
   async getOrCreateConsultation(
     caseId: string,
     userId: string,
