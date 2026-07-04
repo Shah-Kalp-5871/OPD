@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import doctorLayout from '@/views/layouts/doctorLayout';
+import DoctorLayout from '@/views/layouts/DoctorLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { ArrowLeft, History, Activity, Calendar, Stethoscope, XCircle, RefreshCw } from 'lucide-react';
@@ -34,11 +34,11 @@ const ClinicalHistoryView = () => {
 
   if (isLoading) {
     return (
-      <doctorLayout>
+      <DoctorLayout>
         <div className="flex items-center justify-center h-screen">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
-      </doctorLayout>
+      </DoctorLayout>
     );
   }
 
@@ -78,7 +78,7 @@ const ClinicalHistoryView = () => {
   const hasOpenCase = !!activeCase;
 
   return (
-    <doctorLayout>
+    <DoctorLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Back Button & Header */}
@@ -289,7 +289,7 @@ const ClinicalHistoryView = () => {
           )}
         </div>
       </div>
-    </doctorLayout>
+    </DoctorLayout>
   );
 };
 
