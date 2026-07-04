@@ -109,14 +109,14 @@ const PatientSearchView = () => {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#0d6282] transition-colors" />
             <input 
               type="text" 
-              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-[#0d6282] focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
+              className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none focus:border-sky-600 focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
               placeholder="Search by MRD Number, Name, or Mobile Number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {isLoading && (
               <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 border-2 border-[#0d6282]/20 border-t-[#0d6282] rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-sky-600/20 border-t-orange-600 rounded-full animate-spin"></div>
               </div>
             )}
           </div>
@@ -146,10 +146,10 @@ const PatientSearchView = () => {
                     <tr 
                       key={p.id} 
                       className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                      onClick={() => router.push(`/doctor/patients/hub/${p.id}`)}
+                      onClick={() => router.push(`/doctor/patients/${p.id}`)}
                     >
                       <td className="px-5 py-3">
-                        <span className="px-3 py-1 bg-sky-50 text-[#0a4b63] rounded-lg text-[10px] font-black tracking-widest border border-sky-100">
+                        <span className="px-3 py-1 bg-sky-50 text-sky-700 rounded-lg text-[10px] font-black tracking-widest border border-sky-100">
                           {p.mrdNumber}
                         </span>
                       </td>
@@ -202,7 +202,7 @@ const PatientSearchView = () => {
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              router.push(`/doctor/patients/hub/${p.id}`);
+                              router.push(`/doctor/patients/${p.id}`);
                             }}
                             className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-[#0d6282] hover:border-sky-200 hover:shadow-sm rounded-xl transition-all"
                             title="Open Patient File"

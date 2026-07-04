@@ -40,7 +40,7 @@ const DoctorDashboardView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const user = useAuthStore(state => state.user);
+  const user = useAuthStore((state: any) => state.user);
   const doctorId = user?.id;
 
   const { entries: sseEntries, refreshData: refreshSseData } = useQueueSSE({ doctorId });
@@ -204,7 +204,7 @@ const DoctorDashboardView = () => {
                 <button 
                   onClick={() => {
                     const target = activeSessionEntry || nextPatientEntry;
-                    router.push(`/doctor/patients/hub/${target.patientId}`);
+                    router.push(`/doctor/patients/${target.patientId}`);
                   }}
                   className="bg-[#025674] hover:bg-[#01425a] text-white px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all border border-[#01425a] min-w-[120px] shadow-sm"
                 >
@@ -324,7 +324,7 @@ const DoctorDashboardView = () => {
                                    <div className="flex items-center gap-2">
                                       <span 
                                         className="text-[14px] font-bold text-[#107ca3] hover:text-[#0d6282] tracking-tight uppercase cursor-pointer hover:underline transition-all"
-                                        onClick={() => router.push(`/doctor/patients/hub/${entry.patientId}`)}
+                                        onClick={() => router.push(`/doctor/patients/${entry.patientId}`)}
                                       >
                                         {entry.patient.firstName} {entry.patient.lastName}
                                       </span>

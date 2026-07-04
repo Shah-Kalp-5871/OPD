@@ -39,6 +39,7 @@ const patientSchema = z.object({
 type PatientFormValues = z.infer<typeof patientSchema>;
 
 const PatientRegistrationView = () => {
+  const user = useAuthStore((state: any) => state.user);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'PATIENT' | 'MR'>('PATIENT');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,18 +58,20 @@ const PatientRegistrationView = () => {
   const [mrError, setMrError] = useState<string | null>(null);
   const [doctors, setDoctors] = useState<any[]>([]);
 
-  const user = useAuthStore(state => state.user);
+  useEffect(() => { fetchDoctors(); }, []);
 
-  useEffect(() => {
-    if (user?.role?.toUpperCase() === 'DOCTOR') {
-      setDoctors([{
-        id: user.id,
-        name: user.name || 'Doctor',
-        doctorProfile: { id: user.id, specialization: 'General' }
-      }]);
-      setMrDoctorId(user.id);
-    }
-  }, [user]);
+  const fetchDoctors = async () => {
+    try {
+      if (user?.role?.toUpperCase() === 'DOCTOR') {
+        const docId = user.doctorProfile?.id || user.id;
+        setDoctors([{ id: docId, name: user.name, doctorProfile: { id: docId } }]);
+        return;
+      }
+      const res = await api.get('/doctors');
+      setDoctors(res.data);
+    } catch { toast.error('Failed to load doctors'); }
+  };
+
   useEffect(() => {
     if (mrDoctorId) fetchMrSlots(mrDoctorId);
     else { setMrAvailableSlots([]); setMrSelectedSlot(''); }
@@ -153,12 +156,12 @@ const PatientRegistrationView = () => {
     }
   };
 
-  const inputCls = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-[#107ca3] focus:bg-white transition-all";
+  const inputCls = "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-sky-500 focus:bg-white transition-all";
   const labelCls = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
 
   return (
     <DoctorLayout>
-      <div className="w-full h-full flex flex-col font-sans gap-6">
+      <div className="w-full h-full flex flex-col font-sans p-4 md:p-6 bg-slate-50 gap-6">
 
         {/* ── HEADER WITH TABS ── */}
         <div className="flex items-center justify-between px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm shrink-0">
@@ -171,7 +174,7 @@ const PatientRegistrationView = () => {
           <div className="flex items-center gap-4">
             {/* MRD badge — always present, hidden when MR tab active */}
             <div className={`bg-sky-50 px-4 py-2 rounded-xl border border-sky-100 text-right transition-opacity ${activeTab === 'PATIENT' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <span className="block text-[9px] font-black text-[#107ca3] uppercase tracking-widest leading-none">MRD (Auto)</span>
+              <span className="block text-[9px] font-black text-sky-500 uppercase tracking-widest leading-none">MRD (Auto)</span>
               <span className="block text-base font-black text-slate-800 tracking-wider mt-0.5">{mrdPreview}</span>
             </div>
 
@@ -246,9 +249,9 @@ const PatientRegistrationView = () => {
                     <div>
                       <label className={labelCls}>Age (Y / M / D)</label>
                       <div className="flex gap-1.5">
-                        <input {...register('age')} type="number" min="0" className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center outline-none focus:border-[#107ca3]" placeholder="Yr" />
-                        <input {...register('ageMonths')} type="number" min="0" max="11" className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center outline-none focus:border-[#107ca3]" placeholder="Mo" />
-                        <input {...register('ageDays')} type="number" min="0" max="31" className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center outline-none focus:border-[#107ca3]" placeholder="D" />
+                        <input {...register('age')} type="number" min="0" className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center outline-none focus:border-sky-500" placeholder="Yr" />
+                        <input {...register('ageMonths')} type="number" min="0" max="11" className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center outline-none focus:border-sky-500" placeholder="Mo" />
+                        <input {...register('ageDays')} type="number" min="0" max="31" className="w-1/3 px-2 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center outline-none focus:border-sky-500" placeholder="D" />
                       </div>
                     </div>
                     <div>
@@ -256,7 +259,7 @@ const PatientRegistrationView = () => {
                       <div className="flex gap-1.5 h-[42px]">
                         {['M', 'F', 'Other'].map(opt => (
                           <button key={opt} type="button" onClick={() => setValue('gender', opt)}
-                            className={`flex-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${selectedGender === opt ? 'bg-[#0d6282] text-white border-[#0d6282] shadow-md shadow-sky-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-orange-300'}`}>
+                            className={`flex-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${selectedGender === opt ? 'bg-[#0d6282] text-white border-sky-600 shadow-md shadow-sky-100' : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-sky-300'}`}>
                             {opt}
                           </button>
                         ))}
@@ -305,7 +308,7 @@ const PatientRegistrationView = () => {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">MRD Number</p>
-                          <p className="text-sm font-black text-[#0a4b63] tracking-widest">{mrdPreview}</p>
+                          <p className="text-sm font-black text-sky-700 tracking-widest">{mrdPreview}</p>
                         </div>
                         <div>
                           <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Gender | Age</p>
@@ -328,7 +331,7 @@ const PatientRegistrationView = () => {
                 <div className="space-y-3">
                   <button type="submit" disabled={isSubmitting}
                     className="w-full flex items-center justify-center gap-2 py-4 bg-[#0d6282] text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-[#0a4b63] transition-all shadow-md shadow-sky-100 disabled:opacity-50">
-                    {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CalendarCheck className="w-4 h-4" />Complete Registration &amp; Open File</>}
+                    {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><CalendarCheck className="w-4 h-4" />Register &amp; Book Appointment</>}
                   </button>
                   <div className="grid grid-cols-2 gap-3">
                     <button type="button" onClick={() => router.back()}
@@ -336,7 +339,7 @@ const PatientRegistrationView = () => {
                       Cancel
                     </button>
                     <button type="button" onClick={handlePrintSticker}
-                      className="flex items-center justify-center gap-2 py-3.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase hover:border-orange-300 hover:text-[#0d6282] transition-all shadow-sm">
+                      className="flex items-center justify-center gap-2 py-3.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase hover:border-sky-300 hover:text-[#0d6282] transition-all shadow-sm">
                       <Printer className="w-4 h-4" /> Print
                     </button>
                   </div>
@@ -394,35 +397,45 @@ const PatientRegistrationView = () => {
                   </div>
                 </div>
 
-                {/* Slot Selection */}
+                {/* Doctor + Slot selection */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Slots *</p>
-                    <span className="text-[9px] font-bold text-[#0d6282] bg-sky-50 px-2 py-1 rounded-full">{mrAvailableSlots.length} slots</span>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Appointment Details</p>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Slot Selection */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Slots *</p>
+                        <span className="text-[9px] font-bold text-[#0d6282] bg-sky-50 px-2 py-1 rounded-full">{mrAvailableSlots.length} slots</span>
+                      </div>
+                      {isMrSlotsLoading ? (
+                        <div className="text-xs text-slate-400 py-3 flex items-center gap-2">
+                          <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
+                          Loading slots...
+                        </div>
+                      ) : !mrDoctorId ? (
+                        <div className="text-xs text-slate-400 py-3 italic bg-slate-50 rounded-xl px-4 border border-slate-100">Select a doctor to see slots</div>
+                      ) : mrAvailableSlots.length === 0 ? (
+                        <div className="text-xs text-slate-400 py-3 italic text-center border border-dashed border-slate-200 rounded-xl bg-slate-50">No slots today</div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {mrAvailableSlots.filter(slot => {
+                            const now = new Date();
+                            const [h, m] = slot.time.split(':').map(Number);
+                            return h > now.getHours() || (h === now.getHours() && m > now.getMinutes());
+                          }).map((slot, i) => {
+                            const isBooked = slot.status === 'booked';
+                            const isSel = mrSelectedSlot === slot.time;
+                            return (
+                              <button key={i} type="button" disabled={isBooked} onClick={() => setMrSelectedSlot(slot.time)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' : isSel ? 'bg-[#0d6282] text-white shadow-md shadow-sky-100' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-sky-400 hover:bg-white hover:text-[#0d6282]'}`}>
+                                {slot.time}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {isMrSlotsLoading ? (
-                    <div className="text-xs text-slate-400 py-3 flex items-center gap-2">
-                      <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
-                      Loading slots...
-                    </div>
-                  ) : !mrDoctorId ? (
-                    <div className="text-xs text-slate-400 py-3 italic bg-slate-50 rounded-xl px-4 border border-slate-100">Select a doctor to see slots</div>
-                  ) : mrAvailableSlots.length === 0 ? (
-                    <div className="text-xs text-slate-400 py-3 italic text-center border border-dashed border-slate-200 rounded-xl bg-slate-50">No slots today</div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {mrAvailableSlots.map((slot, i) => {
-                        const isBooked = slot.status === 'booked';
-                        const isSel = mrSelectedSlot === slot.time;
-                        return (
-                          <button key={i} type="button" disabled={isBooked} onClick={() => setMrSelectedSlot(slot.time)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' : isSel ? 'bg-[#0d6282] text-white shadow-md shadow-sky-100' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-sky-400 hover:bg-white hover:text-[#0d6282]'}`}>
-                            {slot.time}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -449,13 +462,13 @@ const PatientRegistrationView = () => {
                         </div>
                         <div>
                           <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Time</p>
-                          <p className="text-xs font-black text-[#0a4b63] tracking-widest">{mrSelectedSlot || '--:--'}</p>
+                          <p className="text-xs font-black text-sky-700 tracking-widest">{mrSelectedSlot || '--:--'}</p>
                         </div>
                       </div>
                       <div>
                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tight">Visiting Doctor</p>
                         <p className="text-xs font-black text-slate-800">
-                          {user?.name ? `Dr. ${user.name}` : '---'}
+                          {mrDoctorId ? `Dr. ${doctors.find(d => (d.doctorProfile?.id || d.id) === mrDoctorId)?.name || ''}` : '---'}
                         </p>
                       </div>
                       <div className="pt-3 border-t border-dashed border-slate-200 flex flex-col items-center gap-1.5">

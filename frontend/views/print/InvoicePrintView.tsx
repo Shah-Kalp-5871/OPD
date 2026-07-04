@@ -252,23 +252,33 @@ const InvoicePrintView: React.FC<InvoicePrintViewProps> = ({ data }) => {
                 <span className="font-bold uppercase tracking-widest opacity-60">Gross Total</span>
                 <span className="font-black">{formatCurrency(grossAmount)}</span>
               </div>
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="font-bold uppercase tracking-widest opacity-60">Tax / Discount</span>
-                <span className="font-black text-emerald-400">-{formatCurrency(discountTotal)}</span>
-              </div>
+              {Number(discountTotal) > 0 && (
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="font-bold uppercase tracking-widest opacity-60">Tax / Discount</span>
+                  <span className="font-black text-emerald-400">-{formatCurrency(discountTotal)}</span>
+                </div>
+              )}
               <div className="h-px bg-white/10 my-2"></div>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-black uppercase tracking-widest">Net Payable</span>
                 <span className="text-xl font-black">{formatCurrency(netAmount)}</span>
               </div>
-              <div className="flex justify-between items-center text-[10px] mt-4">
-                <span className="font-bold uppercase tracking-widest opacity-60">Paid Amount</span>
-                <span className="font-black">{formatCurrency(paidAmount)}</span>
+              <div className="flex justify-between items-center text-[10px] mt-4 pt-4 border-t border-white/10">
+                <span className="font-bold uppercase tracking-widest opacity-60">Total Paid</span>
+                <span className="font-black text-emerald-400">{formatCurrency(paidAmount)}</span>
               </div>
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="font-bold uppercase tracking-widest opacity-60">Balance Due</span>
-                <span className="font-black text-rose-400">{formatCurrency(balanceAmount)}</span>
-              </div>
+              
+              {Number(balanceAmount) > 0 ? (
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-rose-500/30">
+                  <span className="text-sm font-black uppercase tracking-widest text-rose-400">Yet to Pay</span>
+                  <span className="text-xl font-black text-rose-400">{formatCurrency(balanceAmount)}</span>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-emerald-500/30">
+                  <span className="text-sm font-black uppercase tracking-widest text-emerald-400">Balance Due</span>
+                  <span className="text-xl font-black text-emerald-400">₹0.00</span>
+                </div>
+              )}
            </div>
         </div>
 

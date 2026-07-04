@@ -308,7 +308,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
               <button 
                 onClick={handleGenerateBill}
                 disabled={isSubmitting}
-                className="px-8 py-4 bg-orange-600 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-100 flex items-center gap-3"
+                className="px-8 py-4 bg-[#0d6282] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-[#0a4b63] transition-all shadow-xl shadow-sky-100 flex items-center gap-3"
               >
                 {isSubmitting ? 'Generating...' : 'Auto-Generate Bill from Consultation Data'}
                 <ArrowRight className="w-4 h-4" />
@@ -511,12 +511,10 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                        ))}
                     </div>
                     
-                    {Number(bill.discountTotal) > 0 && (
-                      <div className="border-t border-dashed border-slate-300 pt-2 mb-2 flex justify-between text-slate-500">
-                         <span>Discount:</span>
-                         <span>{bill.discountTotal.toLocaleString()}</span>
-                      </div>
-                    )}
+                    <div className="border-t border-dashed border-slate-300 pt-2 mb-2 flex justify-between text-slate-500">
+                       <span>Discount:</span>
+                       <span>{bill.discountTotal.toLocaleString()}</span>
+                    </div>
                     <div className="flex justify-between font-bold text-slate-900 mb-2">
                        <span>Net Payable:</span>
                        <span>{bill.netAmount.toLocaleString()}</span>
@@ -525,8 +523,8 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                        <span>Total Paid:</span>
                        <span>{bill.paidAmount.toLocaleString()}</span>
                     </div>
-                    <div className={`flex justify-between font-bold pb-4 border-b border-dashed border-slate-300 ${(bill.netAmount - bill.paidAmount) > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                       <span>{(bill.netAmount - bill.paidAmount) > 0 ? 'Yet To Pay:' : 'Balance Due:'}</span>
+                    <div className="flex justify-between font-bold text-rose-500 pb-4 border-b border-dashed border-slate-300">
+                       <span>Balance Due:</span>
                        <span>{(bill.netAmount - bill.paidAmount).toLocaleString()}</span>
                     </div>
                     
@@ -617,7 +615,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest cursor-pointer" htmlFor="foc-toggle">FOC Mode</label>
                           <label htmlFor="foc-toggle" className="relative inline-flex items-center cursor-pointer">
                              <input id="foc-toggle" type="checkbox" checked={isFoc} disabled={isSubmitting} onChange={(e) => setIsFoc(e.target.checked)} className="sr-only peer" />
-                             <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                             <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
                           </label>
                        </div>
                      )}
@@ -681,7 +679,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                                                 const newSplits = [...splits];
                                                 newSplits[index].amount = e.target.value;
                                                 setSplits(newSplits);
-                                             }} disabled={isSubmitting} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-orange-500 transition-all placeholder:text-slate-300" placeholder="0.00" />
+                                             }} disabled={isSubmitting} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-sky-500 transition-all placeholder:text-slate-300" placeholder="0.00" />
                                           </div>
                                           <div className="space-y-2">
                                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Transaction ID</label>
@@ -689,7 +687,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                                                 const newSplits = [...splits];
                                                 newSplits[index].transactionId = e.target.value;
                                                 setSplits(newSplits);
-                                             }} disabled={isSubmitting} placeholder="AUTO-GENERATED IF EMPTY" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-orange-500 transition-all uppercase placeholder:normal-case placeholder:text-slate-300" />
+                                             }} disabled={isSubmitting} placeholder="AUTO-GENERATED IF EMPTY" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-sky-500 transition-all uppercase placeholder:normal-case placeholder:text-slate-300" />
                                           </div>
                                        </div>
                                        <div className="space-y-2">
@@ -707,9 +705,9 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                                                        setSplits(newSplits);
                                                     }}
                                                     disabled={isSubmitting}
-                                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
+                                                    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}
                                                   >
-                                                     <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-orange-600' : 'text-slate-400'}`} />
+                                                     <Icon className={`w-4 h-4 mb-1 ${isSelected ? 'text-[#0d6282]' : 'text-slate-400'}`} />
                                                      <span className="text-[9px] font-black uppercase tracking-widest">{mode.label}</span>
                                                   </button>
                                                 );
@@ -730,7 +728,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
 
                         <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row gap-4 mt-auto">
                             <button 
-                              onClick={() => router.push('/reception/billing')}
+                              onClick={() => router.push('/doctor/billing')}
                               disabled={isSubmitting}
                               className="flex-1 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-slate-300 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
                             >
@@ -739,7 +737,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                             <button 
                               onClick={handleCollectPayment}
                               disabled={isSubmitting}
-                              className="flex-[2] py-4 bg-orange-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-100 flex items-center justify-center gap-2"
+                              className="flex-[2] py-4 bg-[#0d6282] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#0a4b63] transition-all shadow-xl shadow-sky-100 flex items-center justify-center gap-2"
                             >
                                COLLECT PAYMENT & RECEIPT <ArrowRight className="w-4 h-4" />
                             </button>

@@ -7,11 +7,12 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Clock, Sunrise, Sun, Sunset, Stethoscope, Briefcase, User, Phone, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import InitialConsultationPaymentModal from '../components/InitialConsultationPaymentModal';
 
 const CheckInView = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const user = useAuthStore(state => state.user);
+  const user = useAuthStore((state: any) => state.user);
   const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,9 +34,7 @@ const CheckInView = () => {
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const checkInSubmittingRef = useRef(false);
   useEffect(() => {
-    if (user?.id) {
-      setSelectedDoctorId(user.id);
-    }
+    fetchDoctors();
     // Auto-load if coming from schedule
     const mrdParam = searchParams?.get('mrd');
     const apptId = searchParams?.get('appt');
@@ -58,6 +57,17 @@ const CheckInView = () => {
     }
   }, []);
 
+  const fetchDoctors = async () => {
+    try {
+      if (user?.role?.toUpperCase() === 'DOCTOR') {
+        const docId = user.doctorProfile?.id || user.id;
+        setDoctors([{ id: docId, name: user.name, doctorProfile: { id: docId } }]);
+        return;
+      }
+      const res = await api.get('/doctors');
+      setDoctors(res.data);
+    } catch { toast.error('Failed to load doctors'); }
+  };
 
   useEffect(() => {
     if (selectedDoctorId && !selectedAppointment) {
@@ -112,12 +122,13 @@ const CheckInView = () => {
     }
   };
 
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+
   const handleSelectPatient = (patient: any, apptId?: string | null) => {
     setSelectedPatient(patient);
     setSearchResults([]);
     setCheckInResult(null);
-    setSelectedAppointment(null);
-    fetchPatientAppointments(patient.id, apptId);
+    setSelectedAppointment(apptId ? { id: apptId } : null);
   };
 
   const fetchPatientAppointments = async (patientId: string, apptId?: string | null) => {
@@ -202,7 +213,7 @@ const CheckInView = () => {
       
       // Redirect to patient hub
       setTimeout(() => {
-        router.push(`/doctor/patients/hub/${selectedPatient.id}`);
+        router.push(`/doctor/patients/${selectedPatient.id}`);
       }, 1500);
       
     } catch (error: any) {
@@ -229,7 +240,7 @@ const CheckInView = () => {
         <div className="flex gap-3 mb-5">
            <input 
              type="text" 
-             className="flex-1 p-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-[#107ca3] focus:ring-4 focus:ring-[#107ca3]/10 transition-all shadow-sm"
+             className="flex-1 p-3 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all shadow-sm"
              placeholder="Search arriving patient by Name or Mobile Number..."
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
@@ -250,13 +261,13 @@ const CheckInView = () => {
                 <h3 className="font-semibold text-slate-800 mb-3">Multiple Patients Found. Select one:</h3>
                 <div className="grid gap-2">
                     {searchResults.map(p => (
-                        <div key={p.id} onClick={() => handleSelectPatient(p)} className="p-3 border border-slate-100 rounded-lg hover:border-[#107ca3] hover:bg-sky-50/30 cursor-pointer transition-all flex items-center justify-between group">
+                        <div key={p.id} onClick={() => handleSelectPatient(p)} className="p-3 border border-slate-100 rounded-lg hover:border-sky-500 hover:bg-sky-50/30 cursor-pointer transition-all flex items-center justify-between group">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm">
                                 {p.firstName?.charAt(0)}{p.lastName?.charAt(0)}
                               </div>
                               <div>
-                                <div className="font-semibold text-slate-800 text-sm group-hover:text-[#0a4b63]">{p.firstName} {p.lastName}</div>
+                                <div className="font-semibold text-slate-800 text-sm group-hover:text-sky-700">{p.firstName} {p.lastName}</div>
                                 <div className="text-xs text-slate-500">MRD: {p.mrdNumber} • Mob: {p.mobile}</div>
                               </div>
                             </div>
@@ -273,8 +284,8 @@ const CheckInView = () => {
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center text-[#0d6282] text-sm">✓</div>
                   <div>
-                    <div className="text-orange-900 font-semibold text-sm">Check-In Successful!</div>
-                    <div className="text-[#0a4b63] text-xs">Token: <span className="font-bold">{checkInResult?.tokenDisplay || checkInResult?.tokenNumber || 'N/A'}</span>. Preparing for next patient...</div>
+                    <div className="text-sky-900 font-semibold text-sm">Check-In Successful!</div>
+                    <div className="text-sky-700 text-xs">Token: <span className="font-bold">{checkInResult?.tokenDisplay || checkInResult?.tokenNumber || 'N/A'}</span>. Preparing for next patient...</div>
                   </div>
                 </div>
             </div>
@@ -362,7 +373,7 @@ const CheckInView = () => {
                            value={visitType} 
                            onChange={e => setVisitType(e.target.value)} 
                            placeholder="e.g. Follow-up, Fever..."
-                           className="w-full border border-slate-200 bg-white rounded-lg p-2 outline-none focus:border-[#107ca3] focus:ring-2 focus:ring-[#107ca3]/20 text-xs transition-all" 
+                           className="w-full border border-slate-200 bg-white rounded-lg p-2 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-xs transition-all" 
                          />
                       </div>
                       <div className="space-y-1">
@@ -372,7 +383,7 @@ const CheckInView = () => {
                            value={complaint} 
                            onChange={e => setComplaint(e.target.value)} 
                            placeholder="Brief details..."
-                           className="w-full border border-slate-200 bg-white rounded-lg p-2 outline-none focus:border-[#107ca3] focus:ring-2 focus:ring-[#107ca3]/20 text-xs transition-all" 
+                           className="w-full border border-slate-200 bg-white rounded-lg p-2 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 text-xs transition-all" 
                          />
                       </div>
                     </div>
@@ -394,7 +405,6 @@ const CheckInView = () => {
                     <h2 className="font-semibold text-slate-700 text-sm">Walk-In Clinical Details</h2>
                   </div>
                   <div className="p-4 space-y-4">
-
                     {/* Slot Selection */}
                     <div>
                       <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
@@ -423,7 +433,7 @@ const CheckInView = () => {
                                 onClick={() => setSelectedSlot(slot.time)}
                                 className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${
                                   isBooked ? 'bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed line-through' :
-                                  isSel ? 'bg-[#0d6282] text-white shadow-md shadow-[#0d6282]/20 scale-105' :
+                                  isSel ? 'bg-[#0d6282] text-white shadow-md shadow-sky-600/20 scale-105' :
                                   'bg-white text-slate-600 border border-slate-200 hover:border-sky-400 hover:text-[#0d6282]'
                                 }`}
                               >
@@ -445,12 +455,17 @@ const CheckInView = () => {
             {/* Check-In Action */}
             <div className="flex items-center gap-4 py-1">
                <button 
-                 onClick={handleCheckIn}
-                 disabled={isSubmitting}
-                 className="bg-[#0d6282] text-white font-bold py-3 px-10 text-sm rounded-xl hover:bg-[#0a4b63] transition-all shadow-sm shadow-[#0d6282]/20 disabled:opacity-70 flex items-center gap-2"
+                 onClick={() => {
+                   if (!selectedAppointment && (!selectedDoctorId || !selectedSlot)) {
+                     toast.error('Please select a doctor and a time slot first.');
+                     return;
+                   }
+                   setIsCheckInModalOpen(true);
+                 }}
+                 className="bg-[#0d6282] text-white font-bold py-3 px-10 text-sm rounded-xl hover:bg-[#0a4b63] transition-all shadow-sm shadow-sky-600/20 flex items-center gap-2"
                >
-                 {isSubmitting ? 'Processing...' : 'Confirm Check-In'}
-                 {!isSubmitting && <span>&rarr;</span>}
+                 Proceed to Payment & Check-In
+                 <span>&rarr;</span>
                </button>
             </div>
 
@@ -458,6 +473,23 @@ const CheckInView = () => {
         </div>
       )}
     </div>
+    <InitialConsultationPaymentModal 
+       isOpen={isCheckInModalOpen}
+       onClose={() => setIsCheckInModalOpen(false)}
+       patient={selectedPatient}
+       appointmentId={selectedAppointment?.id}
+       walkInDoctorId={selectedDoctorId}
+       walkInSlot={selectedSlot}
+       walkInVisitType={visitType}
+       walkInComplaint={complaint}
+       onSuccess={() => {
+         setIsCheckInModalOpen(false);
+         // Router push is handled inside handleCheckIn success on the parent or we just reload
+         setTimeout(() => {
+           router.push(`/doctor/patients/${selectedPatient?.id}`);
+         }, 1500);
+       }}
+    />
   </DoctorLayout>
   );
 };

@@ -47,16 +47,11 @@ const BookAppointmentView = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const user = useAuthStore(state => state.user);
-  const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
-
   // Initial Loads
   useEffect(() => {
-    if (user?.id) {
-      setSelectedDoctorId(user.id);
-    }
+    fetchDoctors();
     fetchRecentPatients();
-  }, [user]);
+  }, []);
 
   // Auto-select patient from query param
   useEffect(() => {
@@ -88,8 +83,20 @@ const BookAppointmentView = () => {
     }
   }, [searchQuery]);
 
+  const user = useAuthStore((state: any) => state.user);
+  const isDoctor = user?.role?.toUpperCase() === 'DOCTOR';
 
-
+  const fetchDoctors = async () => {
+    try {
+      if (user?.role?.toUpperCase() === 'DOCTOR') {
+        const docId = user.doctorProfile?.id || user.id;
+        setDoctors([{ id: docId, name: user.name, doctorProfile: { id: docId } }]);
+        return;
+      }
+      const res = await api.get('/doctors');
+      setDoctors(res.data);
+    } catch { toast.error('Failed to load doctors'); }
+  };
 
   const fetchRecentPatients = async () => {
     setIsRecentLoading(true);
@@ -198,7 +205,7 @@ const BookAppointmentView = () => {
               </div>
 
               <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-sky-500 border border-slate-100">
+                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-amber-400 border border-slate-100">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 </div>
                 <div>
@@ -208,16 +215,16 @@ const BookAppointmentView = () => {
               </div>
             </div>
 
-            <div class="w-full bg-gradient-to-br from-sky-50 to-emerald-50 border border-sky-200 p-5 rounded-2xl mt-5 text-center shadow-[inset_0_2px_10px_rgba(20,184,166,0.05)]">
+            <div class="w-full bg-gradient-to-br from-orange-50 to-emerald-50 border border-sky-200 p-5 rounded-2xl mt-5 text-center shadow-[inset_0_2px_10px_rgba(20,184,166,0.05)]">
               <p class="text-[10px] uppercase font-black tracking-widest text-[#0d6282]/80 mb-2 flex items-center justify-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 Generated Case ID
               </p>
-              <p class="text-3xl font-black text-[#0a4b63] tracking-wider drop-shadow-sm">${caseNumber}</p>
+              <p class="text-3xl font-black text-sky-900 tracking-wider drop-shadow-sm">${caseNumber}</p>
             </div>
             
             <div class="mt-5 flex items-center gap-2 text-[11px] font-bold text-slate-500 bg-slate-50 px-4 py-2.5 rounded-full border border-slate-200">
-              <svg class="w-4 h-4 text-[#107ca3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+              <svg class="w-4 h-4 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
               Confirmation SMS has been sent
             </div>
           </div>
@@ -227,7 +234,7 @@ const BookAppointmentView = () => {
         customClass: {
           container: 'font-sans',
           popup: 'rounded-[2rem] p-4 md:p-6 shadow-2xl border border-slate-100',
-          confirmButton: 'bg-[#0d6282] text-white font-black uppercase tracking-widest text-[11px] px-8 py-3.5 rounded-2xl w-full mt-4 hover:bg-[#0a4b63] transition-all shadow-lg shadow-[#107ca3]/20 active:scale-[0.98]',
+          confirmButton: 'bg-[#0d6282] text-white font-black uppercase tracking-widest text-[11px] px-8 py-3.5 rounded-2xl w-full mt-4 hover:bg-[#0a4b63] transition-all shadow-lg shadow-sky-500/20 active:scale-[0.98]',
         },
         buttonsStyling: false,
         width: '420px',
@@ -235,7 +242,7 @@ const BookAppointmentView = () => {
         closeButtonHtml: '<span class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</span>'
       }).then(() => {
         if (selectedPatient) {
-          router.push(`/doctor/patients/hub/${selectedPatient.id}`);
+          router.push(`/doctor/patients/${selectedPatient.id}`);
         } else {
           // Reset flow
           setSelectedPatient(null);
