@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '@/lib/api';
 import { 
   FileText, 
   Clock, 
@@ -11,7 +12,9 @@ import {
   Baby,
   Pill,
   History as HistoryIcon,
-  Search
+  Search,
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { Card, SectionHeader, TextArea, Input, Badge } from './ClinicalDesignSystem';
 
@@ -21,6 +24,8 @@ interface ComplaintsTabProps {
   updateHistory: (field: string, value: any) => void;
   updateVitals: (field: string, value: any) => void;
   patientGender: string;
+  saving?: boolean;
+  onSaveAndNext?: () => void;
 }
 
 const ComplaintsTab: React.FC<ComplaintsTabProps> = ({ 
@@ -28,11 +33,42 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
   updateComplaint, 
   updateHistory,
   updateVitals,
-  patientGender 
+  patientGender,
+  saving,
+  onSaveAndNext
 }) => {
   const complaint = data?.complaint || {};
   const history = data?.history || {};
   const vitals = data?.vitals || {};
+  const patientId = data?.case?.patientId;
+  const currentCaseId = data?.case?.id;
+
+  const [pastCases, setPastCases] = useState<any[]>([]);
+  const [loadingPast, setLoadingPast] = useState(false);
+
+  useEffect(() => {
+    if (patientId) {
+      fetchPastCases();
+    }
+  }, [patientId]);
+
+  const fetchPastCases = async () => {
+    try {
+      setLoadingPast(true);
+      const res = await api.get(`/patients/${patientId}`);
+      if (res.data?.cases) {
+        // Filter out the current case and sort by date descending
+        const previous = res.data.cases
+          .filter((c: any) => c.id !== currentCaseId)
+          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setPastCases(previous);
+      }
+    } catch (err) {
+      console.error('Failed to load past complaints', err);
+    } finally {
+      setLoadingPast(false);
+    }
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -149,6 +185,41 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
         </div>
       </Card>
 
+      {/* Past Complaints Section */}
+      <Card 
+        title="Past Complaints History" 
+        subtitle="Historical complaints from previous visits."
+      >
+        <div className="space-y-4">
+          {loadingPast ? (
+            <div className="flex items-center justify-center p-6">
+              <Activity className="w-6 h-6 text-blue-500 animate-pulse" />
+              <span className="ml-3 text-sm font-bold text-slate-500">Loading past records...</span>
+            </div>
+          ) : pastCases.length === 0 ? (
+            <div className="text-center p-6 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50">
+              <p className="text-sm font-bold text-slate-400">No past complaints found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {pastCases.map((pastCase: any, index: number) => (
+                <div key={pastCase.id} className="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm hover:border-blue-300 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="slate">{pastCase.caseNumber}</Badge>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {new Date(pastCase.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 line-clamp-3">
+                    {pastCase.visitComplaint?.presentComplaint || pastCase.consultationRecord?.complaint?.chiefComplaint || 'No chief complaint recorded'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* Clinical History Section */}
       <SectionHeader 
         title="Clinical History" 
@@ -231,6 +302,33 @@ const ComplaintsTab: React.FC<ComplaintsTabProps> = ({
           placeholder="Pre typing by nursing..."
         />
       </div>
+      
+      {/* Action Bar */}
+      {onSaveAndNext && (
+        <div className="flex justify-end pt-6 border-t border-slate-100">
+          <button
+            onClick={onSaveAndNext}
+            disabled={saving}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
+              saving 
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-200 hover:-translate-y-0.5'
+            }`}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Save & Next
+                <ArrowRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

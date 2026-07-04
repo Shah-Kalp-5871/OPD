@@ -12,6 +12,7 @@ import DiagnosisTab from './components/DiagnosisTab';
 import FinalReportTab from './components/FinalReportTab';
 import SpecialNote, { NoteItem } from './components/SpecialNote';
 import BillingSummaryPanel from './components/BillingSummaryPanel';
+import ClinicChatPanel from './components/ClinicChatPanel';
 import NotificationBar from './components/NotificationBar';
 import { useConsultation } from './hooks/useConsultation';
 import { 
@@ -48,17 +49,77 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
     updateComplaint, 
     updateHistory,
     updateVitals,
+    saveManually,
     refresh
   } = useConsultation(caseId);
   
   const [activeTab, setActiveTab] = useState('complaints');
   const [isBillingOpen, setIsBillingOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Mock Special Notes for demonstration
-  const specialNotes: NoteItem[] = [
-    { id: '1', type: 'appointment', message: 'Delayed Appointment, 10 days delay period (Fever)', timestamp: new Date() },
-    { id: '2', type: 'drug', message: '(S) Tab Levocip advised but patient did not take', timestamp: new Date() }
-  ];
+  const generateSpecialNotes = (consultationData: any): NoteItem[] => {
+    if (!consultationData) return [];
+    const notes: NoteItem[] = [];
+    
+    // 1. Allergies
+    const allergies = consultationData.history?.allergies || consultationData.case?.visitComplaint?.allergies;
+    if (allergies && allergies.trim() !== '') {
+      notes.push({
+        id: 'allergy',
+        type: 'drug',
+        message: `Allergies: ${allergies}`,
+        timestamp: new Date()
+      });
+    }
+
+    // 2. Priority
+    if (consultationData.case?.priority === 'URGENT' || consultationData.case?.priority === 'EMERGENCY') {
+      notes.push({
+        id: 'priority',
+        type: 'info',
+        message: `Priority: ${consultationData.case.priority}`,
+        timestamp: new Date()
+      });
+    }
+
+    // 3. Vitals Warnings
+    const latestVitals = consultationData.case?.patient?.vitals?.[0];
+    if (latestVitals) {
+      if (latestVitals.temperature && latestVitals.temperature >= 100.0) {
+        notes.push({
+          id: 'fever',
+          type: 'info',
+          message: `High Temp at triage: ${latestVitals.temperature}°F`,
+          timestamp: new Date()
+        });
+      }
+      if (latestVitals.bloodPressure) {
+        const parts = latestVitals.bloodPressure.split('/');
+        if (parts.length === 2) {
+          const sys = parseInt(parts[0], 10);
+          const dia = parseInt(parts[1], 10);
+          if ((sys && sys > 140) || (dia && dia > 90)) {
+            notes.push({
+              id: 'bp',
+              type: 'info',
+              message: `Elevated BP at triage: ${latestVitals.bloodPressure}`,
+              timestamp: new Date()
+            });
+          }
+        }
+      }
+    }
+
+    return notes;
+  };
+
+  const specialNotes = generateSpecialNotes(data);
+
+  const handleSaveAndNext = async (nextTabId: string) => {
+    await saveManually();
+    setActiveTab(nextTabId);
+  };
 
   if (loading) {
     return (
@@ -90,6 +151,8 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             updateHistory={updateHistory}
             updateVitals={updateVitals}
             patientGender={patient?.gender}
+            saving={saving}
+            onSaveAndNext={() => handleSaveAndNext('diagnosis')}
           />
         );
       case 'investigation':
@@ -163,9 +226,10 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         doctorName={data?.doctor?.name} 
         saving={saving}
         lastSaved={lastSaved}
-        patientName={`${patient?.firstName} ${patient?.lastName}`}
+        patientName={`${patient?.firstName || ''} ${patient?.lastName || ''}`}
         mrdNumber={patient?.mrdNumber}
-        visitType="OPD Consultation"
+        visitType={data?.case?.visitType || 'Consultation'}
+        doctorId={data?.doctor?.id}
       />
 
       {/* SPECIAL NOTE BANNER */}
@@ -176,12 +240,24 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         
         {/* BILLING DRAWER */}
         <BillingSummaryPanel 
+          caseId={caseId}
           isOpen={isBillingOpen} 
           onClose={() => setIsBillingOpen(false)} 
         />
         
+        {/* CLINIC CHAT DRAWER */}
+        <ClinicChatPanel 
+          isOpen={isChatOpen} 
+          onClose={() => setIsChatOpen(false)} 
+        />
+        
         {/* LEFT: Patient Side Panel — clinical-sidebar hides its scrollbar */}
-        <PatientSidePanel patient={patient} vitals={vitals} />
+        <PatientSidePanel 
+          patient={patient} 
+          vitals={vitals} 
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
 
         {/* RIGHT: Main Clinical Area — single, unified scroll context */}
         <main className="clinical-main-area bg-slate-50">
@@ -221,7 +297,8 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
 
       {/* NOTIFICATION BOTTOM BAR */}
       <NotificationBar 
-        onOpenChat={() => console.log('Open Chat')}
+        caseId={caseId}
+        onOpenChat={() => setIsChatOpen(true)}
         onOpenPayments={() => setIsBillingOpen(true)}
       />
     </div>

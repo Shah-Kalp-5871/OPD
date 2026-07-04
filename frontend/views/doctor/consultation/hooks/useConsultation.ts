@@ -105,27 +105,62 @@ export const useConsultation = (caseId: string) => {
   };
 
   const updateVitals = (field: string, value: any) => {
-    setData((prev: any) => ({
-      ...prev,
-      vitals: { ...prev.vitals, [field]: value }
-    }));
+    setData((prev: any) => {
+      const newVitals = { ...prev.vitals, [field]: value };
+      
+      // Auto-calculate BMI
+      if ((field === 'height' || field === 'weight') && newVitals.height && newVitals.weight) {
+        const heightInMeters = Number(newVitals.height) / 100;
+        const weight = Number(newVitals.weight);
+        if (heightInMeters > 0 && weight > 0) {
+          newVitals.bmi = parseFloat((weight / (heightInMeters * heightInMeters)).toFixed(2));
+        }
+      }
+
+      return {
+        ...prev,
+        vitals: newVitals
+      };
+    });
     setDirty(true);
+  };
+
+  const cleanObject = (obj: any) => {
+    if (!obj) return undefined;
+    const cleaned: any = {};
+    const blockedKeys = ['id', 'consultationId', 'createdAt', 'updatedAt', 'patientId', 'caseId', 'takenById', 'takenAt', 'branchId'];
+    for (const key in obj) {
+      if (!blockedKeys.includes(key) && obj[key] !== null) {
+        // Ensure numeric fields are actually parsed if they are strings
+        if (['height', 'weight', 'bmi', 'pulse', 'temperature', 'spo2'].includes(key) && typeof obj[key] === 'string') {
+           const num = parseFloat(obj[key]);
+           cleaned[key] = isNaN(num) ? undefined : num;
+        } else {
+           cleaned[key] = obj[key];
+        }
+      }
+    }
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  };
+
+  const buildPayload = (currentData: any) => {
+    return {
+      complaint: currentData.complaint ? cleanObject({
+        ...currentData.complaint,
+        duration: currentData.complaint.duration ? parseInt(currentData.complaint.duration) : undefined
+      }) : undefined,
+      history: cleanObject(currentData.history),
+      vitals: cleanObject(currentData.vitals),
+      provisionalDiagnosis: currentData.consultation?.provisionalDiagnosis || undefined,
+      finalDiagnosis: currentData.consultation?.finalDiagnosis || undefined,
+      treatmentPlan: currentData.consultation?.treatmentPlan || undefined,
+      advice: currentData.consultation?.advice || undefined,
+    };
   };
 
   const saveManually = async () => {
     if (!data) return;
-    const payload = {
-      complaint: data.complaint ? {
-        ...data.complaint,
-        duration: data.complaint.duration ? parseInt(data.complaint.duration) : null
-      } : undefined,
-      history: data.history,
-      vitals: data.vitals,
-      provisionalDiagnosis: data.consultation?.provisionalDiagnosis,
-      finalDiagnosis: data.consultation?.finalDiagnosis,
-      treatmentPlan: data.consultation?.treatmentPlan,
-      advice: data.consultation?.advice,
-    };
+    const payload = buildPayload(data);
     await performSave(payload);
     toast.success('Clinical data synchronized');
   };
@@ -135,18 +170,7 @@ export const useConsultation = (caseId: string) => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       
       saveTimeoutRef.current = setTimeout(() => {
-        const payload = {
-          complaint: data.complaint ? {
-            ...data.complaint,
-            duration: data.complaint.duration ? parseInt(data.complaint.duration) : null
-          } : undefined,
-          history: data.history,
-          vitals: data.vitals,
-          provisionalDiagnosis: data.consultation?.provisionalDiagnosis,
-          finalDiagnosis: data.consultation?.finalDiagnosis,
-          treatmentPlan: data.consultation?.treatmentPlan,
-          advice: data.consultation?.advice
-        };
+        const payload = buildPayload(data);
         performSave(payload);
       }, 3000);
     }

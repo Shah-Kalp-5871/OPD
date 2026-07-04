@@ -164,6 +164,10 @@ export class ClinicalHistoryUpdateDto {
   @IsString()
   @IsOptional()
   patientFeedback?: string;
+
+  @IsString()
+  @IsOptional()
+  currentMedications?: string;
 }
 
 export class VitalsUpdateDto {

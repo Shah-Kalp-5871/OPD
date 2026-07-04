@@ -494,6 +494,7 @@ model ClinicalHistory {
   updatedAt        DateTime           @updatedAt
   allergies        String?
   chronicDiseases  String?
+  currentMedications String?
   consultation     ConsultationRecord @relation(fields: [consultationId], references: [id], onDelete: Cascade)
 }
 

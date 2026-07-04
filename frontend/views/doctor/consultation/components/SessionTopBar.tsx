@@ -13,6 +13,7 @@ import {
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Button, Badge } from './ClinicalDesignSystem';
+import { useSessionTopBar } from '../hooks/useSessionTopBar';
 
 interface SessionTopBarProps {
   caseNumber: string;
@@ -22,6 +23,7 @@ interface SessionTopBarProps {
   patientName?: string;
   mrdNumber?: string;
   visitType?: string;
+  doctorId?: string;
 }
 
 const SessionTopBar: React.FC<SessionTopBarProps> = ({ 
@@ -31,10 +33,12 @@ const SessionTopBar: React.FC<SessionTopBarProps> = ({
   lastSaved,
   patientName,
   mrdNumber,
-  visitType = 'Consultation'
+  visitType = 'Consultation',
+  doctorId
 }) => {
   const router = useRouter();
   const [timer, setTimer] = useState(0);
+  const { nextPatient } = useSessionTopBar(doctorId);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -72,14 +76,20 @@ const SessionTopBar: React.FC<SessionTopBarProps> = ({
           </div>
 
           {/* NEXT PATIENT INDICATOR */}
-          <div className="pl-6 border-l border-slate-100 hidden lg:block group cursor-pointer">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Next Patient</p>
+          <div className="pl-6 border-l border-slate-100 hidden lg:block group cursor-pointer hover:bg-slate-50/50 p-2 -ml-2 rounded-xl transition-all">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Up Next in Queue</p>
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">Vikram Singh</p>
-              <Badge variant="amber" className="scale-90 opacity-80">Waiting</Badge>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">
+                {nextPatient ? (nextPatient.patient?.firstName + ' ' + nextPatient.patient?.lastName) : 'No Waiting Patients'}
+              </p>
+              {nextPatient && (
+                <Badge variant="blue" className="scale-75 opacity-80 uppercase tracking-widest">
+                  {nextPatient.status === 'VITALS_DONE' ? 'Ready' : 'Waiting'}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -91,14 +101,14 @@ const SessionTopBar: React.FC<SessionTopBarProps> = ({
           {saving ? (
             <RefreshCcw className="w-3.5 h-3.5 text-blue-500 animate-spin" />
           ) : (
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <Shield className="w-3.5 h-3.5 text-emerald-500" />
           )}
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-0.5">
-              {saving ? 'Syncing...' : 'Encrypted & Synced'}
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+              {saving ? 'Syncing...' : 'Secure & Synced'}
             </span>
             <span className="text-[11px] font-bold text-slate-600 tabular-nums leading-none">
-              {lastSaved ? format(lastSaved, 'HH:mm:ss') : '--:--:--'}
+              {lastSaved ? format(lastSaved, 'HH:mm:ss') : 'Just now'}
             </span>
           </div>
         </div>
@@ -123,10 +133,6 @@ const SessionTopBar: React.FC<SessionTopBarProps> = ({
           >
             Finalize Visit
           </Button>
-          
-          <button className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-2xl transition-all active:scale-95">
-            <MoreVertical className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </header>
