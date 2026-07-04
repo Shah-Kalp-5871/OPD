@@ -216,7 +216,7 @@ const DoctorDashboardView = () => {
                   <button 
                     onClick={() => handleCallPatient(nextPatientEntry.id)}
                     disabled={isSubmitting}
-                    className="bg-amber-400 hover:bg-amber-500 text-amber-950 px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all min-w-[140px] shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-white hover:bg-gray-50 text-[#107ca3] px-6 py-3 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all min-w-[140px] shadow-sm border border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                      <Zap className="w-5 h-5 animate-bounce" />
                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">
