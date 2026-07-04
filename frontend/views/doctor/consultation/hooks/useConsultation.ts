@@ -32,21 +32,29 @@ export const useConsultation = (caseId: string) => {
       }
       
       // Also merge history
-      if (fetchedData?.case?.visitComplaint && !fetchedData.history?.pastHistory && !fetchedData.history?.allergies) {
-         fetchedData.history = {
-           ...fetchedData.history,
-           pastHistory: fetchedData.case.visitComplaint.pastMedical || '',
-           personalHistory: fetchedData.case.visitComplaint.personalHistory || '',
-           surgicalHistory: fetchedData.case.visitComplaint.pastSurgical || '',
-           obstetricHistory: fetchedData.case.visitComplaint.obstetricHistory || '',
-           allergies: fetchedData.case.visitComplaint.allergies || '',
-           patientFeedback: fetchedData.case.visitComplaint.patientFeedback || '',
-         };
+      if (fetchedData?.case?.visitComplaint) {
+        if (!fetchedData.history?.pastHistory && !fetchedData.history?.allergies) {
+           fetchedData.history = {
+             ...fetchedData.history,
+             pastHistory: fetchedData.case.visitComplaint.pastMedical || '',
+             personalHistory: fetchedData.case.visitComplaint.personalHistory || '',
+             surgicalHistory: fetchedData.case.visitComplaint.pastSurgical || '',
+             obstetricHistory: fetchedData.case.visitComplaint.obstetricHistory || '',
+             allergies: fetchedData.case.visitComplaint.allergies || '',
+           };
+        }
+        
+        // Nursing notes and patient feedback are saved in visitComplaint in the DB, not clinicalHistory
+        fetchedData.history = {
+          ...fetchedData.history,
+          nursingNotes: fetchedData.case.visitComplaint.nursingNotes || '',
+          patientFeedback: fetchedData.case.visitComplaint.patientFeedback || '',
+        };
       }
 
-      // Merge vitals
-      if (!fetchedData.vitals && fetchedData?.case?.vitalsList?.[0]) {
-        fetchedData.vitals = { ...fetchedData.case.vitalsList[0] };
+      // Merge vitals - Vitals live on patient, not case
+      if (!fetchedData.vitals && fetchedData?.case?.patient?.vitals?.[0]) {
+        fetchedData.vitals = { ...fetchedData.case.patient.vitals[0] };
       }
 
       setData(fetchedData);

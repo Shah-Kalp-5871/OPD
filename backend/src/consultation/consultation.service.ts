@@ -666,24 +666,25 @@ export class ConsultationService {
             obstetricHistory: history.obstetricHistory,
             allergies: history.allergies,
             chronicDiseases: history.chronicDiseases,
+            currentMedications: history.currentMedications,
             updatedAt: new Date(),
           },
         });
         
         // Update nursing notes and patient feedback on VisitComplaint if present
         if (history.nursingNotes !== undefined || history.patientFeedback !== undefined) {
-          const visitComplaint = await tx.visitComplaint.findUnique({
-            where: { caseId: consultation.caseId }
+          await tx.visitComplaint.upsert({
+            where: { caseId: consultation.caseId },
+            create: {
+              caseId: consultation.caseId,
+              nursingNotes: history.nursingNotes || '',
+              patientFeedback: history.patientFeedback || '',
+            },
+            update: {
+              nursingNotes: history.nursingNotes !== undefined ? history.nursingNotes : undefined,
+              patientFeedback: history.patientFeedback !== undefined ? history.patientFeedback : undefined,
+            }
           });
-          if (visitComplaint) {
-            await tx.visitComplaint.update({
-              where: { id: visitComplaint.id },
-              data: {
-                nursingNotes: history.nursingNotes !== undefined ? history.nursingNotes : visitComplaint.nursingNotes,
-                patientFeedback: history.patientFeedback !== undefined ? history.patientFeedback : visitComplaint.patientFeedback,
-              }
-            });
-          }
         }
       }
 

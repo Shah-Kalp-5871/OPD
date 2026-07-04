@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import SessionTopBar from './components/SessionTopBar';
 import PatientSidePanel from './components/PatientSidePanel';
 import ComplaintsTab from './components/ComplaintsTab';
-import InvestigationsTab from './components/InvestigationsTab';
-import PrescriptionTab from './components/PrescriptionTab';
-import ProceduresTab from './components/ProceduresTab';
-import ImagesTab from './components/ImagesTab';
+import InvestigationTab from './components/InvestigationTab';
+import DrugsTab from './components/DrugsTab';
+import ProcedureTab from './components/ProcedureTab';
+import ImageTab from './components/ImageTab';
 import DiagnosisTab from './components/DiagnosisTab';
 import FinalReportTab from './components/FinalReportTab';
 import SpecialNote, { NoteItem } from './components/SpecialNote';
@@ -31,13 +31,13 @@ interface ConsultationViewProps {
 }
 
 const TABS = [
-  { id: 'complaints',    label: 'Chief Complaints',    icon: FileText },
-  { id: 'diagnosis',     label: 'Clinical Diagnosis',  icon: ClipboardList },
-  { id: 'prescription',  label: 'E-Prescription',      icon: Pill },
-  { id: 'investigation', label: 'Lab & Radiology',     icon: FlaskConical },
-  { id: 'procedure',     label: 'Clinical Procedures', icon: Scissors },
-  { id: 'images',        label: 'Visual Evidence',     icon: Camera },
-  { id: 'final-report',  label: 'Visit Summary',       icon: CheckSquare },
+  { id: 'complaints',    label: 'COMPLAINTS',       icon: FileText },
+  { id: 'investigation', label: 'INVESTIGATION',    icon: FlaskConical },
+  { id: 'prescription',  label: 'DRUGS',            icon: Pill },
+  { id: 'procedure',     label: 'PROCEDURE',        icon: Scissors },
+  { id: 'images',        label: 'IMAGE',            icon: Camera },
+  { id: 'diagnosis',     label: 'DIAGNOSIS & F/U',  icon: ClipboardList },
+  { id: 'final-report',  label: 'FINAL REPORT',     icon: CheckSquare },
 ];
 
 const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
@@ -84,7 +84,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
     }
 
     // 3. Vitals Warnings
-    const latestVitals = consultationData.case?.patient?.vitals?.[0];
+    const latestVitals = consultationData.vitals || consultationData.case?.patient?.vitals?.[0];
     if (latestVitals) {
       if (latestVitals.temperature && latestVitals.temperature >= 100.0) {
         notes.push({
@@ -139,7 +139,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
   }
 
   const patient = data?.case?.patient;
-  const vitals = patient?.vitals || [];
+  const vitals = data?.vitals ? [data.vitals] : (patient?.vitals || []);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -157,7 +157,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         );
       case 'investigation':
         return (
-          <InvestigationsTab 
+          <InvestigationTab 
             caseId={caseId}
             data={data}
             onOrderAdded={refresh}
@@ -165,7 +165,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         );
       case 'prescription':
         return (
-          <PrescriptionTab 
+          <DrugsTab 
             caseId={caseId}
             data={data}
             onPrescriptionAdded={refresh}
@@ -173,7 +173,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         );
       case 'procedure':
         return (
-          <ProceduresTab 
+          <ProcedureTab 
             caseId={caseId}
             data={data}
             onProcedureAdded={refresh}
@@ -181,7 +181,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
         );
       case 'images':
         return (
-          <ImagesTab 
+          <ImageTab 
             caseId={caseId}
             data={data}
             onImageAdded={refresh}

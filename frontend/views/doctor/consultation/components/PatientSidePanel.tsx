@@ -32,7 +32,7 @@ const PatientSidePanel: React.FC<PatientSidePanelProps> = ({ patient: initialPat
   const { patient: livePatient, loading, refresh } = usePatientSidePanel(initialPatient?.id);
   
   const patient = livePatient || initialPatient;
-  const vitals = livePatient?.vitalsList || livePatient?.vitals || initialVitals;
+  const vitals = (initialVitals && initialVitals.length > 0) ? initialVitals : (livePatient?.vitalsList || livePatient?.vitals);
   
   const latestVitals = vitals?.[0];
   const [riskFlags, setRiskFlags] = useState<any[]>([]);

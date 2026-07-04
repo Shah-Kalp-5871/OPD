@@ -83,8 +83,10 @@ const ClinicalDataTab: React.FC<ClinicalDataTabProps> = ({ patient, onSaveClinic
     }
 
     // Load Complaints
-    if (selectedCase && (selectedCase as any).visitComplaint) {
-      const c = (selectedCase as any).visitComplaint;
+    if (selectedCase) {
+      const c = (selectedCase as any).visitComplaint || {};
+      const history = (selectedCase as any).consultationRecord?.history || {};
+      
       setVisitComplaint({
         presentComplaint: c.presentComplaint || '',
         durationDays: c.durationDays?.toString() || '',
@@ -94,12 +96,12 @@ const ClinicalDataTab: React.FC<ClinicalDataTabProps> = ({ patient, onSaveClinic
         onset: c.onset || '',
         aggravatingFactors: c.aggravatingFactors || '',
         relievingFactors: c.relievingFactors || '',
-        pastMedical: c.pastMedical || '',
-        pastSurgical: c.pastSurgical || '',
-        personalHistory: c.personalHistory || '',
-        obstetricHistory: c.obstetricHistory || '',
-        currentMedications: c.currentMedications || '',
-        allergies: c.allergies || '',
+        pastMedical: history.pastHistory || c.pastMedical || '',
+        pastSurgical: history.surgicalHistory || c.pastSurgical || '',
+        personalHistory: history.personalHistory || c.personalHistory || '',
+        obstetricHistory: history.obstetricHistory || c.obstetricHistory || '',
+        currentMedications: history.currentMedications || c.currentMedications || '',
+        allergies: history.allergies || c.allergies || '',
         nursingNotes: c.nursingNotes || '',
         patientFeedback: c.patientFeedback || ''
       });
