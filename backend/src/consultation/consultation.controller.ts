@@ -237,7 +237,7 @@ export class ConsultationController {
   }
 
   @Post('investigations/:orderId/upload')
-  @Roles('DOCTOR', 'ADMIN', 'LAB_TECHNICIAN')
+  @Roles('DOCTOR', 'ADMIN', 'LAB_TECHNICIAN', 'NURSING')
   @UseInterceptors(FileInterceptor('file', FILE_UPLOAD_MULTER_OPTIONS))
   async uploadInvestigationFile(
     @Param('orderId') orderId: string,

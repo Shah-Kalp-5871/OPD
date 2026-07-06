@@ -17,7 +17,7 @@ import {
   History,
   AlertCircle
 } from 'lucide-react';
-import api from '@/lib/api';
+import api, { secureFileUrl } from '@/lib/api';
 import { labApi, LabCategory, LabParameter } from '@/lib/api/lab';
 import { useLabSearch } from '@/hooks/useLabSearch';
 import { toast } from 'sonner';
@@ -58,6 +58,13 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
     fetchDocuments();
     fetchHistoricalReports();
   }, [caseId]);
+
+  useEffect(() => {
+    if (activeSubTab === 'RESULTS') {
+      fetchHistoricalReports();
+      fetchDocuments();
+    }
+  }, [activeSubTab]);
 
   const fetchHistoricalReports = async () => {
     try {
@@ -545,6 +552,7 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                         <div className="space-y-2">
                           {report.results?.map((res: any) => {
                             const val = res.numericValue ?? res.textValue;
+                            if (val === null || val === undefined) return null;
                             const abnormal = isAbnormal(val, param);
                             return (
                               <div key={res.id} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg">
@@ -556,6 +564,14 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                               </div>
                             );
                           })}
+                          {report.files?.map((file: any) => (
+                            <div key={file.id} className="mt-2 flex justify-between items-center bg-indigo-50/50 p-2 rounded-lg border border-indigo-100">
+                              <span className="text-[10px] text-indigo-500 font-medium flex items-center gap-1 truncate max-w-[180px]">
+                                <FileText className="w-3 h-3 flex-shrink-0" /> {file.fileName}
+                              </span>
+                              <button onClick={() => window.open(secureFileUrl(file.fileUrl), '_blank')} className="text-[9px] font-bold text-white bg-indigo-500 px-3 py-1.5 rounded-md hover:bg-indigo-600 transition-colors shadow-sm">VIEW PDF</button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )})}
@@ -573,7 +589,7 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                 {documents.length > 0 ? (
                   <div className="space-y-3">
                     {documents.map(doc => (
-                      <div key={doc.id} onClick={() => window.open(doc.fileUrl, '_blank')} className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300 transition-all shadow-sm">
+                      <div key={doc.id} onClick={() => window.open(secureFileUrl(doc.fileUrl), '_blank')} className="p-3 bg-white border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:border-indigo-300 transition-all shadow-sm">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500">
                             <FileText className="w-4 h-4" />

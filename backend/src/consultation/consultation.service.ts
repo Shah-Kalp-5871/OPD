@@ -64,7 +64,7 @@ export class ConsultationService {
     const history = await this.prisma.investigationOrder.findMany({
       where: {
         patientCase: { patientId: patientCase.patientId },
-        status: 'COMPLETED',
+        status: { in: ['COMPLETED', 'RESULT_READY'] },
         results: { some: {} }
       },
       include: {
@@ -72,7 +72,8 @@ export class ConsultationService {
           include: {
             parameter: true
           }
-        }
+        },
+        files: true,
       },
       orderBy: { createdAt: 'desc' }
     });

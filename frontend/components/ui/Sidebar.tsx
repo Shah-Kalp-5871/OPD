@@ -34,6 +34,11 @@ const Sidebar = ({ role }: SidebarProps) => {
   const user = useAuthStore((state) => state.user);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+
+  const toggleMenu = (title: string) => {
+    setExpandedMenus(prev => ({ ...prev, [title]: !prev[title] }));
+  };
 
   const theme = roleThemes[role as keyof typeof roleThemes] || roleThemes.admin;
   const navConfig = roleNavigation[role] || { directItems: [], groups: [] };
@@ -44,7 +49,7 @@ const Sidebar = ({ role }: SidebarProps) => {
     toast.success('Logged out successfully');
   };
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div className="flex flex-col h-full bg-white border-r border-slate-200 w-64 shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-40">
       {/* BRANDING */}
       <div className="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
@@ -53,34 +58,27 @@ const Sidebar = ({ role }: SidebarProps) => {
             <Activity className="w-5 h-5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-[14px] font-black tracking-[0.15em] leading-none text-slate-900">
-              MEDFLOW
-            </span>
-            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${theme.activeText} leading-none mt-0.5`}>
-              {role}
-            </span>
+            <span className="text-[14px] font-black tracking-[0.15em] text-slate-900 leading-none">MEDFLOW</span>
+            <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase mt-0.5">{role} PANEL</span>
           </div>
         </Link>
       </div>
 
-      {/* NAVIGATION - SCROLLABLE */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
-        
+      {/* NAVIGATION */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 scrollbar-hide">
         {/* Direct Items */}
         {navConfig.directItems && navConfig.directItems.length > 0 && (
           <div className="space-y-1">
             {navConfig.directItems.map((item: any) => {
               const cleanPathname = pathname?.endsWith('/') ? pathname.slice(0, -1) : pathname || '';
               const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
-              const isDashboard = cleanHref === `/${role}/dashboard` || cleanHref === `/${role}`;
-              const isActive = cleanPathname === cleanHref || (!isDashboard && cleanPathname.startsWith(cleanHref));
+              const isActive = cleanPathname === cleanHref || cleanPathname.startsWith(cleanHref);
               const Icon = item.icon;
-
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive ? `${theme.activeBg} ${theme.activeText}` : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 group ${isActive ? `${theme.activeBg} ${theme.activeText}` : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400 group-hover:text-slate-600'}`} />
                   <span className="text-[11px] font-bold uppercase tracking-wider">{item.title}</span>
@@ -102,6 +100,42 @@ const Sidebar = ({ role }: SidebarProps) => {
               const cleanHref = item.href.endsWith('/') ? item.href.slice(0, -1) : item.href;
               const isActive = cleanPathname === cleanHref || cleanPathname.startsWith(cleanHref);
               const Icon = item.icon;
+
+              if (item.subItems) {
+                const isExpanded = expandedMenus[item.title] !== undefined ? expandedMenus[item.title] : isActive;
+                return (
+                  <div key={item.title} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); toggleMenu(item.title); }}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 group ${isActive ? `${theme.activeBg} ${theme.activeText}` : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={`w-4 h-4 ${isActive ? theme.activeText : 'text-slate-400 group-hover:text-slate-600'}`} />
+                        <span className="text-[11px] font-bold tracking-wider">{item.title}</span>
+                      </div>
+                      <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} ${isActive ? theme.activeText : 'text-slate-400'}`} />
+                    </button>
+                    {isExpanded && (
+                      <div className="pl-9 pr-3 space-y-1 mt-1">
+                        {item.subItems.map((sub: any) => {
+                          const subCleanHref = sub.href.endsWith('/') ? sub.href.slice(0, -1) : sub.href;
+                          const isSubActive = cleanPathname === subCleanHref || cleanPathname.startsWith(subCleanHref);
+                          return (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 ${isSubActive ? `${theme.activeText} bg-slate-50 font-bold` : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 font-medium'} text-[10px] tracking-wide`}
+                            >
+                              {sub.title}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
 
               return (
                 <Link
@@ -154,7 +188,7 @@ const Sidebar = ({ role }: SidebarProps) => {
     <>
       {/* DESKTOP SIDEBAR */}
       <div className="hidden lg:block fixed inset-y-0 left-0 z-40">
-        <SidebarContent />
+        {sidebarContent}
       </div>
 
       {/* MOBILE TOPBAR (Only visible on small screens when Sidebar is used) */}
@@ -181,7 +215,7 @@ const Sidebar = ({ role }: SidebarProps) => {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <div className="relative w-64 max-w-[80%] h-full bg-white flex flex-col shadow-2xl">
-            <SidebarContent />
+            {sidebarContent}
           </div>
         </div>
       )}

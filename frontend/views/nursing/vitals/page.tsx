@@ -201,8 +201,8 @@ const VitalsEntryContent = () => {
            <p className="text-slate-500 mt-2">Please select a patient from the queue to enter vitals.</p>
         </div>
         <button 
-          onClick={() => router.push('/nursing/queue')}
-          className="px-8 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
+          onClick={() => router.push('/nursing/dashboard')}
+          className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors"
         >
           Back to Queue
         </button>

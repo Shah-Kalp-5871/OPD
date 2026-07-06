@@ -10,10 +10,11 @@ import {
 } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 
-export type NavItem = {
+export interface NavItem {
   title: string;
   href: string;
   icon: LucideIcon;
+  subItems?: { title: string; href: string }[];
 };
 
 export type NavGroup = {
@@ -57,7 +58,6 @@ export const roleNavigation: Record<string, NavigationConfig> = {
         items: [
           { title: 'Billing', href: ROUTES.ADMIN_BILLING, icon: ReceiptIndianRupee },
           { title: 'Drug Master', href: ROUTES.ADMIN_DRUGS, icon: Pill },
-          { title: 'Lab Master', href: ROUTES.admin.lab, icon: FlaskConical },
           { title: 'Procedure Master', href: ROUTES.admin.procedures, icon: Stethoscope },
           { title: 'Discounts', href: ROUTES.ADMIN_DISCOUNTS, icon: Percent },
           { title: 'Payment Config', href: '/admin/payment-management', icon: Wallet },
@@ -71,6 +71,21 @@ export const roleNavigation: Record<string, NavigationConfig> = {
           { title: 'Workforce', href: ROUTES.GLOBAL.WORKFORCE, icon: HardHat },
           { title: 'Payroll', href: ROUTES.GLOBAL.PAYROLL, icon: BadgeDollarSign },
           { title: 'Procurement', href: ROUTES.GLOBAL.PROCUREMENT, icon: PackageSearch },
+        ]
+      },
+      {
+        title: '7-Tab Management',
+        items: [
+          { 
+            title: 'Lab Master', 
+            href: '/admin/lab', // Used for highlighting base route
+            icon: FlaskConical,
+            subItems: [
+              { title: 'Categories', href: '/admin/lab/categories' },
+              { title: 'Tests', href: '/admin/lab/tests' },
+              { title: 'Reports', href: '/admin/lab/reports' },
+            ]
+          },
         ]
       },
       {
@@ -117,7 +132,6 @@ export const roleNavigation: Record<string, NavigationConfig> = {
       {
         title: 'Clinical Tasks',
         items: [
-          { title: 'OPD Queue', href: ROUTES.nursing.queue, icon: Users },
           { title: 'Vitals Entry', href: ROUTES.nursing.vitals, icon: Activity },
           { title: 'Lab Reports', href: ROUTES.nursing.labReports, icon: FileText },
         ]

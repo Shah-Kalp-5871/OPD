@@ -265,27 +265,36 @@ const LabReportManagementView = () => {
 
   return (
     <NursingLayout>
-      <div className="max-w-[1600px] mx-auto space-y-10 pb-32 animate-in fade-in duration-500">
+      <div className="max-w-[1600px] mx-auto space-y-6 pb-12 animate-in fade-in duration-500">
         
-        {/* 🔷 PAGE HEADER */}
-        <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-           <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-green-400 shadow-xl shadow-slate-200">
-                 <FlaskConical className="w-8 h-8" />
+        {/* 🔷 PREMIUM PAGE HEADER */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 rounded-[2rem] p-10 border border-green-500/20 shadow-2xl shadow-green-900/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
+           <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 opacity-10 pointer-events-none">
+             <FlaskConical className="w-64 h-64 text-white" />
+           </div>
+           
+           <div className="relative z-10 flex items-center gap-6">
+              <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center text-white shadow-inner border border-white/30">
+                 <FlaskConical className="w-10 h-10" />
               </div>
               <div>
-                 <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">
-                    Lab Report Management – <span className="text-green-600">{patientData?.firstName} {patientData?.lastName}</span>
+                 <h1 className="text-3xl font-black text-white tracking-tight uppercase drop-shadow-sm">
+                    Lab Report Management
                  </h1>
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 ml-1">
-                    MRD: <span className="text-slate-800 font-black">{patientData?.mrdNumber}</span> | Linked to Case ID: <span className="text-slate-800 font-black">{caseId.split('-').pop()}</span>
+                 <p className="text-xs font-bold text-green-100 uppercase tracking-[0.2em] mt-2 flex items-center gap-2 flex-wrap">
+                    Patient: <span className="text-white bg-white/20 px-2 py-0.5 rounded-md">{patientData?.firstName} {patientData?.lastName}</span>
+                    <span className="opacity-50">|</span>
+                    MRD: <span className="text-white">{patientData?.mrdNumber}</span> 
+                    <span className="opacity-50">|</span>
+                    Case ID: <span className="text-white">{caseId.split('-').pop()}</span>
                  </p>
               </div>
            </div>
-           <div className="flex items-center gap-3">
-              <div className="px-5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2">
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Enterprise Lab Sync Active</span>
+           <div className="relative z-10 flex items-center gap-3">
+              <div className="px-5 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center gap-3 shadow-lg">
+                 <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping absolute" />
+                 <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full relative" />
+                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Enterprise Sync Active</span>
               </div>
            </div>
         </div>
@@ -294,104 +303,135 @@ const LabReportManagementView = () => {
            
            {/* LEFT: PENDING ORDERS */}
            <div className="lg:col-span-4 space-y-8">
-              <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                 <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
+              <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 overflow-hidden">
+                 <div className="p-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="text-[11px] font-black text-slate-700 uppercase tracking-[0.2em] flex items-center gap-2">
                        <Activity className="w-4 h-4 text-green-500" />
-                       Pending Investigations
+                       Investigations
                     </h3>
-                    <span className="bg-green-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                       {orders.filter(o => o.status !== 'RESULT_READY').length}
+                    <span className="bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full shadow-inner">
+                       {orders.filter(o => o.status !== 'RESULT_READY').length} Pending
                     </span>
                  </div>
-                 <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                 <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar p-3">
                     {orders.length === 0 ? (
-                       <div className="p-12 text-center text-slate-400 text-[10px] font-black uppercase tracking-widest">No investigations ordered for this case</div>
+                       <div className="p-12 flex flex-col items-center justify-center text-center opacity-60">
+                          <Beaker className="w-12 h-12 text-slate-300 mb-4" />
+                          <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">No investigations ordered</span>
+                       </div>
                     ) : (
-                       orders.map((order) => (
-                          <button 
-                             key={order.id}
-                             onClick={() => setSelectedOrderId(order.id)}
-                             className={`w-full text-left p-6 transition-all border-l-4 ${
-                                selectedOrderId === order.id 
-                                ? 'bg-green-50/50 border-green-600' 
-                                : 'hover:bg-slate-50 border-transparent'
-                             }`}
-                          >
-                             <div className="flex justify-between items-start mb-2">
-                                <span className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{order.testName || order.test?.name}</span>
-                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase ${
-                                   order.status === 'RESULT_READY' 
-                                   ? 'bg-emerald-100 text-emerald-700' 
-                                   : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                   {order.status}
-                                </span>
-                             </div>
-                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{order.notes || 'Routine checkup requested by physician'}</p>
-                             {order.files?.length > 0 && (
-                                <div className="mt-3 flex items-center gap-2 text-emerald-600">
-                                   <FileIcon className="w-3 h-3" />
-                                   <span className="text-[9px] font-black uppercase">{order.files.length} Report(s) Linked</span>
+                       orders.map((order) => {
+                          const testName = order.testName || order.test?.name || 'Lab Investigation';
+                          const isSelected = selectedOrderId === order.id;
+                          return (
+                             <button 
+                                key={order.id}
+                                onClick={() => setSelectedOrderId(order.id)}
+                                className={`w-full text-left p-5 rounded-2xl transition-all duration-300 mb-2 ${
+                                   isSelected 
+                                   ? 'bg-gradient-to-br from-green-50 to-emerald-50/30 border border-green-200 shadow-md translate-x-1' 
+                                   : 'bg-white hover:bg-slate-50 border border-transparent hover:border-slate-200'
+                                }`}
+                             >
+                                <div className="flex justify-between items-start mb-3 gap-2">
+                                   <span className={`text-[11px] font-black uppercase tracking-widest ${isSelected ? 'text-green-800' : 'text-slate-700'}`}>
+                                      {testName}
+                                   </span>
+                                   <span className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase shadow-sm shrink-0 ${
+                                      order.status === 'RESULT_READY' 
+                                      ? 'bg-emerald-500 text-white' 
+                                      : 'bg-amber-100 text-amber-700 border border-amber-200'
+                                   }`}>
+                                      {order.status}
+                                   </span>
                                 </div>
-                             )}
-                          </button>
-                       ))
+                                <p className={`text-[9px] font-bold uppercase tracking-widest line-clamp-2 ${isSelected ? 'text-green-600/80' : 'text-slate-400'}`}>
+                                   {order.notes || 'Routine checkup requested by physician'}
+                                </p>
+                                {order.files?.length > 0 && (
+                                   <div className={`mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors ${
+                                      isSelected ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                                   }`}>
+                                      <FileIcon className="w-3 h-3" />
+                                      {order.files.length} Report(s) Linked
+                                   </div>
+                                )}
+                             </button>
+                          );
+                       })
                     )}
                  </div>
               </div>
            </div>
 
            {/* RIGHT: UPLOAD & PREVIEW */}
-           <div className="lg:col-span-8 space-y-8">
+           <div className="lg:col-span-8 space-y-5">
               {selectedOrderId ? (
                  <>
                     {/* UPLOAD BOX */}
-                    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                       <div className="p-8 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-3">
-                             <CloudUpload className="w-5 h-5 text-green-600" />
-                             Upload PDF Report for {orders.find(o => o.id === selectedOrderId)?.testName || orders.find(o => o.id === selectedOrderId)?.test?.name}
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 overflow-hidden relative group">
+                       <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                       
+                       <div className="p-8 border-b border-slate-100 flex items-center justify-between relative z-10">
+                          <h2 className="text-[11px] font-black text-slate-700 uppercase tracking-[0.2em] flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center shrink-0">
+                               <CloudUpload className="w-4 h-4" />
+                             </div>
+                             Upload Report For: <span className="text-green-600 ml-1">{orders.find(o => o.id === selectedOrderId)?.testName || orders.find(o => o.id === selectedOrderId)?.test?.name || 'Lab Investigation'}</span>
                           </h2>
                        </div>
 
-                       <div className="p-10">
-                          <div className="relative group">
-                             <input 
-                                type="file" 
-                                accept="application/pdf"
-                                onChange={handleFileUpload}
-                                disabled={isUploading}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
-                             />
-                             <div className={`border-2 border-dashed rounded-[2.5rem] p-16 text-center transition-all duration-300 ${
-                                isUploading ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/50 border-slate-200 hover:bg-green-50/50 hover:border-green-300 group-hover:shadow-lg'
-                             }`}>
+                       <div className="p-8 relative z-10">
+                          <div className="relative">
+                              <input 
+                                 id={`file-upload-${selectedOrderId}`}
+                                 type="file" 
+                                 accept="application/pdf"
+                                 onChange={handleFileUpload}
+                                 disabled={isUploading}
+                                 className="hidden"
+                              />
+                              <label 
+                                 htmlFor={`file-upload-${selectedOrderId}`}
+                                 className={`border-2 border-dashed rounded-[1.5rem] p-10 flex flex-col items-center justify-center transition-all duration-500 cursor-pointer ${
+                                    isUploading ? 'bg-green-50 border-green-300 scale-[0.98] cursor-not-allowed' : 'bg-slate-50/80 border-slate-300 hover:bg-green-50/80 hover:border-green-400 hover:shadow-lg hover:shadow-green-100/50'
+                                 }`}
+                              >
                                 {isUploading ? (
-                                   <div className="flex flex-col items-center gap-4">
-                                      <Loader2 className="w-12 h-12 text-green-600 animate-spin" />
-                                      <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Uploading Report... {uploadProgress}%</p>
-                                      <div className="h-2 w-64 overflow-hidden rounded-full bg-slate-200">
-                                         <div className="h-full bg-green-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                                   <div className="flex flex-col items-center gap-6 w-full max-w-md">
+                                      <div className="relative">
+                                        <div className="w-16 h-16 border-4 border-green-100 rounded-full animate-pulse" />
+                                        <div className="absolute inset-0 border-4 border-green-600 rounded-full border-t-transparent animate-spin" />
+                                      </div>
+                                      <div className="w-full text-center space-y-3">
+                                        <p className="text-[10px] font-black text-green-800 uppercase tracking-[0.2em]">Uploading Report... {uploadProgress}%</p>
+                                        <div className="h-3 w-full overflow-hidden rounded-full bg-green-100 shadow-inner">
+                                           <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-300 relative" style={{ width: `${uploadProgress}%` }}>
+                                             <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                           </div>
+                                        </div>
                                       </div>
                                    </div>
                                 ) : (
-                                   <div className="flex flex-col items-center gap-4">
-                                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-green-600 shadow-md group-hover:scale-110 transition-transform">
-                                         <Upload className="w-10 h-10" />
+                                   <div className="flex flex-col items-center gap-5">
+                                      <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-green-600 shadow-md shadow-green-900/5 group-hover:-translate-y-2 group-hover:scale-110 transition-all duration-500">
+                                         <Upload className="w-8 h-8" />
                                       </div>
-                                      <div className="space-y-1">
-                                         <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Click to Upload or Drag & Drop PDF</p>
-                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Validated Clinical PDF Format Only</p>
+                                      <div className="text-center space-y-2">
+                                         <p className="text-sm font-black text-slate-700 uppercase tracking-widest">Click or Drag PDF Here</p>
+                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full inline-block">Validated Clinical PDF Format Only</p>
                                       </div>
                                    </div>
                                 )}
-                             </div>
-                             {uploadError && (
-                                <p className="mt-4 text-center text-[10px] font-black uppercase tracking-widest text-rose-600">
-                                   {uploadError}
-                                </p>
-                             )}
+                              </label>
+                              {uploadError && (
+                                 <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-center gap-2 text-rose-600">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest">
+                                       {uploadError}
+                                    </p>
+                                 </div>
+                              )}
                           </div>
                        </div>
                     </div>
@@ -407,53 +447,63 @@ const LabReportManagementView = () => {
                         const abnormal = isAbnormal(currentVal, param);
 
                         return (
-                           <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden mt-8">
-                              <div className="p-8 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                                 <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-3">
-                                    <Activity className="w-5 h-5 text-indigo-600" />
-                                    Enter Lab Values Manually
+                           <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 overflow-hidden animate-in slide-in-from-bottom-8 duration-700">
+                              <div className="p-8 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex items-center justify-between">
+                                 <h2 className="text-[11px] font-black text-slate-700 uppercase tracking-[0.2em] flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
+                                      <Activity className="w-4 h-4" />
+                                    </div>
+                                    Manual Value Entry
                                  </h2>
                               </div>
-                              <div className="p-10">
-                                 <table className="w-full text-left">
-                                    <thead>
-                                       <tr className="border-b border-slate-100">
-                                          <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Parameter</th>
-                                          <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Value</th>
-                                          <th className="py-3 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Master Range</th>
-                                       </tr>
-                                    </thead>
-                                    <tbody>
-                                       <tr>
-                                          <td className="py-6 px-4 text-xs font-bold text-slate-700">{param.name}</td>
-                                          <td className="py-6 px-4 relative">
-                                             <input 
-                                                type="text"
-                                                placeholder="Value" 
-                                                className={`h-10 px-3 border rounded-xl text-xs w-32 pr-8 transition-colors outline-none focus:ring-2 ${abnormal ? 'border-rose-300 text-rose-700 bg-rose-50 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'}`} 
-                                                value={currentVal}
-                                                onChange={(e) => handleValueChange(order.id, param.id, e.target.value)}
-                                             />
-                                             {abnormal && (
-                                                <div className="absolute right-8 top-1/2 -translate-y-1/2 text-rose-500" title="Abnormal value">
-                                                   <AlertCircle className="w-4 h-4" />
-                                                </div>
-                                             )}
-                                          </td>
-                                          <td className="py-6 px-4 text-[10px] font-medium text-slate-500 whitespace-nowrap">
-                                             {getNormalRangeString(param)}
-                                          </td>
-                                       </tr>
-                                    </tbody>
-                                 </table>
-                                 <div className="mt-6 flex justify-end">
+                              <div className="p-8">
+                                 <div className="bg-slate-50/50 border border-slate-100 rounded-2xl overflow-hidden">
+                                    <table className="w-full text-left">
+                                       <thead className="bg-slate-100/50">
+                                          <tr>
+                                             <th className="py-4 px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Parameter</th>
+                                             <th className="py-4 px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Value</th>
+                                             <th className="py-4 px-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Master Range</th>
+                                          </tr>
+                                       </thead>
+                                       <tbody className="divide-y divide-slate-100">
+                                          <tr className="hover:bg-white transition-colors">
+                                             <td className="py-6 px-6 text-[11px] font-black text-slate-700 tracking-wider uppercase">{param.name}</td>
+                                             <td className="py-6 px-6 relative">
+                                                <input 
+                                                   type="text"
+                                                   placeholder="Value" 
+                                                   className={`h-12 px-4 border-2 rounded-xl text-xs font-black tracking-widest w-36 pr-10 transition-all outline-none focus:ring-4 ${
+                                                      abnormal 
+                                                      ? 'border-rose-300 text-rose-700 bg-rose-50/50 focus:border-rose-500 focus:ring-rose-500/20' 
+                                                      : 'border-slate-200 focus:border-green-500 focus:ring-green-500/20 bg-white'
+                                                   }`} 
+                                                   value={currentVal}
+                                                   onChange={(e) => handleValueChange(order.id, param.id, e.target.value)}
+                                                />
+                                                {abnormal && (
+                                                   <div className="absolute right-10 top-1/2 -translate-y-1/2 text-rose-500 drop-shadow-sm" title="Abnormal value">
+                                                      <AlertCircle className="w-5 h-5 animate-pulse" />
+                                                   </div>
+                                                )}
+                                             </td>
+                                             <td className="py-6 px-6">
+                                                <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                   {getNormalRangeString(param)}
+                                                </span>
+                                             </td>
+                                          </tr>
+                                       </tbody>
+                                    </table>
+                                 </div>
+                                 <div className="mt-8 flex justify-end">
                                     <button 
                                        onClick={handleSaveResults} 
                                        disabled={!currentVal.trim() || savingResults}
-                                       className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                                       className="px-8 py-3.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center gap-2"
                                     >
                                        {savingResults ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                       Save Values
+                                       Save Verified Values
                                     </button>
                                  </div>
                               </div>
@@ -463,28 +513,30 @@ const LabReportManagementView = () => {
 
                     {/* ATTACHED FILES LIST */}
                     {orders.find(o => o.id === selectedOrderId)?.files?.length > 0 && (
-                       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-                          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-                             <FileText className="w-4 h-4 text-slate-400" />
-                             <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Linked Clinical Documents</h3>
+                       <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 overflow-hidden animate-in slide-in-from-bottom-8 duration-700 delay-100">
+                          <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+                               <FileText className="w-4 h-4" />
+                             </div>
+                             <h3 className="text-[11px] font-black text-slate-700 uppercase tracking-[0.2em]">Linked Clinical Documents</h3>
                           </div>
-                          <div className="divide-y divide-slate-50">
+                          <div className="divide-y divide-slate-100 p-2">
                              {orders.find(o => o.id === selectedOrderId).files.map((file: any) => (
-                                <div key={file.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-all">
+                                <div key={file.id} className="p-4 m-2 rounded-2xl flex items-center justify-between hover:bg-slate-50 transition-colors group">
                                    <div className="flex items-center gap-4">
-                                      <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center">
-                                         <FileText className="w-5 h-5" />
+                                      <div className="w-12 h-12 bg-white border border-slate-100 shadow-sm text-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                         <FileText className="w-6 h-6" />
                                       </div>
                                       <div>
-                                         <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">{file.fileName}</p>
-                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Uploaded: {new Date(file.uploadedAt).toLocaleString()} | Size: {file.fileSize}</p>
+                                         <p className="text-[11px] font-black text-slate-700 uppercase tracking-widest">{file.fileName}</p>
+                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Uploaded: {new Date(file.uploadedAt).toLocaleString()} • Size: {file.fileSize}</p>
                                       </div>
                                    </div>
                                    <a 
                                       href={secureFileUrl(file.fileUrl)} 
                                       target="_blank" 
                                       rel="noreferrer"
-                                      className="px-5 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all"
+                                      className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-green-700 transition-all hover:shadow-lg"
                                    >
                                       View Report
                                    </a>
@@ -495,13 +547,13 @@ const LabReportManagementView = () => {
                     )}
                  </>
               ) : (
-                 <div className="h-[600px] border-2 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center p-20 text-center space-y-6 opacity-40 bg-white">
-                    <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                 <div className="h-[600px] bg-slate-50/50 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-20 text-center space-y-6">
+                    <div className="w-24 h-24 bg-white shadow-sm rounded-3xl flex items-center justify-center text-slate-300">
                        <Beaker className="w-12 h-12" />
                     </div>
                     <div>
-                       <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter">No Investigation Selected</h3>
-                       <p className="text-xs font-bold text-slate-400 uppercase mt-2 tracking-widest">Select an order from the left panel to upload results</p>
+                       <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter">No Investigation Selected</h3>
+                       <p className="text-xs font-bold text-slate-400 uppercase mt-3 tracking-widest max-w-xs mx-auto leading-relaxed">Select an order from the left panel to upload results</p>
                     </div>
                  </div>
               )}
