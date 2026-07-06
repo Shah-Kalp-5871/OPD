@@ -1143,18 +1143,41 @@ model PrescriptionItem {
   id             String       @id @default(uuid())
   prescriptionId String
   drugId         String?
+  simpleDrugId   String?
   drugName       String
+  isSimpleDrug   Boolean      @default(false)
+  isManualDrug   Boolean      @default(false)
   dosage         String
   frequency      String
   duration       Int
+  totalQuantity  Int?
+  unitCost       Decimal?     @default(0.0) @db.Decimal(10, 2)
   route          String?
   instructions   String?
+  slotNo         String?
   isDispensed    Boolean      @default(false)
   createdAt      DateTime     @default(now())
   drug           Drug?        @relation(fields: [drugId], references: [id])
+  simpleDrug     SimpleDrug?  @relation(fields: [simpleDrugId], references: [id])
   prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
   branchId       String
   branch         Branch       @relation("BranchPrescriptionItems", fields: [branchId], references: [id])
+}
+
+model SimpleDrug {
+  id                String              @id @default(uuid())
+  drugName          String
+  category          String?
+  unitPrice         Decimal             @default(0.0) @db.Decimal(10, 2)
+  stockQuantity     Int                 @default(0)
+  lowStockLimit     Int                 @default(5)
+  stockTracked      Boolean             @default(true)
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  prescriptionItems PrescriptionItem[]
+
+  @@index([drugName])
 }
 
 model Procedure {

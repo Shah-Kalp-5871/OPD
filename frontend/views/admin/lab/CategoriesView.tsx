@@ -5,13 +5,14 @@ import AdminLayout from '@/views/layouts/AdminLayout';
 import { labApi, LabCategory } from '@/lib/api/lab';
 import { toast } from 'sonner';
 import { AdminPageHeader, AdminDataTable, AdminStatusBadge, Column } from '@/components/admin';
-import { Plus, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 
 export default function CategoriesView() {
     const [categories, setCategories] = useState<LabCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const load = () => { setLoading(true); labApi.getCategories(true).then(res => setCategories(res.data)).finally(() => setLoading(false)); };
@@ -22,26 +23,67 @@ export default function CategoriesView() {
         if (!newCategoryName.trim()) return;
         setSubmitting(true);
         try {
-            await labApi.createCategory({ name: newCategoryName.trim() });
-            toast.success('Category created');
+            if (editingId) {
+                await labApi.updateCategory(editingId, { name: newCategoryName.trim() });
+                toast.success('Category updated');
+            } else {
+                await labApi.createCategory({ name: newCategoryName.trim() });
+                toast.success('Category created');
+            }
             setNewCategoryName('');
+            setEditingId(null);
             setShowModal(false);
             load();
         } catch (e: any) { 
-            toast.error(e?.response?.data?.message || 'Failed to create category'); 
+            toast.error(e?.response?.data?.message || 'Failed to save category'); 
         } finally {
             setSubmitting(false);
         }
     };
 
+    const handleEdit = (cat: LabCategory) => {
+        setNewCategoryName(cat.name);
+        setEditingId(cat.id);
+        setShowModal(true);
+    };
+
+    const handleDelete = async (cat: LabCategory) => {
+        if (!confirm('Are you sure you want to delete this category?')) return;
+        try {
+            await labApi.deleteCategory(cat.id);
+            toast.success('Category deleted');
+            load();
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || 'Failed to delete category');
+        }
+    };
+
     const handleToggleActive = async (cat: LabCategory) => {
-        // Option to archive or toggle category status if supported by API.
-        toast.info("This feature will be fully supported once backend supports category toggling.");
+        try {
+            await labApi.updateCategory(cat.id, { isActive: !cat.isActive });
+            toast.success(cat.isActive ? 'Category deactivated' : 'Category activated');
+            load();
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || 'Failed to update category status');
+        }
     };
 
     const columns: Column<LabCategory>[] = [
         { key: 'name', header: 'Name', render: (c) => <span className="text-sm font-extrabold text-slate-800">{c.name}</span> },
         { key: 'status', header: 'Status', render: (c) => <AdminStatusBadge isActive={c.isActive} />, align: 'right' },
+        { key: 'actions', header: 'Actions', align: 'right', render: (c) => (
+            <div className="flex items-center justify-end gap-2">
+                <button onClick={() => handleEdit(c)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit Category">
+                    <Edit3 className="w-4 h-4" />
+                </button>
+                <button onClick={() => handleToggleActive(c)} className={`p-2 rounded-lg transition-all ${c.isActive ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-green-600 hover:bg-green-50'}`} title={c.isActive ? 'Deactivate' : 'Activate'}>
+                    {c.isActive ? <ToggleRight className="w-5 h-5 text-indigo-600" /> : <ToggleLeft className="w-5 h-5" />}
+                </button>
+                <button onClick={() => handleDelete(c)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Delete Category">
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </div>
+        ) }
     ];
 
     return (
@@ -50,7 +92,7 @@ export default function CategoriesView() {
                 <AdminPageHeader
                     title="Lab Categories"
                     subtitle={`${categories.length} categories configured`}
-                    actions={[{ label: 'Add Category', onClick: () => setShowModal(true), variant: 'primary' }]}
+                    actions={[{ label: 'Add Category', onClick: () => { setNewCategoryName(''); setEditingId(null); setShowModal(true); }, variant: 'primary' }]}
                 />
                 <AdminDataTable
                     data={categories}
@@ -70,7 +112,7 @@ export default function CategoriesView() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                            <h3 className="font-black text-slate-800 text-lg">Add New Category</h3>
+                            <h3 className="font-black text-slate-800 text-lg">{editingId ? 'Edit Category' : 'Add New Category'}</h3>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                                 <Plus className="w-5 h-5 rotate-45" />
                             </button>

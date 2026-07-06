@@ -410,12 +410,18 @@ export class ConsultationService {
           items: {
             create: items.map((item) => ({
               drugId: item.drugId,
+              simpleDrugId: item.simpleDrugId,
               drugName: item.drugName,
+              isSimpleDrug: item.isSimpleDrug || false,
+              isManualDrug: item.isManualDrug || false,
               dosage: item.dosage,
               frequency: item.frequency,
               duration: item.duration,
+              totalQuantity: item.totalQuantity || 1,
+              unitCost: item.unitCost || 0,
               route: item.route,
               instructions: item.instructions,
+              slotNo: item.slotNo,
               isDispensed: false,
               branch: { connect: { id: branchId } },
             })),
@@ -436,7 +442,29 @@ export class ConsultationService {
         },
       });
 
-      return prescription;
+      // Stock check warnings
+      const warnings: string[] = [];
+      for (const item of items) {
+        if (item.drugId && !item.isSimpleDrug && !item.isManualDrug) {
+          const inventory = await tx.drugInventory.findUnique({
+            where: { drugId_branchId: { drugId: item.drugId, branchId } },
+          });
+          const totalStock = inventory?.totalStock || 0;
+          if (totalStock < (item.totalQuantity || 1)) {
+            warnings.push(`Drug ${item.drugName} is out of stock (Requested: ${item.totalQuantity || 1}, Available: ${totalStock})`);
+          }
+        } else if (item.simpleDrugId && item.isSimpleDrug) {
+          const simpleDrug = await tx.simpleDrug.findUnique({
+            where: { id: item.simpleDrugId },
+          });
+          const stock = simpleDrug?.stockQuantity || 0;
+          if (stock < (item.totalQuantity || 1)) {
+            warnings.push(`Simple Drug ${item.drugName} is out of stock (Requested: ${item.totalQuantity || 1}, Available: ${stock})`);
+          }
+        }
+      }
+
+      return { ...prescription, warnings };
     });
   }
 

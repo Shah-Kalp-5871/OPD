@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Archive } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 interface AdminStatusBadgeProps {
   isActive: boolean;
@@ -15,7 +15,7 @@ export const AdminStatusBadge: React.FC<AdminStatusBadgeProps> = ({ isActive }) 
   }
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-500 rounded-md text-[10px] font-black uppercase tracking-widest border border-rose-100/50">
-      <Archive className="w-3 h-3" /> Archived
+      <XCircle className="w-3 h-3" /> Inactive
     </span>
   );
 };

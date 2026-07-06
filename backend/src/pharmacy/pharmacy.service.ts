@@ -638,4 +638,58 @@ export class PharmacyService {
       return { success: true, newTotal: afterBatchQty };
     });
   }
+
+  // --- ADMIN: NORMAL DRUGS ---
+  async getAllNormalDrugs() {
+    return this.prisma.drug.findMany({
+      orderBy: { drugName: 'asc' },
+    });
+  }
+
+  async createNormalDrug(dto: any) {
+    return this.prisma.drug.create({
+      data: dto,
+    });
+  }
+
+  async updateNormalDrug(id: string, dto: any) {
+    return this.prisma.drug.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  async deleteNormalDrug(id: string) {
+    return this.prisma.drug.update({
+      where: { id },
+      data: { isActive: false, archivedAt: new Date() },
+    });
+  }
+
+  // --- ADMIN: SIMPLE DRUGS ---
+  async getAllSimpleDrugs() {
+    return this.prisma.simpleDrug.findMany({
+      orderBy: { drugName: 'asc' },
+    });
+  }
+
+  async createSimpleDrug(dto: any) {
+    return this.prisma.simpleDrug.create({
+      data: dto,
+    });
+  }
+
+  async updateSimpleDrug(id: string, dto: any) {
+    return this.prisma.simpleDrug.update({
+      where: { id },
+      data: dto,
+    });
+  }
+
+  async deleteSimpleDrug(id: string) {
+    return this.prisma.simpleDrug.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
 }

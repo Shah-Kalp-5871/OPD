@@ -85,13 +85,15 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     }
   };
 
-  const calculateQty = (freq: string, days: number) => {
+  const calculateQty = (freq: string, days: number): number | string => {
     let perDay = 1;
     if (freq === '1-0-0' || freq === '0-1-0' || freq === '0-0-1' || freq === 'OD') perDay = 1;
     else if (freq === '1-0-1' || freq === 'BD') perDay = 2;
     else if (freq === '1-1-1' || freq === 'TDS') perDay = 3;
     else if (freq === 'SOS') return 'As needed';
-    return perDay * days;
+    
+    const total = perDay * days;
+    return total === 0 ? 'Take from outside' : total;
   };
 
   const addItem = () => {
@@ -102,8 +104,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     const stock = currentDrug.inventory?.totalStock || 0;
     
     if (requiredQty > 0 && stock < requiredQty) {
-      toast.error(`Drug Not Available: ${currentDrug.drugName} (Stock: ${stock}, Required: ${requiredQty})`);
-      return;
+      toast.error(`Drug Not Available: ${currentDrug.drugName} (Stock: ${stock}, Required: ${requiredQty}) - Proceeding anyway`);
     }
     
     const newItem = {
@@ -222,6 +223,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                   onClick={() => {
                     setCurrentDrug(drug);
                     setDosage(drug.formulation === 'TAB' ? '1 Tablet' : '');
+                    setIsSimple(drug.drugCategory === 'SIMPLE' || (drug as any).category === 'SIMPLE');
                   }}
                   className="p-5 bg-white border border-slate-100 rounded-2xl hover:border-blue-300 hover:shadow-xl hover:shadow-slate-100 transition-all cursor-pointer group flex items-center justify-between"
                 >
@@ -295,7 +297,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                   </div>
                   <input 
                     type="range" 
-                    min="1" 
+                    min="0" 
                     max="60" 
                     value={duration}
                     onChange={(e) => setDuration(parseInt(e.target.value))}

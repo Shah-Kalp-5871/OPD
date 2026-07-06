@@ -33,9 +33,21 @@ export class PrescriptionItemDto {
   @IsOptional()
   drugId?: string;
 
+  @IsUUID()
+  @IsOptional()
+  simpleDrugId?: string;
+
   @IsString()
   @IsNotEmpty()
   drugName: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isSimpleDrug?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isManualDrug?: boolean;
 
   @IsString()
   @IsNotEmpty()
@@ -49,6 +61,14 @@ export class PrescriptionItemDto {
   @Min(1)
   duration: number;
 
+  @IsOptional()
+  @IsNumber()
+  totalQuantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  unitCost?: number;
+
   @IsString()
   @IsOptional()
   route?: string;
@@ -56,6 +76,10 @@ export class PrescriptionItemDto {
   @IsString()
   @IsOptional()
   instructions?: string;
+
+  @IsString()
+  @IsOptional()
+  slotNo?: string;
 }
 
 export class CreatePrescriptionDto {

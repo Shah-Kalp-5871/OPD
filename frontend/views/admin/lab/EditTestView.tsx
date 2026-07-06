@@ -11,7 +11,8 @@ import { toast } from 'sonner';
 export default function EditTestView({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string>("");
   useEffect(() => {
-    if (!id) return; params.then(p => setId(p.id)) }, [params]);
+    params.then(p => setId(p.id));
+  }, [params]);
 
   const router = useRouter();
   const [categories, setCategories] = useState<LabCategory[]>([]);
@@ -24,6 +25,9 @@ export default function EditTestView({ params }: { params: Promise<{ id: string 
 
   useEffect(() => {
     labApi.getCategories(true).then(res => setCategories(res.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (id) {
         labApi.getParameterById(id).then(res => {
             const p = (res as any).data || res;
@@ -34,7 +38,7 @@ export default function EditTestView({ params }: { params: Promise<{ id: string 
             });
         });
     }
-  }, []);
+  }, [id]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

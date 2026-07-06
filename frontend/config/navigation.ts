@@ -86,6 +86,15 @@ export const roleNavigation: Record<string, NavigationConfig> = {
               { title: 'Reports', href: '/admin/lab/reports' },
             ]
           },
+          { 
+            title: 'Pharmacy Master', 
+            href: '/admin/pharmacy', 
+            icon: Pill,
+            subItems: [
+              { title: 'Normal Drugs', href: '/admin/pharmacy/normal-drugs' },
+              { title: 'Simple Drugs', href: '/admin/pharmacy/simple-drugs' },
+            ]
+          },
         ]
       },
       {
