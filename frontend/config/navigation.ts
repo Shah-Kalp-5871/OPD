@@ -120,7 +120,6 @@ export const roleNavigation: Record<string, NavigationConfig> = {
           { title: 'OPD Queue', href: ROUTES.nursing.queue, icon: Users },
           { title: 'Vitals Entry', href: ROUTES.nursing.vitals, icon: Activity },
           { title: 'Lab Reports', href: ROUTES.nursing.labReports, icon: FileText },
-          { title: 'F/U Call Mgmt', href: ROUTES.nursing.followup, icon: PhoneCall },
         ]
       }
     ]

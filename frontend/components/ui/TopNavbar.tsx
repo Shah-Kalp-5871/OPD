@@ -43,13 +43,13 @@ const roleThemes = {
     lightIconText: 'text-orange-600'
   },
   nursing: {
-    accent: 'rose',
-    activeText: 'text-rose-600',
-    activeBorder: 'border-rose-600',
-    iconBg: 'bg-rose-600',
+    accent: 'green',
+    activeText: 'text-green-600',
+    activeBorder: 'border-green-600',
+    iconBg: 'bg-green-600',
     iconText: 'text-white',
-    lightIconBg: 'bg-rose-50',
-    lightIconText: 'text-rose-600'
+    lightIconBg: 'bg-green-50',
+    lightIconText: 'text-green-600'
   },
   medical: {
     accent: 'emerald',

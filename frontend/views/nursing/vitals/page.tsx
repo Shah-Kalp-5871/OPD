@@ -22,6 +22,7 @@ import {
   Ruler,
   Loader2
 } from 'lucide-react';
+import ComplaintsForm, { VisitComplaintData } from '@/views/reception/check-in/components/ComplaintsForm';
 
 const VitalsEntryContent = () => {
   const searchParams = useSearchParams();
@@ -45,6 +46,25 @@ const VitalsEntryContent = () => {
   const [bpSystolic, setBpSystolic] = useState('');
   const [bpDiastolic, setBpDiastolic] = useState('');
   const [spo2, setSpo2] = useState('');
+
+  const [complaint, setComplaint] = useState<VisitComplaintData>({
+    presentComplaint: '',
+    durationDays: '',
+    durationMonths: '',
+    durationYears: '',
+    severity: 'Moderate',
+    onset: '',
+    aggravatingFactors: '',
+    relievingFactors: '',
+    pastMedical: '',
+    personalHistory: '',
+    pastSurgical: '',
+    currentMedications: '',
+    obstetricHistory: '',
+    allergies: '',
+    nursingNotes: '',
+    patientFeedback: ''
+  });
 
   // Auto-calculate BMI
   useEffect(() => {
@@ -77,6 +97,29 @@ const VitalsEntryContent = () => {
       if (data.vitals?.length > 0) {
         setHeight(data.vitals[0].height?.toString() || '');
       }
+      
+      const activeCase = data.cases?.find((c: any) => c.id === caseId);
+      if (activeCase?.visitComplaint) {
+         const c = activeCase.visitComplaint;
+         setComplaint({
+            presentComplaint: c.presentComplaint || '',
+            durationDays: c.durationDays?.toString() || '',
+            durationMonths: c.durationMonths?.toString() || '',
+            durationYears: c.durationYears?.toString() || '',
+            severity: c.severity || 'Moderate',
+            onset: c.onset || '',
+            aggravatingFactors: c.aggravatingFactors || '',
+            relievingFactors: c.relievingFactors || '',
+            pastMedical: c.pastMedical || '',
+            personalHistory: c.personalHistory || '',
+            pastSurgical: c.pastSurgical || '',
+            currentMedications: c.currentMedications || '',
+            obstetricHistory: c.obstetricHistory || '',
+            allergies: c.allergies || '',
+            nursingNotes: c.nursingNotes || '',
+            patientFeedback: c.patientFeedback || ''
+         });
+      }
     } catch (error) {
       console.error('Error fetching patient:', error);
       toast.error('Failed to load patient data');
@@ -106,7 +149,19 @@ const VitalsEntryContent = () => {
       };
 
       await api.post(`/patients/${patient.id}/vitals`, payload);
-      toast.success('Vitals saved successfully');
+      
+      if (complaint.presentComplaint || complaint.nursingNotes) {
+         const complaintPayload = {
+            ...complaint,
+            durationDays: parseInt(complaint.durationDays) || null,
+            durationMonths: parseInt(complaint.durationMonths) || null,
+            durationYears: parseInt(complaint.durationYears) || null,
+            caseId: caseId || undefined
+         };
+         await api.post(`/patients/${patient.id}/complaints`, complaintPayload);
+      }
+
+      toast.success('Records saved successfully');
       
       // Clear form (except height usually)
       setWeight('');
@@ -129,7 +184,7 @@ const VitalsEntryContent = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+        <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
         <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Fetching Clinical Record...</p>
       </div>
     );
@@ -161,7 +216,7 @@ const VitalsEntryContent = () => {
       {/* 🔷 PAGE HEADER */}
       <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-100 uppercase font-black text-2xl">
+            <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-green-100 uppercase font-black text-2xl">
                {patient?.firstName?.[0] || <User className="w-8 h-8" />}
             </div>
             <div>
@@ -175,7 +230,7 @@ const VitalsEntryContent = () => {
                   {caseId && (
                     <>
                       <span className="text-slate-200">|</span>
-                      <span className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                      <span className="flex items-center gap-1.5 text-[10px] font-black text-green-600 uppercase tracking-widest">
                          <FileText className="w-3.5 h-3.5" /> Case: {caseId.split('-').pop()}
                       </span>
                     </>
@@ -183,15 +238,15 @@ const VitalsEntryContent = () => {
                </div>
             </div>
          </div>
-         <div className="px-6 py-3 bg-blue-50 border border-blue-100 rounded-2xl">
-            <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Pre-Consultation Workflow</span>
+         <div className="px-6 py-3 bg-green-50 border border-green-100 rounded-2xl">
+            <span className="text-[10px] font-black text-green-600 uppercase tracking-[0.2em]">Pre-Consultation Workflow</span>
          </div>
       </div>
 
       {/* 🔷 VITALS ENTRY FORM */}
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
          <div className="p-8 bg-slate-50 border-b border-slate-100 flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-blue-400">
+            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-green-400">
                <Activity className="w-5 h-5" />
             </div>
             <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Enter Current Vitals</h2>
@@ -211,7 +266,7 @@ const VitalsEntryContent = () => {
                  <div key={idx} className="space-y-3">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{group.label}</label>
                     <div className="relative group">
-                       <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors">
+                       <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-green-500 transition-colors">
                           <group.icon className="w-4 h-4" />
                        </div>
                        <input 
@@ -219,7 +274,7 @@ const VitalsEntryContent = () => {
                          value={group.value}
                          onChange={(e) => group.setter(e.target.value)}
                          placeholder={group.placeholder}
-                         className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner"
+                         className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner"
                        />
                     </div>
                  </div>
@@ -234,7 +289,7 @@ const VitalsEntryContent = () => {
                        placeholder="120"
                        value={bpSystolic}
                        onChange={(e) => setBpSystolic(e.target.value)}
-                       className="w-1/2 px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner text-center"
+                       className="w-1/2 px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner text-center"
                      />
                      <span className="text-slate-300 font-black">/</span>
                      <input 
@@ -242,20 +297,31 @@ const VitalsEntryContent = () => {
                        placeholder="80"
                        value={bpDiastolic}
                        onChange={(e) => setBpDiastolic(e.target.value)}
-                       className="w-1/2 px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner text-center"
+                       className="w-1/2 px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[13px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner text-center"
                      />
                   </div>
                </div>
 
                {/* BMI Display (Read-only) */}
                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest ml-1">BMI (Auto-calculated)</label>
-                  <div className="w-full px-6 py-4 bg-blue-50 border border-blue-100 rounded-2xl text-[13px] font-black text-blue-700 shadow-sm flex items-center justify-between">
+                  <label className="text-[10px] font-black text-green-400 uppercase tracking-widest ml-1">BMI (Auto-calculated)</label>
+                  <div className="w-full px-6 py-4 bg-green-50 border border-green-100 rounded-2xl text-[13px] font-black text-green-700 shadow-sm flex items-center justify-between">
                      <span>Index Score</span>
                      <span className="text-xl leading-none">{bmi}</span>
                   </div>
                </div>
 
+            </div>
+
+            {/* 🔷 COMPLAINTS ENTRY FORM */}
+            <div className="pt-10 border-t border-slate-50">
+               <div className="mb-6 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-green-400">
+                     <FileText className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Clinical History & Complaints</h2>
+               </div>
+               <ComplaintsForm data={complaint} onChange={setComplaint} />
             </div>
 
             {/* ACTION SECTION */}
@@ -266,11 +332,11 @@ const VitalsEntryContent = () => {
                 className="px-16 py-6 bg-slate-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-2xl shadow-slate-200 flex items-center gap-4 group disabled:opacity-50"
                >
                   {saving ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                    <Loader2 className="w-5 h-5 animate-spin text-green-400" />
                   ) : (
-                    <Save className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <Save className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
                   )}
-                  {saving ? 'SAVING...' : 'SAVE VITALS'}
+                  {saving ? 'SAVING...' : 'SAVE RECORDS'}
                </button>
                
                {caseId && (
@@ -324,7 +390,7 @@ const VitalsEntryContent = () => {
                        </td>
                        <td className="px-6 py-6 text-[13px] font-black text-slate-800">{row.height || '-'}</td>
                        <td className="px-6 py-6 text-[13px] font-black text-slate-800">{row.weight || '-'}</td>
-                       <td className="px-6 py-6 text-[13px] font-black text-blue-600">{row.bmi || '-'}</td>
+                       <td className="px-6 py-6 text-[13px] font-black text-green-600">{row.bmi || '-'}</td>
                        <td className="px-6 py-6 text-[13px] font-black text-slate-800">{row.temperature}°F</td>
                        <td className="px-6 py-6 text-[13px] font-black text-slate-800">{row.pulse}</td>
                        <td className="px-6 py-6 text-[13px] font-black text-slate-800">{row.bloodPressure}</td>

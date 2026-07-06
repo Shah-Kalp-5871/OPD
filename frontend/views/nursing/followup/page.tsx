@@ -35,7 +35,7 @@ const NursingFollowupView = () => {
       case 'Called – No Answer': return 'bg-amber-50 text-amber-600 border-amber-100';
       case 'Rescheduled': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
       case 'Do Not Call': return 'bg-rose-50 text-rose-600 border-rose-100';
-      case 'Pending': return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'Pending': return 'bg-green-50 text-green-600 border-green-100';
       default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
   };
@@ -54,12 +54,12 @@ const NursingFollowupView = () => {
         {/* 🔷 PAGE HEADER */}
         <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex items-center justify-between">
            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-200">
+              <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-green-200">
                  <PhoneCall className="w-8 h-8" />
               </div>
               <div>
                  <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Follow-Up Call Management</h1>
-                 <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1.5 ml-1">Forwarded by Doctor Coordination Team</p>
+                 <p className="text-[10px] font-black text-green-600 uppercase tracking-[0.2em] mt-1.5 ml-1">Forwarded by Doctor Coordination Team</p>
               </div>
            </div>
            <div className="flex items-center gap-4">
@@ -90,14 +90,14 @@ const NursingFollowupView = () => {
                       <tr 
                         key={idx} 
                         onClick={() => setSelectedPatient(row.patient)}
-                        className={`group cursor-pointer transition-all ${selectedPatient === row.patient ? 'bg-blue-50/50' : 'hover:bg-slate-50/50'}`}
+                        className={`group cursor-pointer transition-all ${selectedPatient === row.patient ? 'bg-green-50/50' : 'hover:bg-slate-50/50'}`}
                       >
                          <td className="px-8 py-6">
                             <span className="text-[11px] font-black text-slate-400">{row.priority}</span>
                          </td>
                          <td className="px-6 py-6">
                             <div className="flex items-center gap-3">
-                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm ${selectedPatient === row.patient ? 'bg-blue-600 text-white' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm ${selectedPatient === row.patient ? 'bg-green-600 text-white' : 'bg-white border border-slate-100 text-slate-400'}`}>
                                   {row.patient[0]}
                                </div>
                                <span className="text-[13px] font-black text-slate-800 tracking-tight">{row.patient}</span>
@@ -142,12 +142,12 @@ const NursingFollowupView = () => {
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
            <div className="p-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-4 text-white">
-                 <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                 <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
                     <ClipboardList className="w-5 h-5 text-white" />
                  </div>
                  <div>
                     <h2 className="text-xs font-black uppercase tracking-[0.2em]">Log Call Outcome</h2>
-                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mt-1">Selected Patient: {selectedPatient}</p>
+                    <p className="text-[9px] font-black text-green-400 uppercase tracking-[0.2em] mt-1">Selected Patient: {selectedPatient}</p>
                  </div>
               </div>
            </div>
@@ -163,12 +163,12 @@ const NursingFollowupView = () => {
                         onClick={() => setSelectedOutcome(opt.id)}
                         className={`p-6 rounded-[2rem] border-2 transition-all text-left flex flex-col gap-4 shadow-sm ${
                           selectedOutcome === opt.id 
-                          ? 'border-blue-600 bg-blue-50 shadow-blue-100' 
+                          ? 'border-green-600 bg-green-50 shadow-green-100' 
                           : 'border-slate-100 bg-slate-50 hover:border-slate-200'
                         }`}
                       >
-                         <opt.icon className={`w-6 h-6 ${selectedOutcome === opt.id ? 'text-blue-600' : 'text-slate-400'}`} />
-                         <span className={`text-[10px] font-black uppercase tracking-widest leading-tight ${selectedOutcome === opt.id ? 'text-blue-900' : 'text-slate-500'}`}>
+                         <opt.icon className={`w-6 h-6 ${selectedOutcome === opt.id ? 'text-green-600' : 'text-slate-400'}`} />
+                         <span className={`text-[10px] font-black uppercase tracking-widest leading-tight ${selectedOutcome === opt.id ? 'text-green-900' : 'text-slate-500'}`}>
                             {opt.label}
                          </span>
                       </button>
@@ -184,14 +184,14 @@ const NursingFollowupView = () => {
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New F/U Date</label>
                           <div className="relative">
                              <Calendar className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
-                             <input type="date" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner" />
+                             <input type="date" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner" />
                           </div>
                        </div>
                        <div className="space-y-3">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New F/U Time</label>
                           <div className="relative">
                              <Clock className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />
-                             <input type="time" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner" />
+                             <input type="time" className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner" />
                           </div>
                        </div>
                     </div>
@@ -199,7 +199,7 @@ const NursingFollowupView = () => {
                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Feedback / Notes</label>
                        <textarea 
                          placeholder="Mention patient's health status or reason for rescheduling..."
-                         className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner h-32 resize-none"
+                         className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner h-32 resize-none"
                        />
                     </div>
                  </div>
@@ -208,7 +208,7 @@ const NursingFollowupView = () => {
                     <div className="grid grid-cols-2 gap-6">
                        <div className="space-y-3">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Drug Taken? (Y/N/P)</label>
-                          <select className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner appearance-none cursor-pointer">
+                          <select className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner appearance-none cursor-pointer">
                              <option value="Yes">Yes</option>
                              <option value="No">No</option>
                              <option value="Partial">Partial</option>
@@ -216,7 +216,7 @@ const NursingFollowupView = () => {
                        </div>
                        <div className="space-y-3">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Advice Followed? (Y/N)</label>
-                          <select className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-blue-600 focus:bg-white transition-all shadow-inner appearance-none cursor-pointer">
+                          <select className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black outline-none focus:border-green-600 focus:bg-white transition-all shadow-inner appearance-none cursor-pointer">
                              <option value="Yes">Yes</option>
                              <option value="No">No</option>
                           </select>
@@ -225,7 +225,7 @@ const NursingFollowupView = () => {
                     
                     <div className="bg-slate-900 rounded-[2rem] p-8 space-y-6 shadow-xl shadow-slate-200">
                        <div className="flex items-center gap-3">
-                          <Smartphone className="w-5 h-5 text-blue-400" />
+                          <Smartphone className="w-5 h-5 text-green-400" />
                           <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Automation Summary</h3>
                        </div>
                        <ul className="space-y-3">
@@ -249,10 +249,10 @@ const NursingFollowupView = () => {
               {/* Action Buttons */}
               <div className="flex flex-col md:flex-row items-center justify-end gap-4 pt-6 border-t border-slate-100">
                  <button className="w-full md:w-auto px-12 py-5 bg-white border border-slate-200 text-slate-800 rounded-[2rem] text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-3">
-                    <Smartphone className="w-4 h-4 text-blue-600" />
+                    <Smartphone className="w-4 h-4 text-green-600" />
                     SEND SMS/WHATSAPP CONFIRMATION
                  </button>
-                 <button className="w-full md:w-auto px-16 py-5 bg-blue-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3">
+                 <button className="w-full md:w-auto px-16 py-5 bg-green-600 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-xl shadow-green-200 flex items-center justify-center gap-3">
                     <CheckCircle2 className="w-4 h-4" />
                     SAVE CALL LOG
                  </button>

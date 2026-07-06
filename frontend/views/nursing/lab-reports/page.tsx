@@ -203,7 +203,7 @@ const LabReportManagementView = () => {
     return (
       <NursingLayout>
         <div className="flex flex-col items-center justify-center py-40 space-y-4">
-           <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+           <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Loading Case Files...</p>
         </div>
       </NursingLayout>
@@ -216,7 +216,7 @@ const LabReportManagementView = () => {
         <div className="max-w-5xl mx-auto py-10 space-y-6">
            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                 <div className="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center">
                     <FlaskConical className="w-6 h-6" />
                  </div>
                  <div>
@@ -224,14 +224,14 @@ const LabReportManagementView = () => {
                     <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Select a patient to upload their results</p>
                  </div>
               </div>
-              <div className="text-[10px] font-black text-white bg-blue-600 px-3 py-1.5 rounded-full uppercase tracking-widest">
+              <div className="text-[10px] font-black text-white bg-green-600 px-3 py-1.5 rounded-full uppercase tracking-widest">
                  {globalPending.length} Pending
               </div>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {isLoading ? (
-                 <div className="col-span-full py-20 flex justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>
+                 <div className="col-span-full py-20 flex justify-center"><Loader2 className="w-8 h-8 text-green-600 animate-spin" /></div>
               ) : globalPending.length === 0 ? (
                  <div className="col-span-full py-20 text-center text-slate-400 text-xs font-black uppercase tracking-widest">No pending reports</div>
               ) : (
@@ -241,16 +241,16 @@ const LabReportManagementView = () => {
                        <button
                          key={order.id}
                          onClick={() => window.location.href = `/nursing/lab-reports?caseId=${order.patientCase?.id}`}
-                         className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-left hover:border-blue-500 hover:shadow-md transition-all group"
+                         className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-left hover:border-green-500 hover:shadow-md transition-all group"
                        >
                          <div className="flex justify-between items-start mb-4">
                             <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase tracking-widest">{order.status}</span>
-                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all" />
                          </div>
                          <h3 className="text-lg font-black text-slate-800 tracking-tight">{patient?.firstName} {patient?.lastName}</h3>
                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">MRD: {patient?.mrdNumber}</p>
                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.1em]">{order.testName || 'Investigation'}</p>
+                            <p className="text-[10px] font-black text-green-600 uppercase tracking-[0.1em]">{order.testName || 'Investigation'}</p>
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ordered on: {new Date(order.createdAt).toLocaleDateString()}</p>
                          </div>
                        </button>
@@ -270,12 +270,12 @@ const LabReportManagementView = () => {
         {/* 🔷 PAGE HEADER */}
         <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-blue-400 shadow-xl shadow-slate-200">
+              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-green-400 shadow-xl shadow-slate-200">
                  <FlaskConical className="w-8 h-8" />
               </div>
               <div>
                  <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">
-                    Lab Report Management – <span className="text-blue-600">{patientData?.firstName} {patientData?.lastName}</span>
+                    Lab Report Management – <span className="text-green-600">{patientData?.firstName} {patientData?.lastName}</span>
                  </h1>
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 ml-1">
                     MRD: <span className="text-slate-800 font-black">{patientData?.mrdNumber}</span> | Linked to Case ID: <span className="text-slate-800 font-black">{caseId.split('-').pop()}</span>
@@ -297,10 +297,10 @@ const LabReportManagementView = () => {
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                  <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                     <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-2">
-                       <Activity className="w-4 h-4 text-blue-500" />
+                       <Activity className="w-4 h-4 text-green-500" />
                        Pending Investigations
                     </h3>
-                    <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
+                    <span className="bg-green-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
                        {orders.filter(o => o.status !== 'RESULT_READY').length}
                     </span>
                  </div>
@@ -314,7 +314,7 @@ const LabReportManagementView = () => {
                              onClick={() => setSelectedOrderId(order.id)}
                              className={`w-full text-left p-6 transition-all border-l-4 ${
                                 selectedOrderId === order.id 
-                                ? 'bg-blue-50/50 border-blue-600' 
+                                ? 'bg-green-50/50 border-green-600' 
                                 : 'hover:bg-slate-50 border-transparent'
                              }`}
                           >
@@ -350,7 +350,7 @@ const LabReportManagementView = () => {
                     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
                        <div className="p-8 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                           <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em] flex items-center gap-3">
-                             <CloudUpload className="w-5 h-5 text-blue-600" />
+                             <CloudUpload className="w-5 h-5 text-green-600" />
                              Upload PDF Report for {orders.find(o => o.id === selectedOrderId)?.testName || orders.find(o => o.id === selectedOrderId)?.test?.name}
                           </h2>
                        </div>
@@ -365,19 +365,19 @@ const LabReportManagementView = () => {
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
                              />
                              <div className={`border-2 border-dashed rounded-[2.5rem] p-16 text-center transition-all duration-300 ${
-                                isUploading ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/50 border-slate-200 hover:bg-blue-50/50 hover:border-blue-300 group-hover:shadow-lg'
+                                isUploading ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/50 border-slate-200 hover:bg-green-50/50 hover:border-green-300 group-hover:shadow-lg'
                              }`}>
                                 {isUploading ? (
                                    <div className="flex flex-col items-center gap-4">
-                                      <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                                      <Loader2 className="w-12 h-12 text-green-600 animate-spin" />
                                       <p className="text-[11px] font-black text-slate-800 uppercase tracking-widest">Uploading Report... {uploadProgress}%</p>
                                       <div className="h-2 w-64 overflow-hidden rounded-full bg-slate-200">
-                                         <div className="h-full bg-blue-600 transition-all" style={{ width: `${uploadProgress}%` }} />
+                                         <div className="h-full bg-green-600 transition-all" style={{ width: `${uploadProgress}%` }} />
                                       </div>
                                    </div>
                                 ) : (
                                    <div className="flex flex-col items-center gap-4">
-                                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-blue-600 shadow-md group-hover:scale-110 transition-transform">
+                                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-green-600 shadow-md group-hover:scale-110 transition-transform">
                                          <Upload className="w-10 h-10" />
                                       </div>
                                       <div className="space-y-1">
@@ -472,7 +472,7 @@ const LabReportManagementView = () => {
                              {orders.find(o => o.id === selectedOrderId).files.map((file: any) => (
                                 <div key={file.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-all">
                                    <div className="flex items-center gap-4">
-                                      <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                                      <div className="w-10 h-10 bg-green-50 text-green-600 rounded-xl flex items-center justify-center">
                                          <FileText className="w-5 h-5" />
                                       </div>
                                       <div>
