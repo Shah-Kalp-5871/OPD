@@ -27,9 +27,10 @@ interface PrescriptionTabProps {
   caseId: string;
   data: any;
   onPrescriptionAdded?: () => void;
+  onSaveAndNext?: () => void;
 }
 
-const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPrescriptionAdded }) => {
+const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPrescriptionAdded, onSaveAndNext }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState<'BRAND' | 'GENERIC'>('BRAND');
   const { results: filteredDrugs, isLoading: searchLoading } = useDrugSearch(searchQuery);
@@ -550,6 +551,20 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
                 icon={<CheckCircle2 className="w-5 h-5" />}
               >
                 SIGN & SEND PRESCRIPTION
+              </Button>
+            </div>
+          )}
+
+          {/* Always show Save & Next at the bottom of the panel */}
+          {onSaveAndNext && (
+            <div className={`p-8 bg-white border-t border-slate-100 flex justify-center ${selectedItems.length === 0 ? 'mt-auto' : ''}`}>
+              <Button 
+                variant="secondary"
+                onClick={onSaveAndNext}
+                className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
+                icon={<ChevronRight className="w-5 h-5" />}
+              >
+                SAVE & NEXT TAB
               </Button>
             </div>
           )}

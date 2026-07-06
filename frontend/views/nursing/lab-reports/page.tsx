@@ -18,7 +18,8 @@ import {
   FlaskConical,
   Activity,
   Loader2,
-  FileIcon
+  FileIcon,
+  ArrowRight
 } from 'lucide-react';
 
 const LabReportManagementView = () => {
@@ -166,6 +167,28 @@ const LabReportManagementView = () => {
     return false;
   };
 
+  const [globalPending, setGlobalPending] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (caseId) {
+      fetchCaseDetails();
+    } else {
+      fetchGlobalPending();
+    }
+  }, [caseId]);
+
+  const fetchGlobalPending = async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get('/consultation/investigations/pending');
+      setGlobalPending(res.data || res);
+    } catch (err) {
+      toast.error('Failed to load pending lab reports');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getNormalRangeString = (parameter: any) => {
     if (!parameter) return 'N/A';
     const patientGender = patientData?.gender;
@@ -190,20 +213,51 @@ const LabReportManagementView = () => {
   if (!caseId) {
     return (
       <NursingLayout>
-        <div className="max-w-4xl mx-auto py-20 text-center space-y-8">
-           <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
-              <FlaskConical className="w-10 h-10" />
+        <div className="max-w-5xl mx-auto py-10 space-y-6">
+           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                    <FlaskConical className="w-6 h-6" />
+                 </div>
+                 <div>
+                    <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Global Pending Lab Reports</h2>
+                    <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Select a patient to upload their results</p>
+                 </div>
+              </div>
+              <div className="text-[10px] font-black text-white bg-blue-600 px-3 py-1.5 rounded-full uppercase tracking-widest">
+                 {globalPending.length} Pending
+              </div>
            </div>
-           <div>
-              <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">No Active Case Selected</h2>
-              <p className="text-xs font-bold text-slate-400 uppercase mt-2 tracking-widest">Please select a patient from the queue to manage lab reports</p>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {isLoading ? (
+                 <div className="col-span-full py-20 flex justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>
+              ) : globalPending.length === 0 ? (
+                 <div className="col-span-full py-20 text-center text-slate-400 text-xs font-black uppercase tracking-widest">No pending reports</div>
+              ) : (
+                 globalPending.map((order) => {
+                    const patient = order.patientCase?.patient;
+                    return (
+                       <button
+                         key={order.id}
+                         onClick={() => window.location.href = `/nursing/lab-reports?caseId=${order.patientCase?.id}`}
+                         className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm text-left hover:border-blue-500 hover:shadow-md transition-all group"
+                       >
+                         <div className="flex justify-between items-start mb-4">
+                            <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase tracking-widest">{order.status}</span>
+                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                         </div>
+                         <h3 className="text-lg font-black text-slate-800 tracking-tight">{patient?.firstName} {patient?.lastName}</h3>
+                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">MRD: {patient?.mrdNumber}</p>
+                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.1em]">{order.testName || 'Investigation'}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Ordered on: {new Date(order.createdAt).toLocaleDateString()}</p>
+                         </div>
+                       </button>
+                    );
+                 })
+              )}
            </div>
-           <button 
-             onClick={() => window.location.href = '/nursing/dashboard'}
-             className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all"
-           >
-             Go to Nursing Dashboard
-           </button>
         </div>
       </NursingLayout>
     );

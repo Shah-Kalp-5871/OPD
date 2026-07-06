@@ -15,6 +15,7 @@ import BillingSummaryPanel from './components/BillingSummaryPanel';
 import ClinicChatPanel from './components/ClinicChatPanel';
 import NotificationBar from './components/NotificationBar';
 import { useConsultation } from './hooks/useConsultation';
+import { useCaseLock } from '@/hooks/useCaseLock';
 import { 
   FileText, 
   Pill, 
@@ -41,6 +42,8 @@ const TABS = [
 ];
 
 const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
+  useCaseLock(caseId, 'DOCTOR');
+
   const { 
     data, 
     loading, 
@@ -170,6 +173,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             caseId={caseId}
             data={data}
             onPrescriptionAdded={refresh}
+            onSaveAndNext={() => handleSaveAndNext('procedure')}
           />
         );
       case 'procedure':
@@ -178,6 +182,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             caseId={caseId}
             data={data}
             onProcedureAdded={refresh}
+            onSaveAndNext={() => handleSaveAndNext('images')}
           />
         );
       case 'images':
@@ -186,6 +191,7 @@ const ConsultationView: React.FC<ConsultationViewProps> = ({ caseId }) => {
             caseId={caseId}
             data={data}
             onImageAdded={refresh}
+            onSaveAndNext={() => handleSaveAndNext('diagnosis')}
           />
         );
       case 'diagnosis':

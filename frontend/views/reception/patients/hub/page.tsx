@@ -6,6 +6,7 @@ import ReceptionLayout from '@/views/layouts/ReceptionLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { Lock, FileText, ChevronDown, Stethoscope } from 'lucide-react';
+import { useCaseLock } from '@/hooks/useCaseLock';
 
 import PatientHeader from './components/PatientHeader';
 import TopNavBar from './components/TopNavBar';
@@ -30,6 +31,9 @@ const PatientHubView = () => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(urlCaseId || null);
+
+  // Call the case lock hook for Reception
+  useCaseLock(selectedCaseId || '', 'RECEPTION');
 
   useEffect(() => {
     fetchPatientData();

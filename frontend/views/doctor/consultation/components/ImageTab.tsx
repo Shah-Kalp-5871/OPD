@@ -15,7 +15,8 @@ import {
   Clock,
   Tag,
   ImageIcon,
-  Plus
+  Plus,
+  ChevronRight
 } from 'lucide-react';
 import api, { secureFileUrl } from '@/lib/api';
 import { toast } from 'sonner';
@@ -25,11 +26,12 @@ interface ImagesTabProps {
   caseId: string;
   data: any;
   onImageAdded?: (image: any) => void;
+  onSaveAndNext?: () => void;
 }
 
 const IMAGES_TAGS = ['BEFORE', 'AFTER', 'FOLLOWUP', 'GENERAL'];
 
-const ImagesTab: React.FC<ImagesTabProps> = ({ caseId, data, onImageAdded }) => {
+const ImagesTab: React.FC<ImagesTabProps> = ({ caseId, data, onImageAdded, onSaveAndNext }) => {
   const [images, setImages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -382,6 +384,20 @@ const ImagesTab: React.FC<ImagesTabProps> = ({ caseId, data, onImageAdded }) => 
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Always show Save & Next at the bottom of the tab */}
+      {onSaveAndNext && (
+        <div className="flex justify-end pt-4 border-t border-slate-100">
+          <Button 
+            variant="secondary"
+            onClick={onSaveAndNext}
+            className="h-14 px-10 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
+            icon={<ChevronRight className="w-5 h-5" />}
+          >
+            SAVE & NEXT TAB
+          </Button>
         </div>
       )}
     </div>

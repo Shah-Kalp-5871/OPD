@@ -255,6 +255,22 @@ export class ConsultationService {
     });
   }
 
+  async getPendingInvestigations(branchId: string) {
+    return this.prisma.investigationOrder.findMany({
+      where: {
+        status: { not: 'RESULT_READY' },
+        patientCase: { branchId },
+      },
+      include: {
+        results: { include: { parameter: true } },
+        patientCase: {
+          include: { patient: { include: { profile: true } } }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
   async createInvestigationOrders(
     caseId: string,
     orders: CreateInvestigationOrderDto[],

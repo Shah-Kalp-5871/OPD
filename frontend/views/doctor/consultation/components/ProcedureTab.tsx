@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Scissors, Search, X, Clock, Calendar, Loader2, CheckCircle2,
-  Info, Layers, Activity, AlertTriangle, Package, FileSignature, Save
+  Info, Layers, Activity, AlertTriangle, Package, FileSignature, Save, ChevronRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import { procedureApi, Procedure } from '@/lib/api/procedures';
@@ -13,9 +13,10 @@ interface ProceduresTabProps {
   caseId: string;
   data: any;
   onProcedureAdded?: (procedure: any) => void;
+  onSaveAndNext?: () => void;
 }
 
-const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedureAdded }) => {
+const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedureAdded, onSaveAndNext }) => {
   const [dbCategories, setDbCategories] = useState<string[]>([]);
   const { query, setQuery, category, setCategory, results, isLoading } = useProcedureSearch();
   const [submitting, setSubmitting] = useState(false);
@@ -378,10 +379,21 @@ const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedure
               onClick={handleScheduleProcedure}
               loading={submitting}
               className="w-full h-16 rounded-2xl text-xs tracking-[0.25em] shadow-2xl shadow-blue-200"
-              icon={<Calendar className="w-5 h-5" />}
+              icon={<CheckCircle2 className="w-5 h-5" />}
             >
-              SCHEDULE &amp; PUSH TO BILL
+              SCHEDULE PROCEDURE
             </Button>
+            {/* Always show Save & Next at the bottom of the panel */}
+            {onSaveAndNext && (
+              <Button 
+                variant="secondary"
+                onClick={onSaveAndNext}
+                className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
+                icon={<ChevronRight className="w-5 h-5" />}
+              >
+                SAVE & NEXT TAB
+              </Button>
+            )}
             <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 italic">
               <Activity className="w-3 h-3" /> Real-time synchronization enabled
             </p>

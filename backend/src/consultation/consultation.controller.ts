@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConsultationService } from './consultation.service';
+import { ConsultationLockService } from './consultation-lock.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -30,12 +31,21 @@ import {
 @Controller('consultation')
 @UseGuards(JwtAuthGuard, RolesGuard, BranchGuard)
 export class ConsultationController {
-  constructor(private readonly consultationService: ConsultationService) {}
+  constructor(
+    private readonly consultationService: ConsultationService,
+    private readonly consultationLockService: ConsultationLockService,
+  ) {}
 
   @Get('lab/masters')
   @Roles('DOCTOR', 'ADMIN', 'NURSING')
   async getLabMasters() {
     return this.consultationService.getLabMasters();
+  }
+
+  @Get('investigations/pending')
+  @Roles('NURSING', 'ADMIN', 'DOCTOR')
+  async getPendingInvestigations(@BranchId() branchId: string) {
+    return this.consultationService.getPendingInvestigations(branchId);
   }
 
   @Get('pharmacy/drugs')
@@ -63,6 +73,25 @@ export class ConsultationController {
       req.user.id,
       branchId,
     );
+  }
+
+  @Post(':caseId/lock')
+  @Roles('DOCTOR', 'ADMIN', 'NURSING', 'RECEPTION')
+  async acquireLock(
+    @Param('caseId') caseId: string,
+    @Request() req,
+  ) {
+    return this.consultationLockService.acquireLock(caseId, req.user.id, req.user.role);
+  }
+
+  @Post(':caseId/unlock')
+  @Roles('DOCTOR', 'ADMIN', 'NURSING', 'RECEPTION')
+  async releaseLock(
+    @Param('caseId') caseId: string,
+    @Request() req,
+  ) {
+    this.consultationLockService.releaseLock(caseId, req.user.id);
+    return { success: true };
   }
 
   @Post(':caseId/save')

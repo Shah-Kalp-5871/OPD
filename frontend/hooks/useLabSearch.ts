@@ -28,7 +28,8 @@ export function useLabSearch(limit = 20) {
         const response = await labApi.getParameters({
           search: query,
           categoryId: categoryId,
-          limit,
+          // If a category is selected, fetch a high number so we don't truncate results
+          limit: categoryId ? 500 : limit,
         });
         setResults(response.items);
       } catch (error) {

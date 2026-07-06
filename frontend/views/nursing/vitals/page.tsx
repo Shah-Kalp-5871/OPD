@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import NursingLayout from '@/views/layouts/NursingLayout';
 import api from '@/lib/api';
 import { toast } from 'sonner';
+import { useCaseLock } from '@/hooks/useCaseLock';
 import { 
   Activity, 
   History, 
@@ -27,6 +28,8 @@ const VitalsEntryContent = () => {
   const router = useRouter();
   const mrd = searchParams?.get('mrd');
   const caseId = searchParams?.get('caseId');
+
+  useCaseLock(caseId || '', 'NURSING');
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

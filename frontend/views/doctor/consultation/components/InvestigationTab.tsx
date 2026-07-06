@@ -246,17 +246,27 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
             <div className="col-span-12 lg:col-span-7 space-y-6">
           <Card className="p-0 border-none shadow-none bg-transparent">
             <div className="flex flex-col gap-6">
-              <div className="relative group">
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              <div className="flex gap-4">
+                <div className="relative group flex-1">
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Search lab tests, radiology, or profiles..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="w-full pl-16 pr-8 py-5 bg-white border border-slate-200 rounded-3xl text-lg font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-8 focus:ring-indigo-500/5 transition-all shadow-xl shadow-slate-100 placeholder:text-slate-300"
+                  />
                 </div>
-                <input 
-                  type="text" 
-                  placeholder="Search lab tests, radiology, or profiles..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="w-full pl-16 pr-8 py-5 bg-white border border-slate-200 rounded-3xl text-lg font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-8 focus:ring-indigo-500/5 transition-all shadow-xl shadow-slate-100 placeholder:text-slate-300"
-                />
+                
+                <button
+                  onClick={() => window.open('/opd/doctor/settings/investigation', '_blank')}
+                  className="w-16 h-16 bg-white border border-slate-200 rounded-3xl flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 shadow-xl shadow-slate-100 transition-all active:scale-95 flex-shrink-0"
+                  title="Manage Lab Catalog Settings"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+                </button>
               </div>
 
               <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
@@ -289,7 +299,7 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-1 min-h-[200px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pr-1 min-h-[200px]">
             {isLoading && filteredMasters.length === 0 ? (
               <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-300">
                 <Loader2 className="w-10 h-10 animate-spin mb-4" />
@@ -303,35 +313,37 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                     key={item.id}
                     onClick={() => toggleOrder(item)}
                     className={`
-                      p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer group relative flex flex-col justify-between min-h-[120px]
+                      p-5 rounded-[24px] border-2 transition-all duration-300 cursor-pointer group relative flex flex-col justify-between min-h-[160px]
                       ${isSelected 
-                        ? 'bg-gradient-to-br from-indigo-50 to-white border-indigo-300 ring-4 ring-indigo-500/10 shadow-md shadow-indigo-500/10' 
-                        : 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10'}
+                        ? 'bg-gradient-to-br from-indigo-900 to-slate-900 border-indigo-500/50 shadow-2xl shadow-indigo-500/20 scale-[1.02]' 
+                        : 'bg-white border-slate-100 hover:border-indigo-200 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1'}
                     `}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
-                        <FlaskConical className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <Badge variant="slate" className="bg-slate-100 text-slate-500 text-[9px] tracking-widest uppercase mb-1.5 border-none px-2 py-0.5 inline-block">
-                          {item.category?.name || 'TEST'}
-                        </Badge>
-                        <h3 className={`text-sm font-black uppercase tracking-tight leading-snug line-clamp-2 ${isSelected ? 'text-indigo-950' : 'text-slate-800 group-hover:text-indigo-900'}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1.5 pr-4 flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-lg inline-block ${isSelected ? 'bg-indigo-500/30 text-indigo-200' : 'bg-slate-50 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+                            {item.category?.name || 'TEST'}
+                          </span>
+                        </div>
+                        <h3 className={`text-base font-extrabold tracking-tight leading-snug line-clamp-2 ${isSelected ? 'text-white' : 'text-slate-800 group-hover:text-indigo-900'}`}>
                           {item.name}
                         </h3>
                       </div>
+                      <div className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${isSelected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-100 group-hover:text-indigo-600'}`}>
+                        <FlaskConical className="w-6 h-6" />
+                      </div>
                     </div>
                     
-                    <div className="flex items-end justify-between mt-4">
+                    <div className="flex items-end justify-between mt-6">
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Base Price</span>
-                        <span className={`text-lg font-black tracking-tight leading-none ${isSelected ? 'text-indigo-600' : 'text-slate-700'}`}>
-                          ₹{item.basePrice}
+                        <span className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${isSelected ? 'text-indigo-300' : 'text-slate-400'}`}>Base Price</span>
+                        <span className={`text-xl font-black tracking-tighter leading-none ${isSelected ? 'text-white' : 'text-indigo-600'}`}>
+                          ₹{item.basePrice || (item as any).price || 0}
                         </span>
                       </div>
                       
-                      <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 text-white scale-110 shadow-lg shadow-indigo-500/30' : 'bg-slate-50 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-indigo-500/20'}`}>
+                      <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isSelected ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-indigo-500/30 group-active:scale-95'}`}>
                         {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                       </div>
                     </div>
@@ -349,83 +361,96 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
 
         {/* Right Column: Order Summary */}
         <div className="col-span-12 lg:col-span-5">
-          <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col max-h-[650px] sticky top-6">
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
+          <div className="bg-white rounded-[32px] border-2 border-slate-100 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col max-h-[750px] sticky top-6">
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-indigo-600" />
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner shadow-white">
+                  <ShoppingCart className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-slate-900 font-black text-base leading-none mb-1">Order Cart</h2>
+                  <h2 className="text-slate-900 font-extrabold text-lg tracking-tight mb-0.5">Order Cart</h2>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{pendingOrders.length} Items Selected</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin bg-slate-50/30">
               {pendingOrders.length > 0 ? (
                 pendingOrders.map(order => (
-                  <div key={order.id} className="group relative bg-slate-50/50 border border-slate-100 rounded-[24px] p-5 hover:border-indigo-200 hover:bg-white transition-all animate-in slide-in-from-right-4">
+                  <div key={order.id} className="group relative bg-white border border-slate-200 rounded-[24px] p-5 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-100/50 transition-all animate-in slide-in-from-right-4">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h4 className="text-slate-900 font-black text-sm tracking-tight mb-1">{order.name}</h4>
-                        <Badge variant="blue" className="text-[8px] py-0">{order.categoryName}</Badge>
+                      <div className="flex-1 pr-4">
+                        <Badge variant="slate" className="text-[9px] py-0.5 mb-2 bg-slate-100 text-slate-500">{order.categoryName}</Badge>
+                        <h4 className="text-slate-900 font-extrabold text-sm tracking-tight leading-snug">{order.name}</h4>
                       </div>
                       <button 
                         onClick={() => toggleOrder(order)}
-                        className="w-8 h-8 rounded-full bg-white border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center active:scale-90"
+                        className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all flex items-center justify-center active:scale-90 shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
                     
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 border-dashed">
                       <button 
                         onClick={() => toggleUrgency(order.id)}
                         className={`
-                          flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
+                          flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all
                           ${order.urgent 
-                            ? 'bg-rose-600 text-white shadow-lg shadow-rose-500/20' 
-                            : 'bg-white text-slate-400 border border-slate-100 hover:border-rose-200 hover:text-rose-500'}
+                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' 
+                            : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-rose-200 hover:text-rose-500 hover:bg-rose-50'}
                         `}
                       >
                         <AlertTriangle className={`w-3 h-3 ${order.urgent ? 'animate-pulse' : ''}`} />
                         Urgent / STAT
                       </button>
-                      <span className="text-xs font-black text-indigo-600 italic tracking-tight">₹{order.basePrice}</span>
+                      <span className="text-sm font-black text-slate-900 tracking-tight">₹{order.basePrice}</span>
                     </div>
                   </div>
                 )
               )) : (
                 <div className="h-full flex flex-col items-center justify-center text-center py-20">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-slate-200">
+                  <div className="w-24 h-24 bg-white shadow-sm rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
                     <FlaskConical className="w-10 h-10 text-slate-200" />
                   </div>
-                  <h3 className="text-slate-400 font-black text-xs uppercase tracking-[0.2em]">Cart is Empty</h3>
-                  <p className="text-slate-300 text-[11px] font-medium mt-2 max-w-[200px]">Select investigations from the catalog to build an order</p>
+                  <h3 className="text-slate-400 font-extrabold text-sm uppercase tracking-[0.2em]">Cart is Empty</h3>
+                  <p className="text-slate-400 text-xs font-medium mt-2 max-w-[200px]">Select investigations from the catalog to build an order</p>
                 </div>
               )}
             </div>
 
-            <div className="p-8 bg-slate-50/50 border-t border-slate-100 space-y-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.05)]">
-              <div className="flex items-center justify-between px-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em]">Estimated Total</span>
-                <span className="text-2xl font-black text-slate-900 italic tracking-tighter">
+            <div className="p-8 bg-white border-t border-slate-100 space-y-5 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.03)] z-10">
+              <div className="flex items-center justify-between px-2 mb-2">
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Estimated Total</span>
+                <span className="text-3xl font-black text-slate-900 tracking-tighter">
                   ₹{pendingOrders.reduce((sum, o) => sum + Number(o.basePrice), 0)}
                 </span>
               </div>
 
-              <Button 
-                onClick={handlePlaceOrder}
-                disabled={pendingOrders.length === 0 || submitting}
-                loading={submitting}
-                className="w-full h-16 rounded-2xl text-xs tracking-[0.25em] shadow-2xl shadow-indigo-200"
-                icon={<CheckCircle2 className="w-5 h-5" />}
-              >
-                PLACE ORDER & BILL
-              </Button>
-              <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                 <Activity className="w-3 h-3" /> Orders sync instantly with Laboratory & Billing
+              <div className="grid grid-cols-1 gap-3">
+                <Button 
+                  onClick={handlePlaceOrder}
+                  disabled={pendingOrders.length === 0 || submitting}
+                  loading={submitting}
+                  className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] shadow-xl shadow-indigo-200/50"
+                  icon={<CheckCircle2 className="w-5 h-5" />}
+                >
+                  PLACE ORDER & BILL
+                </Button>
+                
+                {onSaveAndNext && (
+                  <Button 
+                    variant="secondary"
+                    onClick={onSaveAndNext}
+                    className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
+                    icon={<ChevronRight className="w-5 h-5" />}
+                  >
+                    SAVE & NEXT TAB
+                  </Button>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 text-center font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                 <Activity className="w-3.5 h-3.5 text-indigo-400" /> Orders sync instantly with Laboratory
               </p>
             </div>
           </div>

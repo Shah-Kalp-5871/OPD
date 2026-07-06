@@ -31,7 +31,7 @@ export class LabMasterController {
   // --- Categories ---
 
   @Post('categories')
-  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR)
   createCategory(@Body() dto: CreateLabCategoryDto) {
     return this.labService.createCategory(dto);
   }
@@ -43,13 +43,13 @@ export class LabMasterController {
   }
 
   @Patch('categories/:id')
-  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR)
   updateCategory(@Param('id') id: string, @Body() dto: UpdateLabCategoryDto) {
     return this.labService.updateCategory(id, dto);
   }
 
   @Delete('categories/:id')
-  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR)
   deleteCategory(@Param('id') id: string) {
     return this.labService.deleteCategory(id);
   }
@@ -57,7 +57,7 @@ export class LabMasterController {
   // --- Parameters ---
 
   @Post('parameters')
-  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR)
   createParameter(@Body() dto: CreateLabParameterDto) {
     return this.labService.createParameter(dto);
   }
@@ -87,13 +87,13 @@ export class LabMasterController {
   }
 
   @Patch('parameters/:id')
-  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR)
   updateParameter(@Param('id') id: string, @Body() dto: UpdateLabParameterDto) {
     return this.labService.updateParameter(id, dto);
   }
 
   @Delete('parameters/:id')
-  @Roles(Role.ADMIN, Role.SUPERADMIN)
+  @Roles(Role.ADMIN, Role.SUPERADMIN, Role.DOCTOR)
   deleteParameter(@Param('id') id: string) {
     return this.labService.deleteParameter(id);
   }
