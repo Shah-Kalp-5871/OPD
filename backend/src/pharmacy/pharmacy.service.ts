@@ -409,8 +409,71 @@ export class PharmacyService {
         },
       });
 
-      return { success: true, beforeQty, afterQty };
+      return { success: true, message: 'Stock adjusted', newTotal: afterQty };
     });
+  }
+
+  // --- UNIFIED SEARCH ---
+  async searchUnifiedDrugs(searchQuery: string, limit: number = 20) {
+    const search = searchQuery ? searchQuery.trim() : '';
+    
+    // Search Normal Drugs
+    const normalDrugs = await this.prisma.drug.findMany({
+      where: search ? {
+        isActive: true,
+        OR: [
+          { drugName: { contains: search, mode: 'insensitive' } },
+          { genericName: { contains: search, mode: 'insensitive' } },
+        ]
+      } : { isActive: true },
+      take: limit,
+      orderBy: { drugName: 'asc' },
+      include: { inventory: true }
+    });
+
+    // Search Simple Drugs
+    const simpleDrugs = await this.prisma.simpleDrug.findMany({
+      where: search ? {
+        isActive: true,
+        drugName: { contains: search, mode: 'insensitive' }
+      } : { isActive: true },
+      take: limit,
+      orderBy: { drugName: 'asc' }
+    });
+
+    // Map Normal Drugs to unified format
+    const unifiedNormal = normalDrugs.map(d => ({
+      id: d.id,
+      drugName: d.drugName,
+      genericName: d.genericName || '',
+      category: d.drugCategory || 'NORMAL',
+      formulation: d.formulation || 'Tab',
+      strength: d.strength || '',
+      unitPrice: d.unitPrice || 0,
+      drugCategory: d.drugCategory || '',
+      inventory: d.inventory || [],
+      isSimpleDrug: false
+    }));
+
+    // Map Simple Drugs to unified format
+    const unifiedSimple = simpleDrugs.map(s => ({
+      id: s.id,
+      drugName: s.drugName,
+      genericName: '', // Simple drugs don't have this
+      category: 'SIMPLE',
+      formulation: 'Unit',
+      strength: '',
+      unitPrice: 0,
+      drugCategory: 'SIMPLE',
+      inventory: [],
+      isSimpleDrug: true
+    }));
+
+    // Combine and sort
+    const allDrugs = [...unifiedNormal, ...unifiedSimple];
+    allDrugs.sort((a, b) => a.drugName.localeCompare(b.drugName));
+    
+    return allDrugs.slice(0, limit);
   }
 
   async getInventory(branchId: string) {

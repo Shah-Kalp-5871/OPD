@@ -5,6 +5,7 @@ import { Plus, Edit3, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-rea
 import { pharmacyAdminApi } from '@/lib/api/pharmacy';
 import { Drug } from '@/lib/api/drugs';
 import { toast } from 'sonner';
+import AdminLayout from '@/views/layouts/AdminLayout';
 
 export default function NormalDrugsView() {
   const [drugs, setDrugs] = useState<Drug[]>([]);
@@ -43,17 +44,28 @@ export default function NormalDrugsView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        drugName: form.drugName,
+        genericName: form.genericName,
+        drugCategory: form.drugCategory,
+        formulation: form.formulation,
+        unitOfMeasure: form.unitOfMeasure,
+        unitPrice: Number(form.unitPrice) || 0,
+        stockTracked: form.stockTracked,
+      };
+      
       if (editingId) {
-        await pharmacyAdminApi.updateNormalDrug(editingId, form);
+        await pharmacyAdminApi.updateNormalDrug(editingId, payload);
         toast.success('Drug updated successfully');
       } else {
-        await pharmacyAdminApi.createNormalDrug(form);
+        await pharmacyAdminApi.createNormalDrug(payload);
         toast.success('Drug created successfully');
       }
       setShowModal(false);
       loadDrugs();
     } catch (e: any) {
-      toast.error('Failed to save drug');
+      const errorMsg = e.response?.data?.message || e.message || 'Failed to save drug';
+      toast.error(Array.isArray(errorMsg) ? errorMsg[0] : errorMsg);
     }
   };
 
@@ -91,7 +103,8 @@ export default function NormalDrugsView() {
   );
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Normal Drugs Master</h1>
         <button
@@ -275,8 +288,8 @@ export default function NormalDrugsView() {
                     min="0"
                     step="0.01"
                     required
-                    value={form.unitPrice}
-                    onChange={(e) => setForm({ ...form, unitPrice: parseFloat(e.target.value) })}
+                    value={form.unitPrice || ''}
+                    onChange={(e) => setForm({ ...form, unitPrice: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-indigo-400 focus:bg-white transition-all"
                   />
                 </div>
@@ -302,5 +315,6 @@ export default function NormalDrugsView() {
         </div>
       )}
     </div>
+    </AdminLayout>
   );
 }

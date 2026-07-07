@@ -8,14 +8,17 @@ export class CreateNormalDrugDto {
   @IsString()
   genericName?: string;
 
+  @IsOptional()
   @IsString()
-  formulation: string;
+  formulation?: string;
 
+  @IsOptional()
   @IsString()
-  drugCategory: string;
+  drugCategory?: string;
 
+  @IsOptional()
   @IsString()
-  unitOfMeasure: string;
+  unitOfMeasure?: string;
 
   @IsNumber()
   @Min(0)

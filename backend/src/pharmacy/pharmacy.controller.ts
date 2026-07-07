@@ -32,6 +32,23 @@ export class PharmacyController {
     return this.pharmacyService.getPharmacyQueue(branchId);
   }
 
+  @Get('drugs/search')
+  @Roles('ADMIN', 'MEDICAL', 'PHARMACY', 'DOCTOR')
+  async searchDrugs(
+    @Query('search') search?: string,
+    @Query('limit') limit?: string
+  ) {
+    const parsedLimit = limit ? parseInt(limit, 10) : 20;
+    const items = await this.pharmacyService.searchUnifiedDrugs(search || '', parsedLimit);
+    return {
+      items,
+      total: items.length,
+      page: 1,
+      limit: parsedLimit,
+      totalPages: 1
+    };
+  }
+
   @Post('dispense')
   async dispense(
     @Body() dto: DispenseMedicationDto,
