@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
+  Patch,
   Body,
   Param,
   UseGuards,
@@ -138,6 +140,38 @@ export class ConsultationController {
       caseId,
       dto.items,
       dto.notes || '',
+      req.user.id,
+      branchId,
+    );
+  }
+
+  @Patch(':caseId/prescriptions/items/:itemId')
+  @Roles('DOCTOR', 'ADMIN')
+  async updatePrescriptionItem(
+    @Param('caseId') caseId: string,
+    @Param('itemId') itemId: string,
+    @Body() data: any,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.updatePrescriptionItem(
+      itemId,
+      data,
+      req.user.id,
+      branchId,
+    );
+  }
+
+  @Delete(':caseId/prescriptions/items/:itemId')
+  @Roles('DOCTOR', 'ADMIN')
+  async deletePrescriptionItem(
+    @Param('caseId') caseId: string,
+    @Param('itemId') itemId: string,
+    @Request() req,
+    @BranchId() branchId: string,
+  ) {
+    return this.consultationService.deletePrescriptionItem(
+      itemId,
       req.user.id,
       branchId,
     );

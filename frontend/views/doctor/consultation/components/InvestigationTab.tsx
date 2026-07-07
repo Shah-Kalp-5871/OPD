@@ -128,6 +128,10 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
       toast.success(`${pendingOrders.length} Investigations ordered successfully`);
       setPendingOrders([]);
       if (onOrderAdded) onOrderAdded(true);
+      
+      if (onSaveAndNext) {
+        setTimeout(() => onSaveAndNext(), 600);
+      }
     } catch (error) {
       console.error('Failed to place orders', error);
       toast.error('Failed to place investigation orders');
@@ -444,17 +448,6 @@ const InvestigationsTab: React.FC<InvestigationsTabProps> = ({ caseId, data, onO
                 >
                   PLACE ORDER & BILL
                 </Button>
-                
-                {onSaveAndNext && (
-                  <Button 
-                    variant="secondary"
-                    onClick={onSaveAndNext}
-                    className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
-                    icon={<ChevronRight className="w-5 h-5" />}
-                  >
-                    SAVE & NEXT TAB
-                  </Button>
-                )}
               </div>
               <p className="text-[10px] text-slate-400 text-center font-bold uppercase tracking-widest flex items-center justify-center gap-2">
                  <Activity className="w-3.5 h-3.5 text-indigo-400" /> Orders sync instantly with Laboratory

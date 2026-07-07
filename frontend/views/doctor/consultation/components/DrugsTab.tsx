@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   Search,
   Pill,
-  Trash2
+  Trash2,
+  Edit2,
+  Save
 } from 'lucide-react';
 import api from '@/lib/api';
 import { aiApi } from '@/lib/api/ai';
@@ -58,6 +60,11 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
   // AI Safety State
   const [aiSafetyReport, setAiSafetyReport] = useState<any>(null);
   const [checkingSafety, setCheckingSafety] = useState(false);
+
+  // Edit/Delete State
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
   const patientId = data?.case?.patientId || '';
   const branchId = data?.case?.branchId || 'default-branch';
@@ -247,6 +254,39 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       setRows(prev => prev.filter(r => r.id !== id));
     }
   };
+  const handleDeleteItem = async (itemId: string) => {
+    if (!confirm('Are you sure you want to delete this prescribed item?')) return;
+    setDeletingItemId(itemId);
+    try {
+      await api.delete(`/consultation/${caseId}/prescriptions/items/${itemId}`);
+      toast.success('Prescription item deleted successfully');
+      if (onPrescriptionAdded) onPrescriptionAdded();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to delete item');
+    } finally {
+      setDeletingItemId(null);
+    }
+  };
+
+  const handleUpdateItem = async (itemId: string) => {
+    setUpdatingItemId(itemId);
+    try {
+      await api.patch(`/consultation/${caseId}/prescriptions/items/${itemId}`, {
+        dosage: editingItem.dosage,
+        frequency: editingItem.frequency,
+        duration: parseInt(editingItem.duration) || 0,
+        instructions: editingItem.instructions,
+      });
+      toast.success('Prescription item updated successfully');
+      setEditingItem(null);
+      if (onPrescriptionAdded) onPrescriptionAdded();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update item');
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
 
   const handlePlacePrescription = async () => {
     // Only submit rows that have a selected drug
@@ -260,17 +300,17 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       setSubmitting(true);
       await api.post(`/consultation/${caseId}/prescriptions`, {
         items: validItems.map(item => ({
-          drugId: item.drugId,
+          drugId: item.isSimple ? undefined : item.drugId,
+          simpleDrugId: item.isSimple ? item.drugId : undefined,
           drugName: item.drugName,
           dosage: item.dosage,
           frequency: item.frequency,
           duration: Number(item.duration) || 0,
           instructions: item.instructions,
-          route: 'Oral', // default for now, or add column
-          formulation: item.formulation,
-          isSimple: item.isSimple,
-          unitPrice: item.unitPrice,
-          totalQty: item.totalQty
+          route: 'Oral', 
+          isSimpleDrug: item.isSimple,
+          unitCost: item.unitPrice,
+          totalQuantity: typeof item.totalQty === 'number' ? item.totalQty : 0
         })),
         notes
       });
@@ -291,6 +331,10 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       }
 
       if (onPrescriptionAdded) onPrescriptionAdded();
+
+      if (onSaveAndNext) {
+        setTimeout(() => onSaveAndNext(), 600);
+      }
     } catch (error) {
       console.error('Failed to create prescription', error);
       toast.error('Failed to save prescription');
@@ -310,6 +354,8 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
           <p className="text-xs text-slate-500 font-medium">Search and select items to build the prescription.</p>
         </div>
       </div>
+
+
 
       {/* TABLE CONTENT */}
       <div className="flex-1 overflow-auto pb-48" ref={tableContainerRef}>
@@ -514,19 +560,106 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
             >
               SIGN & SEND
             </Button>
-            {onSaveAndNext && (
-              <Button 
-                variant="secondary"
-                onClick={onSaveAndNext}
-                className="w-full h-12 rounded-xl text-xs tracking-widest bg-slate-200 hover:bg-slate-300 text-slate-700"
-                icon={<ChevronRight className="w-4 h-4" />}
-              >
-                SAVE & NEXT
-              </Button>
-            )}
           </div>
         </div>
       </div>
+      
+      {/* EXISTING PRESCRIPTIONS (Moved to bottom) */}
+      {data?.case?.prescriptions?.some((p: any) => p.items?.length > 0) && (
+        <div className="px-6 py-4 border-t border-slate-200 bg-blue-50/30">
+          <h3 className="text-sm font-black text-slate-800 mb-3 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            Already Prescribed
+          </h3>
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">Medicine</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">Dosage</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">Frequency</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-wider text-right">Days</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {data.case.prescriptions.flatMap((p: any) => p.items || []).map((item: any, idx: number) => {
+                  const isEditing = editingItem?.id === item.id;
+                  return (
+                    <tr key={item.id || idx} className="group hover:bg-slate-50/50 transition-colors">
+                      {isEditing ? (
+                        <>
+                          <td className="px-4 py-2.5">
+                            <div className="text-xs font-bold text-slate-900">{item.drugName}</div>
+                            <input 
+                              className="w-full px-2 py-1 mt-1 text-xs border border-blue-200 rounded outline-none focus:border-blue-500 bg-white" 
+                              value={editingItem.instructions || ''} 
+                              onChange={e => setEditingItem({...editingItem, instructions: e.target.value})}
+                              placeholder="Instructions"
+                            />
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <input 
+                              className="w-full px-2 py-1 text-xs border border-blue-200 rounded outline-none focus:border-blue-500 bg-white" 
+                              value={editingItem.dosage || ''} 
+                              onChange={e => setEditingItem({...editingItem, dosage: e.target.value})}
+                            />
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <input 
+                              className="w-full px-2 py-1 text-xs border border-blue-200 rounded outline-none focus:border-blue-500 bg-white" 
+                              value={editingItem.frequency || ''} 
+                              onChange={e => setEditingItem({...editingItem, frequency: e.target.value})}
+                            />
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <input 
+                                className="w-16 px-2 py-1 text-xs border border-blue-200 rounded outline-none focus:border-blue-500 text-right bg-white" 
+                                value={editingItem.duration || ''} 
+                                onChange={e => setEditingItem({...editingItem, duration: e.target.value})}
+                              />
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleUpdateItem(item.id)} disabled={updatingItemId === item.id} className="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors cursor-pointer" title="Save">
+                                  {updatingItemId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                                </button>
+                                <button onClick={() => setEditingItem(null)} className="p-1.5 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors cursor-pointer" title="Cancel">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-4 py-2.5">
+                            <div className="text-xs font-bold text-slate-900">{item.drugName}</div>
+                            {item.instructions && <div className="text-[10px] font-medium text-slate-500 mt-0.5">{item.instructions}</div>}
+                          </td>
+                          <td className="px-4 py-2.5 text-xs font-semibold text-slate-700">{item.dosage}</td>
+                          <td className="px-4 py-2.5 text-xs font-bold text-blue-600">{item.frequency}</td>
+                          <td className="px-4 py-2.5 text-xs font-bold text-slate-600">
+                            <div className="flex items-center justify-end gap-3">
+                              <span>{item.duration} Days</span>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => setEditingItem({...item})} className="p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer" title="Edit">
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => handleDeleteItem(item.id)} disabled={deletingItemId === item.id} className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer" title="Delete">
+                                  {deletingItemId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
 
     {/* PORTAL DROPDOWN: rendered outside DOM tree to avoid table scroll clipping */}

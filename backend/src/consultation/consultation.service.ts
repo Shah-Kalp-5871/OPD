@@ -409,8 +409,8 @@ export class ConsultationService {
           status: 'ACTIVE',
           items: {
             create: items.map((item) => ({
-              drugId: item.drugId,
-              simpleDrugId: item.simpleDrugId,
+              drug: item.drugId ? { connect: { id: item.drugId } } : undefined,
+              simpleDrug: item.simpleDrugId ? { connect: { id: item.simpleDrugId } } : undefined,
               drugName: item.drugName,
               isSimpleDrug: item.isSimpleDrug || false,
               isManualDrug: item.isManualDrug || false,
@@ -466,6 +466,83 @@ export class ConsultationService {
 
       return { ...prescription, warnings };
     });
+  }
+
+  async updatePrescriptionItem(
+    itemId: string,
+    data: any,
+    userId: string,
+    branchId: string,
+  ) {
+    const item = await this.prisma.prescriptionItem.findUnique({
+      where: { id: itemId },
+      include: { prescription: true },
+    });
+
+    if (!item) {
+      throw new NotFoundException(`Prescription item ${itemId} not found`);
+    }
+
+    if (item.prescription.branchId !== branchId) {
+      throw new BadRequestException('Unauthorized to update this item');
+    }
+
+    const updated = await this.prisma.prescriptionItem.update({
+      where: { id: itemId },
+      data: {
+        dosage: data.dosage,
+        frequency: data.frequency,
+        duration: data.duration,
+        instructions: data.instructions,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        entityType: 'PRESCRIPTION_ITEM',
+        entityId: itemId,
+        action: 'UPDATE',
+        details: `Updated dosage/frequency for drug ${item.drugName}`,
+      },
+    });
+
+    return updated;
+  }
+
+  async deletePrescriptionItem(
+    itemId: string,
+    userId: string,
+    branchId: string,
+  ) {
+    const item = await this.prisma.prescriptionItem.findUnique({
+      where: { id: itemId },
+      include: { prescription: true },
+    });
+
+    if (!item) {
+      throw new NotFoundException(`Prescription item ${itemId} not found`);
+    }
+
+    if (item.prescription.branchId !== branchId) {
+      throw new BadRequestException('Unauthorized to delete this item');
+    }
+
+    await this.prisma.prescriptionItem.delete({
+      where: { id: itemId },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        entityType: 'PRESCRIPTION_ITEM',
+        entityId: itemId,
+        action: 'DELETE',
+        details: `Deleted prescription item ${item.drugName}`,
+      },
+    });
+
+    return { success: true };
   }
 
   async getProcedures() {
