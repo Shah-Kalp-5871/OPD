@@ -45,7 +45,14 @@ cd backend
 node clear.js
 ```
 
-### 6. (Optional) Clear All Patients
+### 6. (Optional) Seed Drugs Data
+If you need to quickly populate the database with a mix of 70 Normal Drugs and 30 Simple Drugs (Consumables), you can run the drug seeder:
+```bash
+cd backend
+npx ts-node prisma/seed-drugs.ts
+```
+
+### 7. (Optional) Clear All Patients
 If you need to completely delete all patients and their related records (bills, cases, appointments, etc.) from the database, you can run this script:
 ```bash
 cd backend

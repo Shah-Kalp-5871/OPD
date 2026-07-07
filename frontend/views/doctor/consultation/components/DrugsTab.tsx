@@ -1,25 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { 
-  Pill, 
-  Search, 
-  Plus, 
   X, 
-  Clock, 
-  Info, 
   AlertCircle,
   CheckCircle2,
   Loader2,
-  Calendar,
-  History,
-  FileText,
   ChevronRight,
-  ShoppingCart,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  Pill,
+  Trash2
 } from 'lucide-react';
 import api from '@/lib/api';
 import { aiApi } from '@/lib/api/ai';
 import { toast } from 'sonner';
-import { Card, Button, Input, Badge, SectionHeader, TextArea } from './ClinicalDesignSystem';
+import { Button, TextArea, Badge } from './ClinicalDesignSystem';
 
 import { useDrugSearch } from '@/hooks/useDrugSearch';
 
@@ -30,42 +25,141 @@ interface PrescriptionTabProps {
   onSaveAndNext?: () => void;
 }
 
+export interface PrescriptionRow {
+  id: string;
+  drugId?: string;
+  drugName: string;
+  dosage: string;
+  frequency: string;
+  duration: number | string;
+  totalQty: number | string;
+  instructions: string;
+  isSimple?: boolean;
+  unitPrice?: number;
+  formulation?: string;
+}
+
 const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPrescriptionAdded, onSaveAndNext }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchMode, setSearchMode] = useState<'BRAND' | 'GENERIC'>('BRAND');
-  const { results: filteredDrugs, isLoading: searchLoading } = useDrugSearch(searchQuery);
-  const [submitting, setSubmitting] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  const [rows, setRows] = useState<PrescriptionRow[]>([]);
   const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [currentDrug, setCurrentDrug] = useState<any>(null);
-  const [dosage, setDosage] = useState('');
-  const [frequency, setFrequency] = useState('1-0-1');
-  const [duration, setDuration] = useState(5);
-  const [instructions, setInstructions] = useState('After Food');
-  const [route, setRoute] = useState('Oral');
-  const [isSimple, setIsSimple] = useState(false);
+  // Search Autocomplete state
+  const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  // Only fire search after 2+ chars typed
+  const debouncedQuery = searchQuery.length >= 2 ? searchQuery : '';
+  const { results: filteredDrugs, isLoading: searchLoading } = useDrugSearch(debouncedQuery);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const activeInputRef = useRef<HTMLInputElement | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
+  // AI Safety State
   const [aiSafetyReport, setAiSafetyReport] = useState<any>(null);
   const [checkingSafety, setCheckingSafety] = useState(false);
 
   const patientId = data?.case?.patientId || '';
   const branchId = data?.case?.branchId || 'default-branch';
   const chiefComplaint = data?.complaint?.chiefComplaint || '';
+  const commonFrequencies = [
+    '1-0-1', '1-0-0', '0-1-0', '0-0-1', '1-1-1', '1-1-1-1', 
+    'OD (Once Daily)', 'BD (Twice Daily)', 'TDS (Thrice Daily)', 'QID (Four Times a Day)', 
+    'SOS (As Needed)', 'HS (At Bedtime)', 'Stat (Immediately)', 
+    'Q4H (Every 4 Hours)', 'Q6H (Every 6 Hours)', 'Q8H (Every 8 Hours)'
+  ];
+
+  const commonDosages = [
+    '1 Tab', '1/2 Tab', '2 Tabs', '5 ml', '10 ml', '15 ml', '1 Cap', '2 Caps', '1 Sachet', '2 Drops', 'Apply Locally'
+  ];
+
+  const commonInstructions = [
+    'After Food (PC)', 'Before Food (AC)', 'Empty Stomach', 'With Milk', 'With Warm Water', 'At Bedtime', 'Apply twice daily', 'As directed by physician'
+  ];
+
+  // Initialize with one empty row
+  useEffect(() => {
+    if (rows.length === 0) {
+      addEmptyRow();
+    }
+  }, []);
+
+  // Auto-scroll to bottom when new row is added
+  useEffect(() => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = tableContainerRef.current.scrollHeight;
+    }
+  }, [rows.length]);
+
+  // Position portal dropdown relative to the focused input
+  const updateDropdownPos = useCallback(() => {
+    if (activeInputRef.current) {
+      const rect = activeInputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: Math.max(rect.width, 440),
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (focusedRowId) {
+      updateDropdownPos();
+      window.addEventListener('scroll', updateDropdownPos, true);
+      window.addEventListener('resize', updateDropdownPos);
+    } else {
+      setDropdownPos(null);
+    }
+    return () => {
+      window.removeEventListener('scroll', updateDropdownPos, true);
+      window.removeEventListener('resize', updateDropdownPos);
+    };
+  }, [focusedRowId, updateDropdownPos]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const clickedDropdown = dropdownRef.current?.contains(target);
+      const clickedInput = activeInputRef.current?.contains(target);
+      if (!clickedDropdown && !clickedInput) {
+        setFocusedRowId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const addEmptyRow = () => {
+    setRows(prev => [
+      ...prev,
+      { 
+        id: crypto.randomUUID(), 
+        drugName: '', 
+        dosage: '', 
+        frequency: '1-0-1', 
+        duration: 5, 
+        totalQty: 10, 
+        instructions: '' 
+      }
+    ]);
+  };
 
   // Trigger real-time clinical safety checks whenever items are modified
   useEffect(() => {
-    if (selectedItems.length > 0) {
-      runSafetyCrossCheck();
+    const activeDrugs = rows.filter(r => r.drugId);
+    if (activeDrugs.length > 0) {
+      runSafetyCrossCheck(activeDrugs);
     } else {
       setAiSafetyReport(null);
     }
-  }, [selectedItems]);
+  }, [rows.length]); // Optimistic: trigger mainly when row count changes to save API calls
 
-  const runSafetyCrossCheck = async () => {
+  const runSafetyCrossCheck = async (activeDrugs: PrescriptionRow[]) => {
     try {
       setCheckingSafety(true);
-      const drugList = selectedItems.map(item => item.drugName);
+      const drugList = activeDrugs.map(item => item.drugName);
       
       const res = await aiApi.getClinicalSuggestions({
         caseId,
@@ -85,64 +179,99 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     }
   };
 
-  const calculateQty = (freq: string, days: number): number | string => {
+  const calculateQty = (freq: string, days: number | string): number | string => {
+    const numDays = Number(days) || 0;
     let perDay = 1;
     if (freq === '1-0-0' || freq === '0-1-0' || freq === '0-0-1' || freq === 'OD') perDay = 1;
     else if (freq === '1-0-1' || freq === 'BD') perDay = 2;
     else if (freq === '1-1-1' || freq === 'TDS') perDay = 3;
     else if (freq === 'SOS') return 'As needed';
     
-    const total = perDay * days;
+    const total = perDay * numDays;
     return total === 0 ? 'Take from outside' : total;
   };
 
-  const addItem = () => {
-    if (!currentDrug) return;
-    
-    const qty = calculateQty(frequency, duration);
-    const requiredQty = typeof qty === 'number' ? qty : 0;
-    const stock = currentDrug.inventory?.totalStock || 0;
-    
-    if (requiredQty > 0 && stock < requiredQty) {
-      toast.error(`Drug Not Available: ${currentDrug.drugName} (Stock: ${stock}, Required: ${requiredQty}) - Proceeding anyway`);
-    }
-    
-    const newItem = {
-      drugId: currentDrug.id,
-      drugName: currentDrug.drugName,
-      dosage,
-      frequency,
-      duration,
-      instructions,
-      route,
-      formulation: currentDrug.formulation,
-      isSimple,
-      unitPrice: Number(currentDrug.unitPrice) || 0,
-      totalQty: qty
-    };
-
-    setSelectedItems(prev => [...prev, newItem]);
-    setCurrentDrug(null);
-    setSearchQuery(''); // Reset search after selection
-    setDosage('');
-    setFrequency('1-0-1');
-    setDuration(5);
-    setInstructions('After Food');
-    setRoute('Oral');
-    setIsSimple(false);
+  const updateRow = (id: string, field: keyof PrescriptionRow, value: any) => {
+    setRows(prev => prev.map(row => {
+      if (row.id === id) {
+        const updatedRow = { ...row, [field]: value };
+        // Auto calculate total if frequency or duration changes
+        if (field === 'frequency' || field === 'duration') {
+          updatedRow.totalQty = calculateQty(updatedRow.frequency, updatedRow.duration);
+        }
+        return updatedRow;
+      }
+      return row;
+    }));
   };
 
-  const removeItem = (index: number) => {
-    setSelectedItems(prev => prev.filter((_, i) => i !== index));
+  const selectDrug = (rowId: string, drug: any) => {
+    setRows(prev => {
+      const newRows = prev.map(row => {
+        if (row.id === rowId) {
+          const dosage = drug.formulation === 'TAB' ? '1 Tablet' : '';
+          return {
+            ...row,
+            drugId: drug.id,
+            drugName: drug.drugName,
+            formulation: drug.formulation,
+            dosage,
+            isSimple: drug.drugCategory === 'SIMPLE' || drug.category === 'SIMPLE',
+            unitPrice: Number(drug.unitPrice) || 0,
+            searchQuery: '' // clear local search query
+          };
+        }
+        return row;
+      });
+
+      // If the row we just populated was the last row, append a new empty row
+      const isLastRow = prev[prev.length - 1].id === rowId;
+      if (isLastRow) {
+        return [
+          ...newRows,
+          { id: crypto.randomUUID(), drugName: '', dosage: '', frequency: '1-0-1', duration: 5, totalQty: 10, instructions: '' }
+        ];
+      }
+      return newRows;
+    });
+
+    setFocusedRowId(null);
+    setSearchQuery('');
+  };
+
+  const removeRow = (id: string) => {
+    if (rows.length === 1) {
+      // If it's the last row, just clear it instead of removing
+      setRows([{ id: crypto.randomUUID(), drugName: '', dosage: '', frequency: '1-0-1', duration: 5, totalQty: 10, instructions: '' }]);
+    } else {
+      setRows(prev => prev.filter(r => r.id !== id));
+    }
   };
 
   const handlePlacePrescription = async () => {
-    if (selectedItems.length === 0) return;
+    // Only submit rows that have a selected drug
+    const validItems = rows.filter(r => r.drugId);
+    if (validItems.length === 0) {
+      toast.error('Please add at least one valid medication');
+      return;
+    }
     
     try {
       setSubmitting(true);
       await api.post(`/consultation/${caseId}/prescriptions`, {
-        items: selectedItems,
+        items: validItems.map(item => ({
+          drugId: item.drugId,
+          drugName: item.drugName,
+          dosage: item.dosage,
+          frequency: item.frequency,
+          duration: Number(item.duration) || 0,
+          instructions: item.instructions,
+          route: 'Oral', // default for now, or add column
+          formulation: item.formulation,
+          isSimple: item.isSimple,
+          unitPrice: item.unitPrice,
+          totalQty: item.totalQty
+        })),
         notes
       });
       
@@ -161,8 +290,6 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
         }
       }
 
-      setSelectedItems([]);
-      setNotes('');
       if (onPrescriptionAdded) onPrescriptionAdded();
     } catch (error) {
       console.error('Failed to create prescription', error);
@@ -172,407 +299,304 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     }
   };
 
-  const commonFrequencies = ['1-0-0', '0-1-0', '0-0-1', '1-0-1', '1-1-1', 'OD', 'BD', 'TDS', 'SOS'];
-
-
   return (
-    <div className="grid grid-cols-12 gap-8 pb-12 overflow-hidden">
-      {/* Left: Drug Selection Area */}
-      <div className="col-span-12 lg:col-span-7 space-y-6">
-        {!currentDrug ? (
-          <div className="space-y-6">
-            <Card className="p-0 border-none shadow-none bg-transparent">
-              <div className="flex items-center gap-2 mb-2 bg-slate-100 p-1 rounded-xl w-fit">
-                <button 
-                  onClick={() => setSearchMode('BRAND')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${searchMode === 'BRAND' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  By Brand Name
-                </button>
-                <button 
-                  onClick={() => setSearchMode('GENERIC')}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${searchMode === 'GENERIC' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                  By Content / Generic
-                </button>
-              </div>
-              <div className="relative group">
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                  <Search className="w-5 h-5" />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder={searchMode === 'BRAND' ? "Search by Brand Name (e.g. Crocin, Dolo)..." : "Search by Molecule/Generic (e.g. Paracetamol)..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-16 pr-12 py-5 bg-white border border-slate-200 rounded-3xl text-lg font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 transition-all shadow-xl shadow-slate-100 placeholder:text-slate-300"
-                  autoFocus
-                />
-                {searchLoading && (
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2">
-                    <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            <div className="grid grid-cols-1 gap-3 pr-1">
-              {filteredDrugs.map(drug => (
-                <div 
-                  key={drug.id}
-                  onClick={() => {
-                    setCurrentDrug(drug);
-                    setDosage(drug.formulation === 'TAB' ? '1 Tablet' : '');
-                    setIsSimple(drug.drugCategory === 'SIMPLE' || (drug as any).category === 'SIMPLE');
-                  }}
-                  className="p-5 bg-white border border-slate-100 rounded-2xl hover:border-blue-300 hover:shadow-xl hover:shadow-slate-100 transition-all cursor-pointer group flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center transition-all group-hover:bg-blue-50 group-hover:scale-110">
-                      <Pill className="w-7 h-7 text-slate-300 group-hover:text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-slate-900 font-black text-base leading-none">{drug.drugName}</h3>
-                        <Badge variant="slate" className="bg-slate-100 text-[9px]">{drug.formulation}</Badge>
-                      </div>
-                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight italic">{drug.genericName}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        {drug.schedule && (
-                          <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100/50">
-                            <AlertTriangle className="w-3 h-3" /> {drug.schedule}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100/50">
-                          <CheckCircle2 className="w-3 h-3" /> {drug.inventory?.totalStock || 0} In Stock
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-500">
-                          ₹{Number(drug.unitPrice || 0).toFixed(2)} / unit
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                    <Plus className="w-5 h-5" />
-                  </div>
-                </div>
-              ))}
-              {filteredDrugs.length === 0 && (
-                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-slate-300" />
-                  </div>
-                  <h3 className="text-slate-900 font-black text-sm uppercase tracking-widest">No Medications Found</h3>
-                  <p className="text-slate-400 text-xs font-medium mt-1">Try searching with a generic name or check inventory.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <Card 
-            className="animate-in zoom-in-95 duration-300 border-2 border-blue-50 shadow-2xl shadow-blue-100/50"
-            title="Dosage Configuration"
-            subtitle={`Set parameters for ${currentDrug.drugName}`}
-            headerAction={
-              <button 
-                onClick={() => setCurrentDrug(null)}
-                className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            }
-          >
-            <div className="space-y-10">
-              <div className="grid grid-cols-2 gap-8">
-                <Input
-                  label="Dosage Strength"
-                  value={dosage}
-                  onChange={(e) => setDosage(e.target.value)}
-                  placeholder="e.g. 500mg, 1 Tab, 5ml"
-                />
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between px-1">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">Duration (Days)</label>
-                    <span className="text-blue-600 font-black text-sm">{duration} Days</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="60" 
-                    value={duration}
-                    onChange={(e) => setDuration(parseInt(e.target.value))}
-                    className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-blue-600 cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {currentDrug.schedule && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-amber-900 font-bold text-xs uppercase tracking-wider mb-1">Restricted Drug ({currentDrug.schedule})</h4>
-                    <p className="text-[10px] text-amber-700 font-medium">This drug falls under a restricted schedule. Please ensure appropriate consent and diagnosis before prescribing.</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={isSimple}
-                    onChange={(e) => setIsSimple(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                  />
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">Mark as Simple Drug (S)</span>
-                </label>
-                
-                <div className="text-right">
-                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Qty: </span>
-                   <span className="text-lg font-black text-blue-600 mr-4">{calculateQty(frequency, duration)}</span>
-                   
-                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Est Cost: </span>
-                   <span className="text-lg font-black text-emerald-600">₹{((Number(calculateQty(frequency, duration)) || 0) * (Number(currentDrug.unitPrice) || 0)).toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Frequency Schedule</label>
-                <div className="flex flex-wrap gap-2.5">
-                  {commonFrequencies.map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setFrequency(f)}
-                      className={`
-                        px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border
-                        ${frequency === f 
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20 active:scale-95' 
-                          : 'bg-white text-slate-500 border-slate-100 hover:border-slate-300 active:scale-95'}
-                      `}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Route & Instructions</label>
-                <div className="flex flex-wrap gap-2.5 mb-2">
-                  {['Oral', 'IV', 'IM', 'Topical', 'Subcutaneous', 'Inhalation'].map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setRoute(r)}
-                      className={`
-                        px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border
-                        ${route === r 
-                          ? 'bg-blue-100 text-blue-700 border-blue-200' 
-                          : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}
-                      `}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-2.5 mb-3">
-                  {['After Food', 'Before Food', 'Empty Stomach', 'With Milk', 'SOS'].map(inst => (
-                    <button
-                      key={inst}
-                      onClick={() => setInstructions(inst)}
-                      className={`
-                        px-4 py-2 rounded-xl text-[10px] font-bold transition-all border
-                        ${instructions === inst 
-                          ? 'bg-slate-800 text-white border-slate-800' 
-                          : 'bg-slate-50 text-slate-500 border-slate-100 hover:border-slate-200'}
-                      `}
-                    >
-                      {inst}
-                    </button>
-                  ))}
-                </div>
-                <TextArea 
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="Additional specific instructions for the patient..."
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              <Button 
-                onClick={addItem}
-                className="w-full h-14 rounded-2xl text-sm tracking-widest"
-                icon={<Plus className="w-5 h-5" />}
-              >
-                ADD TO PRESCRIPTION
-              </Button>
-            </div>
-          </Card>
-        )}
+    <>
+    <div className="flex flex-col h-full bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xl shadow-slate-200/50">
+      
+      {/* HEADER */}
+      <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 className="text-slate-900 font-black text-lg tracking-tight">Prescription Entry</h2>
+          <p className="text-xs text-slate-500 font-medium">Search and select items to build the prescription.</p>
+        </div>
       </div>
 
-      {/* Right: Active Prescription List */}
-      <div className="col-span-12 lg:col-span-5">
-        <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col max-h-[650px] sticky top-6">
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-                <ShoppingCart className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-slate-900 font-black text-base leading-none mb-1">Prescription Hub</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedItems.length} Items • Est Total: ₹{selectedItems.reduce((acc, curr) => acc + ((curr.totalQty || 0) * (curr.unitPrice || 0)), 0).toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-thin">
-            {/* Real-time AI Safety Cross Check Indicators */}
-            {checkingSafety && (
-              <div className="flex items-center justify-center gap-3 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl text-xs text-blue-600 font-bold animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                Cross-checking patient history, allergies & drug interactions...
-              </div>
-            )}
-
-            {aiSafetyReport && !checkingSafety && (
-              <div className="space-y-3">
-                {/* Allergy Warnings */}
-                {aiSafetyReport.allergyWarnings?.length > 0 && (
-                  <div className="p-4 bg-rose-50 border border-rose-100 rounded-[20px] text-[11px] text-rose-800 space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 font-black uppercase tracking-wider text-rose-900">
-                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                      Allergy Safety Risk Detected
-                    </div>
-                    <ul className="list-disc pl-4 font-bold space-y-1">
-                      {aiSafetyReport.allergyWarnings.map((warning: string, i: number) => (
-                        <li key={i}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Drug Interactions */}
-                {aiSafetyReport.drugInteractions?.length > 0 && (
-                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-[20px] text-[11px] text-amber-800 space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 font-black uppercase tracking-wider text-amber-900">
-                      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                      Drug-to-Drug Interaction Warn
-                    </div>
-                    <ul className="list-disc pl-4 font-bold space-y-1">
-                      {aiSafetyReport.drugInteractions.map((warning: string, i: number) => (
-                        <li key={i}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Duplicate Therapies */}
-                {aiSafetyReport.duplicateTherapies?.length > 0 && (
-                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-[20px] text-[11px] text-indigo-800 space-y-2 animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 font-black uppercase tracking-wider text-indigo-900">
-                      <AlertCircle className="w-4 h-4 text-indigo-500 shrink-0" />
-                      Therapeutic Duplication Alert
-                    </div>
-                    <ul className="list-disc pl-4 font-bold space-y-1">
-                      {aiSafetyReport.duplicateTherapies.map((warning: string, i: number) => (
-                        <li key={i}>{warning}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* AI Safety Clinical Disclaimer */}
-                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-[9px] text-slate-400 font-medium">
-                  <strong>Clinical Safety Notice:</strong> AI advice is assistive only. Final clinical judgment remains entirely with the attending physician. All safety actions are logged securely.
-                </div>
-              </div>
-            )}
-
-            {selectedItems.length > 0 ? (
-              selectedItems.map((item, index) => (
-                <div key={index} className="group relative bg-slate-50/50 border border-slate-100 rounded-[24px] p-5 hover:border-blue-200 hover:bg-white transition-all animate-in slide-in-from-right-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-slate-900 font-black text-sm tracking-tight">
-                          {item.isSimple ? <span className="text-blue-500 mr-1">(S)</span> : null}
-                          {item.drugName}
-                        </h4>
-                        <Badge variant="blue" className="text-[8px] py-0">{item.formulation}</Badge>
+      {/* TABLE CONTENT */}
+      <div className="flex-1 overflow-auto pb-48" ref={tableContainerRef}>
+        <table className="w-full text-left border-collapse border border-slate-200">
+          <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm">
+            <tr>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[35%]">Item Name</th>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[15%]">Dosage</th>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[15%]">Frequency</th>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[8%] text-center">Days</th>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[7%] text-center">Total</th>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[15%]">Note</th>
+              <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200 w-[5%] text-center"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {rows.map((row) => (
+              <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
+                <td className="px-3 py-2 relative border-r border-slate-200 align-top">
+                  <div className="relative">
+                    {row.drugId ? (
+                      <div className="flex items-center justify-between py-1.5">
+                        <div>
+                          <span className="font-bold text-slate-900 text-sm">
+                            {row.isSimple ? <span className="text-blue-600 mr-1.5 font-black text-[11px] px-1 bg-blue-100 rounded">S</span> : null}
+                            {row.drugName}
+                          </span>
+                          {row.formulation && <Badge variant="slate" className="ml-2 text-[10px] bg-slate-100 font-bold">{row.formulation}</Badge>}
+                        </div>
+                        <button 
+                          onClick={() => updateRow(row.id, 'drugId', undefined)}
+                          className="text-[10px] text-blue-600 hover:underline font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          Change
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 uppercase tracking-tighter">
-                          {item.dosage} {item.route ? `(${item.route})` : ''}
-                        </span>
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                          {item.frequency} • {item.duration} Days
-                        </span>
-                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 uppercase tracking-tighter">
-                          Qty: {item.totalQty}
-                        </span>
+                    ) : (
+                      <div className="relative flex items-center">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                        <input 
+                          type="text"
+                          placeholder="Type 2+ chars to search..."
+                          className="w-full pl-8 pr-2 py-1.5 bg-white border border-slate-300 focus:border-blue-500 rounded-lg text-sm font-semibold text-slate-900 outline-none shadow-sm transition-all placeholder:text-slate-400"
+                          value={focusedRowId === row.id ? searchQuery : row.drugName}
+                          ref={focusedRowId === row.id ? (el) => { activeInputRef.current = el; } : undefined}
+                          onFocus={(e) => {
+                            activeInputRef.current = e.currentTarget;
+                            setFocusedRowId(row.id);
+                            setSearchQuery(row.drugName);
+                            updateDropdownPos();
+                          }}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            updateRow(row.id, 'drugName', e.target.value);
+                            updateDropdownPos();
+                          }}
+                        />
+                        {searchLoading && focusedRowId === row.id && (
+                          <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin absolute right-2.5" />
+                        )}
                       </div>
-                    </div>
-                    <button 
-                      onClick={() => removeItem(index)}
-                      className="w-8 h-8 rounded-full bg-white border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center active:scale-90"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2.5 p-3 bg-white/50 border border-slate-100 rounded-xl text-[10px] text-slate-500 font-bold italic">
-                    <Info className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                    {item.instructions}
+                </td>
+                <td className="px-3 py-2 border-r border-slate-200 align-top relative">
+                  <input 
+                    list="dosage-options"
+                    type="text"
+                    value={row.dosage}
+                    onChange={(e) => updateRow(row.id, 'dosage', e.target.value)}
+                    placeholder="e.g. 1 Tab"
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-400 hover:border-slate-300 rounded-lg text-sm font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-400"
+                  />
+                  <datalist id="dosage-options">
+                    {commonDosages.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </datalist>
+                </td>
+                <td className="px-3 py-2 border-r border-slate-200 align-top relative">
+                  <input 
+                    list="frequency-options"
+                    value={row.frequency}
+                    onChange={(e) => updateRow(row.id, 'frequency', e.target.value)}
+                    placeholder="Select or Type..."
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-400 hover:border-slate-300 rounded-lg text-sm font-semibold text-slate-800 outline-none transition-all"
+                  />
+                  <datalist id="frequency-options">
+                    {commonFrequencies.map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </datalist>
+                </td>
+                <td className="px-3 py-2 border-r border-slate-200 align-top text-center">
+                  <input 
+                    type="number"
+                    min="1"
+                    value={row.duration}
+                    onChange={(e) => updateRow(row.id, 'duration', e.target.value)}
+                    className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-400 hover:border-slate-300 rounded-lg text-sm font-bold text-slate-800 outline-none transition-all text-center"
+                  />
+                </td>
+                <td className="px-3 py-2 border-r border-slate-200 align-top">
+                  <div className="px-2 py-1.5 mt-0.5 text-sm font-black text-slate-700 text-center">
+                    {row.totalQty}
                   </div>
+                </td>
+                <td className="px-3 py-2 border-r border-slate-200 align-top relative">
+                  <input 
+                    list="instructions-options"
+                    type="text"
+                    value={row.instructions}
+                    onChange={(e) => updateRow(row.id, 'instructions', e.target.value)}
+                    placeholder="Notes"
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-400 hover:border-slate-300 rounded-lg text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400"
+                  />
+                  <datalist id="instructions-options">
+                    {commonInstructions.map(i => (
+                      <option key={i} value={i}>{i}</option>
+                    ))}
+                  </datalist>
+                </td>
+                <td className="px-2 py-2 align-top text-center">
+                  <button 
+                    onClick={() => removeRow(row.id)}
+                    className="p-1.5 mt-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors mx-auto block"
+                    title="Remove Item"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* FOOTER SECTION: AI Safety + Submit */}
+      <div className="bg-slate-50 border-t border-slate-200 p-6 space-y-6">
+        
+        {/* Real-time AI Safety Cross Check Indicators */}
+        {checkingSafety && (
+          <div className="flex items-center justify-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-xs text-blue-600 font-bold animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            Cross-checking patient history, allergies & drug interactions...
+          </div>
+        )}
+
+        {aiSafetyReport && !checkingSafety && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {aiSafetyReport.allergyWarnings?.length > 0 && (
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-xs text-rose-800 space-y-2">
+                <div className="flex items-center gap-2 font-black uppercase tracking-wider text-rose-900">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" /> Allergy Risk
                 </div>
-              ))
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center py-20">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-slate-200">
-                  <Pill className="w-10 h-10 text-slate-200" />
+                <ul className="list-disc pl-4 font-bold space-y-1">
+                  {aiSafetyReport.allergyWarnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+            
+            {aiSafetyReport.drugInteractions?.length > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-xs text-amber-800 space-y-2">
+                <div className="flex items-center gap-2 font-black uppercase tracking-wider text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" /> Drug Interactions
                 </div>
-                <h3 className="text-slate-400 font-black text-xs uppercase tracking-[0.2em]">List is Empty</h3>
-                <p className="text-slate-300 text-[11px] font-medium mt-2 max-w-[200px]">Add medications from the left panel to begin prescription</p>
+                <ul className="list-disc pl-4 font-bold space-y-1">
+                  {aiSafetyReport.drugInteractions.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+            
+            {aiSafetyReport.duplicateTherapies?.length > 0 && (
+              <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-xs text-indigo-800 space-y-2">
+                <div className="flex items-center gap-2 font-black uppercase tracking-wider text-indigo-900">
+                  <AlertCircle className="w-4 h-4 text-indigo-500" /> Duplicate Therapy
+                </div>
+                <ul className="list-disc pl-4 font-bold space-y-1">
+                  {aiSafetyReport.duplicateTherapies.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                </ul>
               </div>
             )}
           </div>
+        )}
 
-          {selectedItems.length > 0 && (
-            <div className="p-8 bg-slate-50/50 border-t border-slate-100 space-y-6 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.05)]">
-              <TextArea 
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Doctor's notes for the pharmacist or patient..."
-                className="min-h-[80px] bg-white text-[11px]"
-                label="Clinical Notes"
-              />
-
-              <Button 
-                onClick={handlePlacePrescription}
-                loading={submitting}
-                className="w-full h-16 rounded-2xl text-xs tracking-[0.25em] shadow-2xl shadow-blue-200"
-                icon={<CheckCircle2 className="w-5 h-5" />}
-              >
-                SIGN & SEND PRESCRIPTION
-              </Button>
-            </div>
-          )}
-
-          {/* Always show Save & Next at the bottom of the panel */}
-          {onSaveAndNext && (
-            <div className={`p-8 bg-white border-t border-slate-100 flex justify-center ${selectedItems.length === 0 ? 'mt-auto' : ''}`}>
+        <div className="flex items-end gap-6">
+          <div className="flex-1">
+            <TextArea 
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="General clinical notes for this prescription..."
+              className="min-h-[80px] bg-white text-sm shadow-sm"
+              label="Prescription Notes"
+            />
+          </div>
+          <div className="w-[300px] flex flex-col gap-3">
+            <Button 
+              onClick={handlePlacePrescription}
+              loading={submitting}
+              className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] shadow-xl shadow-blue-200"
+              icon={<CheckCircle2 className="w-5 h-5" />}
+            >
+              SIGN & SEND
+            </Button>
+            {onSaveAndNext && (
               <Button 
                 variant="secondary"
                 onClick={onSaveAndNext}
-                className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
-                icon={<ChevronRight className="w-5 h-5" />}
+                className="w-full h-12 rounded-xl text-xs tracking-widest bg-slate-200 hover:bg-slate-300 text-slate-700"
+                icon={<ChevronRight className="w-4 h-4" />}
               >
-                SAVE & NEXT TAB
+                SAVE & NEXT
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
+
+    {/* PORTAL DROPDOWN: rendered outside DOM tree to avoid table scroll clipping */}
+    {focusedRowId && dropdownPos && ReactDOM.createPortal(
+      <div
+        ref={dropdownRef}
+        style={{
+          position: 'fixed',
+          top: dropdownPos.top,
+          left: dropdownPos.left,
+          width: dropdownPos.width,
+          zIndex: 9999,
+        }}
+        className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
+      >
+        {/* Search hint */}
+        {searchQuery.length < 2 && (
+          <div className="px-4 py-3 text-xs text-slate-400 font-medium border-b border-slate-100 flex items-center gap-2">
+            <Search className="w-3 h-3" />
+            Type at least 2 characters to search medications...
+          </div>
+        )}
+
+        {searchQuery.length >= 2 && (
+          <>
+            {searchLoading ? (
+              <div className="flex items-center gap-2 px-4 py-3 text-xs text-blue-500 font-medium">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Searching...
+              </div>
+            ) : filteredDrugs.length > 0 ? (
+              <div className="max-h-[280px] overflow-y-auto">
+                {filteredDrugs.map(drug => (
+                  <div
+                    key={drug.id}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // prevent blur before click
+                      selectDrug(focusedRowId, drug);
+                    }}
+                    className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-50 last:border-0"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-slate-800">{drug.drugName}</span>
+                        {drug.formulation && (
+                          <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded">{drug.formulation}</span>
+                        )}
+                        {(drug.drugCategory === 'SIMPLE' || drug.category === 'SIMPLE') && (
+                          <span className="text-[10px] bg-blue-100 text-blue-700 font-black px-1.5 py-0.5 rounded">S</span>
+                        )}
+                      </div>
+                      {drug.genericName && (
+                        <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">{drug.genericName}</div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-600">Select →</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-4 py-3 text-xs text-slate-400 font-medium">
+                No medications found for "{searchQuery}"
+              </div>
+            )}
+          </>
+        )}
+      </div>,
+      document.body
+    )}
+    </>
   );
 };
 
