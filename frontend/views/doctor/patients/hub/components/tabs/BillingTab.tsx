@@ -204,7 +204,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
         }))
       }, {
         headers: {
-          'Idempotency-Key': crypto.randomUUID(),
+          'Idempotency-Key': Date.now().toString() + Math.random().toString(36).substring(2),
         },
       });
       toast.success('Payment settled successfully');
@@ -805,7 +805,7 @@ export default function BillingTab({ caseId, patient }: { caseId: string; patien
                           paymentMode: 'CASH', // maps to UPI in ledger note
                           transactionId: `UPI-${Date.now()}`
                         }]
-                      }, { headers: { 'Idempotency-Key': crypto.randomUUID() } });
+                      }, { headers: { 'Idempotency-Key': Date.now().toString() + Math.random().toString(36).substring(2) } });
                       const updatedRes = await api.get(`/billing/${caseId}`);
                       setBill(updatedRes.data);
                       setIsQrModalOpen(false);

@@ -142,7 +142,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
     setRows(prev => [
       ...prev,
       { 
-        id: crypto.randomUUID(), 
+        id: Math.random().toString(36).substring(2), 
         drugName: '', 
         dosage: '', 
         frequency: '1-0-1', 
@@ -236,7 +236,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
       if (isLastRow) {
         return [
           ...newRows,
-          { id: crypto.randomUUID(), drugName: '', dosage: '', frequency: '1-0-1', duration: 5, totalQty: 10, instructions: '' }
+          { id: Math.random().toString(36).substring(2), drugName: '', dosage: '', frequency: '1-0-1', duration: 5, totalQty: 10, instructions: '' }
         ];
       }
       return newRows;
@@ -249,7 +249,7 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({ caseId, data, onPresc
   const removeRow = (id: string) => {
     if (rows.length === 1) {
       // If it's the last row, just clear it instead of removing
-      setRows([{ id: crypto.randomUUID(), drugName: '', dosage: '', frequency: '1-0-1', duration: 5, totalQty: 10, instructions: '' }]);
+      setRows([{ id: Math.random().toString(36).substring(2), drugName: '', dosage: '', frequency: '1-0-1', duration: 5, totalQty: 10, instructions: '' }]);
     } else {
       setRows(prev => prev.filter(r => r.id !== id));
     }
