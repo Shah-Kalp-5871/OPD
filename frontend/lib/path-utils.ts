@@ -28,10 +28,17 @@ export const getBasePath = (): string => {
 
 /**
  * Constructs a fully qualified API endpoint URL.
+ * NOTE: APP_CONFIG.API_BASE_URL already ends with /api in production
+ * (e.g. "http://187.127.131.26:8080/api"), so we must NOT append /api again.
  */
 export const getApiUrl = (endpoint: string): string => {
+  const base = APP_CONFIG.API_BASE_URL.replace(/\/+$/, ''); // strip trailing slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${APP_CONFIG.API_BASE_URL}/api${cleanEndpoint}`;
+  // If base already ends with /api, don't add it again
+  if (base.endsWith('/api')) {
+    return `${base}${cleanEndpoint}`;
+  }
+  return `${base}/api${cleanEndpoint}`;
 };
 
 /**
