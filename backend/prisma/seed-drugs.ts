@@ -1,7 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import * as process from 'process';
 const prisma = new PrismaClient();
-
 const generateDrugs = () => {
   const categories = ['Antibiotic', 'Painkiller', 'Antacid', 'Vitamin', 'Antihistamine', 'Antidiabetic', 'Cardiovascular', 'Respiratory'];
   const formulations = ['TAB', 'CAP', 'SYR', 'INJ', 'OINT', 'DROP'];
@@ -68,6 +66,7 @@ async function main() {
 main()
   .catch((e) => {
     console.error(e);
+    // @ts-ignore
     process.exit(1);
   })
   .finally(async () => {
