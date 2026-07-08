@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as process from 'process';
 const prisma = new PrismaClient();
 
 const generateDrugs = () => {
@@ -27,19 +28,20 @@ const generateDrugs = () => {
   return drugs;
 };
 
-const generateSimpleDrugs = () => {
+const generateConsumables = () => {
   const names = ['Cotton Roll', 'Bandage', 'Syringe 5ml', 'Syringe 10ml', 'Surgical Spirit', 'Betadine', 'Gauze Pad', 'Surgical Tape', 'Gloves Box', 'Face Mask', 'Thermometer', 'Tongue Depressor'];
   const simple: any[] = [];
 
-  // Simple Drugs (30 items)
+  // Consumables (30 items)
   for (let i = 1; i <= 30; i++) {
     const baseName = names[i % names.length];
     simple.push({
       drugName: `${baseName} - Variant ${i}`,
-      category: 'Consumable',
+      genericName: baseName,
+      drugCategory: 'Consumable',
+      formulation: 'OTHER',
+      unitOfMeasure: 'Piece',
       unitPrice: Math.floor(Math.random() * 200) + 10,
-      stockQuantity: Math.floor(Math.random() * 500) + 50,
-      lowStockLimit: 20,
       stockTracked: true,
       isActive: true,
     });
@@ -50,22 +52,13 @@ const generateSimpleDrugs = () => {
 async function main() {
   console.log('Starting Drugs Seeder...');
   
-  // Optional: Clean up existing drugs
-  // await prisma.drug.deleteMany();
-  // await prisma.simpleDrug.deleteMany();
-  
   const normalDrugs = generateDrugs();
-  const simpleDrugs = generateSimpleDrugs();
+  const consumables = generateConsumables();
+  const allDrugs = [...normalDrugs, ...consumables];
   
-  console.log(`Seeding ${normalDrugs.length} Normal Drugs...`);
+  console.log(`Seeding ${allDrugs.length} Total Drugs (70 Normal + 30 Consumables)...`);
   await prisma.drug.createMany({
-    data: normalDrugs,
-    skipDuplicates: true,
-  });
-
-  console.log(`Seeding ${simpleDrugs.length} Simple Drugs (Consumables)...`);
-  await prisma.simpleDrug.createMany({
-    data: simpleDrugs,
+    data: allDrugs,
     skipDuplicates: true,
   });
 
