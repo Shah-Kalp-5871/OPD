@@ -4,8 +4,11 @@ import { APP_CONFIG } from '@/lib/config';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 
+const baseUrlRaw = APP_CONFIG.API_BASE_URL || 'http://localhost:3001';
+const baseURL = baseUrlRaw.endsWith('/api') ? baseUrlRaw : `${baseUrlRaw.replace(/\/$/, '')}/api`;
+
 const api = axios.create({
-  baseURL: `${APP_CONFIG.API_BASE_URL}/api`,
+  baseURL,
 });
 
 export const secureFileUrl = (url: string) => {
