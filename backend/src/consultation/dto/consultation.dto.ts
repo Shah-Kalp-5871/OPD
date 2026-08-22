@@ -116,6 +116,14 @@ export class CreateProcedureSessionDto {
   @IsNumber()
   @IsOptional()
   sessions?: number;
+
+  @IsString()
+  @IsOptional()
+  bodyPart?: string;
+
+  @IsNumber()
+  @IsOptional()
+  followUpDays?: number;
 }
 
 export class ComplaintUpdateDto {

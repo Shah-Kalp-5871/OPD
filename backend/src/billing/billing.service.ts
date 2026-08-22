@@ -66,9 +66,10 @@ export class BillingService {
                   doctorProfile: true,
                 },
               },
-              procedureSessions: {
+              patientProcedures: {
                 include: {
                   procedure: true,
+                  sessions: true,
                 },
               },
               prescriptions: {
@@ -910,20 +911,20 @@ export class BillingService {
       }
 
       if (
-        patientCase.procedureSessions &&
-        patientCase.procedureSessions.length > 0
+        patientCase.patientProcedures &&
+        patientCase.patientProcedures.length > 0
       ) {
-        for (const session of patientCase.procedureSessions) {
+        for (const patientProcedure of patientCase.patientProcedures) {
           finalItems.push({
-            serviceName: session.procedure.name,
-            description: session.procedure.description,
-            quantity: 1,
-            unitPrice: session.procedure.basePrice,
+            serviceName: patientProcedure.procedure.name,
+            description: patientProcedure.procedure.description,
+            quantity: patientProcedure.totalSessions,
+            unitPrice: patientProcedure.procedure.basePrice,
             discount: 0,
-            totalPrice: session.procedure.basePrice,
+            totalPrice: Number(patientProcedure.procedure.basePrice) * patientProcedure.totalSessions,
             itemType: 'PROCEDURE',
-            referenceId: session.procedure.id,
-            procedureSessionId: session.id,
+            referenceId: patientProcedure.id,
+            procedureSessionId: patientProcedure.sessions?.[0]?.id,
           });
         }
       }

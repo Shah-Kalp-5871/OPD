@@ -1,608 +1,528 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import {
-  Scissors, Search, X, Clock, Calendar, Loader2, CheckCircle2,
-  Info, Layers, Activity, AlertTriangle, Package, FileSignature, Save, ChevronRight
+  Search, Trash2, Edit2, Save, X, Loader2, CheckCircle2,
+  Calendar, Scissors, AlertTriangle
 } from 'lucide-react';
 import api from '@/lib/api';
-import { procedureApi, Procedure } from '@/lib/api/procedures';
 import { useProcedureSearch } from '@/hooks/useProcedureSearch';
 import { toast } from 'sonner';
-import { Card, Button, Badge, TextArea, SectionHeader } from './ClinicalDesignSystem';
+import { Button } from './ClinicalDesignSystem';
 
 interface ProceduresTabProps {
   caseId: string;
   data: any;
-  onProcedureAdded?: (procedure: any) => void;
+  onProcedureAdded?: (procedure?: any) => void;
   onSaveAndNext?: () => void;
 }
 
+export interface ProcedureBuilderRow {
+  id: string;
+  procedureId?: string;
+  procedureName: string;
+  bodyPart: string;
+  totalSessions: number | string;
+  followUpDays: number | string;
+  rate: number | string;
+}
+
 const ProceduresTab: React.FC<ProceduresTabProps> = ({ caseId, data, onProcedureAdded, onSaveAndNext }) => {
-  const [dbCategories, setDbCategories] = useState<string[]>([]);
-  const { query, setQuery, category, setCategory, results, isLoading } = useProcedureSearch();
+  const doctorName = data?.doctor?.name || 'Doctor';
+  const doctorId = data?.doctor?.id || '';
+
+  // Builder Row State
+  const [builderRows, setBuilderRows] = useState<ProcedureBuilderRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedProcedure, setSelectedProcedure] = useState<Procedure | null>(null);
-  const [notes, setNotes] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<string>('');
-  const [scheduledTime, setScheduledTime] = useState<string>('');
-  const [sessionsCount, setSessionsCount] = useState<number>(1);
-  const [isCompletedByDoctor, setIsCompletedByDoctor] = useState<boolean>(false);
+
+  // Search Autocomplete state
+  const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedQuery = searchQuery.length >= 2 ? searchQuery : '';
+  const { results: filteredProcedures, isLoading: searchLoading } = useProcedureSearch(20); // ignoring limits for now, just hook
   
-  // Consent Modal State
-  const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
-  const [activeConsentOrder, setActiveConsentOrder] = useState<any>(null);
-  const [consentNotes, setConsentNotes] = useState('');
-  const [consentRisks, setConsentRisks] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const activeInputRef = useRef<HTMLInputElement | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   useEffect(() => {
-    procedureApi.getCategories()
-      .then(res => setDbCategories(res))
-      .catch(() => console.error('Failed to load procedure categories'));
+    if (builderRows.length === 0) {
+      addEmptyRow();
+    }
   }, []);
 
-  const handleScheduleProcedure = async () => {
-    if (!selectedProcedure) return;
+  const updateDropdownPos = useCallback(() => {
+    if (activeInputRef.current) {
+      const rect = activeInputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: Math.max(rect.width, 300),
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (focusedRowId) {
+      updateDropdownPos();
+      window.addEventListener('scroll', updateDropdownPos, true);
+      window.addEventListener('resize', updateDropdownPos);
+    } else {
+      setDropdownPos(null);
+    }
+    return () => {
+      window.removeEventListener('scroll', updateDropdownPos, true);
+      window.removeEventListener('resize', updateDropdownPos);
+    };
+  }, [focusedRowId, updateDropdownPos]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const clickedDropdown = dropdownRef.current?.contains(target);
+      const clickedInput = activeInputRef.current?.contains(target);
+      if (!clickedDropdown && !clickedInput) {
+        setFocusedRowId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const addEmptyRow = () => {
+    setBuilderRows(prev => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(2),
+        procedureName: '',
+        bodyPart: '',
+        totalSessions: 1,
+        followUpDays: 20,
+        rate: 0
+      }
+    ]);
+  };
+
+  const updateBuilderRow = (id: string, field: keyof ProcedureBuilderRow, value: any) => {
+    setBuilderRows(prev => prev.map(row => {
+      if (row.id === id) {
+        return { ...row, [field]: value };
+      }
+      return row;
+    }));
+  };
+
+  const selectProcedure = (rowId: string, proc: any) => {
+    setBuilderRows(prev => {
+      const newRows = prev.map(row => {
+        if (row.id === rowId) {
+          return {
+            ...row,
+            procedureId: proc.id,
+            procedureName: proc.name,
+            rate: proc.basePrice || 0
+          };
+        }
+        return row;
+      });
+
+      const isLastRow = prev[prev.length - 1].id === rowId;
+      if (isLastRow) {
+        return [
+          ...newRows,
+          { id: Math.random().toString(36).substring(2), procedureName: '', bodyPart: '', totalSessions: 1, followUpDays: 20, rate: 0 }
+        ];
+      }
+      return newRows;
+    });
+
+    setFocusedRowId(null);
+    setSearchQuery('');
+  };
+
+  const removeBuilderRow = (id: string) => {
+    if (builderRows.length === 1) {
+      setBuilderRows([{ id: Math.random().toString(36).substring(2), procedureName: '', bodyPart: '', totalSessions: 1, followUpDays: 20, rate: 0 }]);
+    } else {
+      setBuilderRows(prev => prev.filter(r => r.id !== id));
+    }
+  };
+
+  const handleScheduleProcedures = async () => {
+    const validItems = builderRows.filter(r => r.procedureId);
+    if (validItems.length === 0) {
+      toast.error('Please add at least one valid procedure');
+      return;
+    }
+
     try {
       setSubmitting(true);
-      await api.post(`/consultation/${caseId}/procedures`, {
-        procedureId: selectedProcedure.id,
-        notes,
-        scheduledDate,
-        scheduledTime,
-        sessions: sessionsCount,
-        isCompletedByDoctor
-      });
-      toast.success(`Procedure "${selectedProcedure.name}" scheduled successfully`);
-      setSelectedProcedure(null);
-      setNotes('');
-      setScheduledDate('');
-      setScheduledTime('');
-      setSessionsCount(1);
-      setIsCompletedByDoctor(false);
-      if (onProcedureAdded) onProcedureAdded(true);
+      for (const item of validItems) {
+        await api.post(`/consultation/${caseId}/procedures`, {
+          procedureId: item.procedureId,
+          sessions: Number(item.totalSessions) || 1,
+          bodyPart: item.bodyPart,
+          followUpDays: Number(item.followUpDays) || 0,
+          isCompletedByDoctor: false
+        });
+      }
+      toast.success('Procedures scheduled successfully');
+      setBuilderRows([{ id: Math.random().toString(36).substring(2), procedureName: '', bodyPart: '', totalSessions: 1, followUpDays: 20, rate: 0 }]);
+      if (onProcedureAdded) onProcedureAdded();
     } catch (error) {
-      console.error('Failed to schedule procedure', error);
-      toast.error('Failed to schedule procedure');
+      console.error('Failed to schedule procedures', error);
+      toast.error('Failed to schedule procedures');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const inputClass = "w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-400 hover:border-slate-300 rounded-lg text-sm font-semibold text-slate-800 outline-none transition-all placeholder:text-slate-400";
+  const tblInputClass = "border border-slate-200 rounded bg-slate-50 px-2 py-1.5 w-full text-xs focus:bg-white focus:border-blue-500 outline-none placeholder-slate-300";
+
   return (
-    <div className="grid grid-cols-12 gap-8 pb-12 overflow-hidden">
-      {/* Left Column: Search & Catalog */}
-      <div className="col-span-12 lg:col-span-7 space-y-6">
-        <Card className="p-0 border-none shadow-none bg-transparent">
-          <div className="flex flex-col gap-6">
-            <div className="relative group">
-              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-              </div>
-              <input
-                type="text"
-                placeholder="Search procedures (e.g. Dressing, ECG, Suturing)..."
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                className="w-full pl-16 pr-8 py-5 bg-white border border-slate-200 rounded-3xl text-lg font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 transition-all shadow-xl shadow-slate-100 placeholder:text-slate-300"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-              <button
-                onClick={() => setCategory(undefined)}
-                className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border whitespace-nowrap ${
-                  !category
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20'
-                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                ALL
-              </button>
-              {dbCategories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setCategory(cat)}
-                  className={`px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all border whitespace-nowrap ${
-                    category === cat
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+    <>
+      <div className="flex flex-col h-full bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xl shadow-slate-200/50">
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 className="text-slate-900 font-black text-lg tracking-tight">Procedure Entry</h2>
+            <p className="text-xs text-slate-500 font-medium">Search and select procedures to schedule.</p>
           </div>
-        </Card>
-
-        <div className="grid grid-cols-1 gap-4 pr-1 min-h-[200px]">
-          {isLoading && results.length === 0 ? (
-            <div className="py-20 flex flex-col items-center justify-center text-slate-300">
-              <Loader2 className="w-10 h-10 animate-spin mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Searching Catalog...</p>
-            </div>
-          ) : results.length > 0 ? (
-            results.map(item => {
-              const isSelected = selectedProcedure?.id === item.id;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedProcedure(item)}
-                  className={`p-5 rounded-2xl border transition-all cursor-pointer group relative flex items-center justify-between ${
-                    isSelected
-                      ? 'bg-blue-50/50 border-blue-400 ring-2 ring-blue-500/10'
-                      : 'bg-white border-slate-100 hover:border-blue-200 hover:shadow-xl hover:shadow-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-5">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all shrink-0 ${
-                      isSelected ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-slate-50 text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600'
-                    }`}>
-                      <Scissors className="w-7 h-7" />
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                        <h3 className={`text-sm font-black uppercase tracking-tight leading-none ${isSelected ? 'text-blue-900' : 'text-slate-800'}`}>
-                          {item.name}
-                        </h3>
-                        {item.code && (
-                          <Badge variant="slate" className="bg-slate-100 text-[9px] tracking-widest">
-                            {item.code}
-                          </Badge>
-                        )}
-                        {item.requiresConsent && (
-                          <Badge variant="amber" className="text-[9px]">Consent</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold">{item.estimatedDuration} mins</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-bold lowercase italic">{item.category ?? 'general'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-lg font-black text-blue-600 italic tracking-tighter">₹{item.basePrice}</div>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Base Rate</div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="py-20 flex flex-col items-center justify-center text-slate-300">
-              <Scissors className="w-10 h-10 mb-4 opacity-20" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Type to search or select a category</p>
-            </div>
-          )}
+          <Button 
+            onClick={handleScheduleProcedures}
+            loading={submitting}
+            className="h-10 px-6 rounded-xl text-xs tracking-wider shadow-md"
+            icon={<CheckCircle2 className="w-4 h-4" />}
+          >
+            SCHEDULE SELECTED
+          </Button>
         </div>
-      </div>
 
-      {/* Right Column: Session Config */}
-      <div className="col-span-12 lg:col-span-5">
-        <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col max-h-[650px] sticky top-6">
-          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-                <Scissors className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-slate-900 font-black text-base leading-none mb-1">Session Config</h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setup Clinical Procedure</p>
-              </div>
-            </div>
-            {selectedProcedure && (
-              <button
-                onClick={() => setSelectedProcedure(null)}
-                className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 transition-all flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-thin bg-slate-50/30">
-            {selectedProcedure ? (
-              <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
-                <div className="bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm">
-                  <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                      <Scissors className="w-6 h-6" />
+        {/* Builder Table */}
+        <div className="overflow-x-auto border-b border-slate-200">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-100">
+              <tr>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[20%]">Therapist</th>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[30%]">Procedure</th>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[15%]">Body Part</th>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[10%] text-center">Total Sessions</th>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[10%] text-center">F/U Days</th>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-r border-slate-200 w-[10%] text-center">Rate</th>
+                <th className="px-3 py-2.5 text-[11px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200 w-[5%] text-center"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {builderRows.map((row) => (
+                <tr key={row.id} className="hover:bg-blue-50/30 transition-colors">
+                  <td className="px-3 py-2 border-r border-slate-200 align-top">
+                    <input type="text" readOnly value={`Dr. ${doctorName}`} className={`${inputClass} bg-slate-100 text-slate-500 cursor-not-allowed`} />
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-200 align-top">
+                    <div className="relative">
+                      {row.procedureId ? (
+                        <div className="flex items-center justify-between py-1.5 px-2">
+                          <span className="font-bold text-slate-900 text-sm">{row.procedureName}</span>
+                          <button 
+                            onClick={() => updateBuilderRow(row.id, 'procedureId', undefined)}
+                            className="text-[10px] text-blue-600 hover:underline font-bold"
+                          >
+                            Change
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative flex items-center">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                          <input 
+                            type="text"
+                            placeholder="Search procedure..."
+                            className="w-full pl-8 pr-2 py-1.5 bg-white border border-slate-300 focus:border-blue-500 rounded-lg text-sm font-semibold text-slate-900 outline-none shadow-sm transition-all placeholder:text-slate-400"
+                            value={focusedRowId === row.id ? searchQuery : row.procedureName}
+                            ref={focusedRowId === row.id ? (el) => { activeInputRef.current = el; } : undefined}
+                            onFocus={(e) => {
+                              activeInputRef.current = e.currentTarget;
+                              setFocusedRowId(row.id);
+                              setSearchQuery(row.procedureName);
+                              updateDropdownPos();
+                            }}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              updateBuilderRow(row.id, 'procedureName', e.target.value);
+                              updateDropdownPos();
+                            }}
+                          />
+                          {searchLoading && focusedRowId === row.id && (
+                            <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin absolute right-2.5" />
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="overflow-hidden">
-                      <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight truncate">{selectedProcedure.name}</h4>
-                      <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest mt-0.5">
-                        {selectedProcedure.category ?? 'General'} Dept
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-5">
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Duration</div>
-                      <div className="text-xs font-black text-slate-700 flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-blue-500" />
-                        {selectedProcedure.estimatedDuration} Minutes
-                      </div>
-                    </div>
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Billing Rate</div>
-                      <div className="text-xs font-black text-emerald-600 italic tracking-tight flex items-center gap-2">
-                        <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                        ₹{selectedProcedure.basePrice}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Flags */}
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    {selectedProcedure.requiresConsent && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                        <AlertTriangle className="w-3 h-3" /> Consent Required
-                      </span>
-                    )}
-                    {selectedProcedure.requiresNursing && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                        Nursing Req.
-                      </span>
-                    )}
-                    {selectedProcedure.requiresRoom && (
-                      <span className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                        Room Req.
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Consumables */}
-                  {selectedProcedure.consumableTemplates && selectedProcedure.consumableTemplates.length > 0 && (
-                    <div className="mb-5">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                        <Package className="w-3 h-3" /> Consumables
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedProcedure.consumableTemplates.map((c, i) => (
-                          <span key={i} className="px-2.5 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg text-[9px] font-black">
-                            {c.itemName} ×{c.defaultQuantity}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pre-instructions */}
-                  {selectedProcedure.preInstructions && (
-                    <div className="mb-5 p-3.5 bg-slate-50 rounded-xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Pre-Procedure</p>
-                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{selectedProcedure.preInstructions}</p>
-                    </div>
-                  )}
-
-                  <TextArea
-                    label="Clinical Instruction / Notes"
-                    value={notes}
-                    onChange={e => setNotes(e.target.value)}
-                    placeholder="Add specific instructions for nursing staff or complications to watch for..."
-                    className="min-h-[100px] text-[11px]"
-                  />
-
-                  <div className="grid grid-cols-2 gap-4 mt-5">
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Date</label>
-                      <input 
-                        type="date" 
-                        value={scheduledDate}
-                        onChange={(e) => setScheduledDate(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 outline-none transition-all"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1">Time</label>
-                      <input 
-                        type="time" 
-                        value={scheduledTime}
-                        onChange={(e) => setScheduledTime(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-blue-500 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-1.5">
-                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-tight ml-1 flex justify-between">
-                      <span>Total Sessions</span>
-                      <span className="text-blue-600">{sessionsCount} Sessions</span>
-                    </label>
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-200 align-top">
                     <input 
-                      type="range" 
-                      min="1" 
-                      max="20" 
-                      value={sessionsCount}
-                      onChange={(e) => setSessionsCount(parseInt(e.target.value))}
-                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none accent-blue-600 cursor-pointer"
+                      type="text"
+                      list="body-parts"
+                      value={row.bodyPart}
+                      onChange={(e) => updateBuilderRow(row.id, 'bodyPart', e.target.value)}
+                      placeholder="e.g. Face"
+                      className={inputClass}
                     />
-                  </div>
-
-                  <div className="mt-5 bg-white border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="completedByDoctor"
-                      checked={isCompletedByDoctor}
-                      onChange={(e) => setIsCompletedByDoctor(e.target.checked)}
-                      className="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
+                    <datalist id="body-parts">
+                      <option value="Face" />
+                      <option value="Arms" />
+                      <option value="Legs" />
+                      <option value="Full Body" />
+                      <option value="Underarms" />
+                    </datalist>
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-200 align-top">
+                    <input 
+                      type="number"
+                      min="1"
+                      value={row.totalSessions}
+                      onChange={(e) => updateBuilderRow(row.id, 'totalSessions', e.target.value)}
+                      className={`${inputClass} text-center`}
                     />
-                    <div>
-                      <label htmlFor="completedByDoctor" className="text-sm font-bold text-slate-800 cursor-pointer">
-                        Mark as "Done by Doctor"
-                      </label>
-                      <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-0.5">
-                        Skip nursing queue. The procedure will be marked as COMPLETED instantly and billed.
-                      </p>
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-200 align-top">
+                    <input 
+                      type="number"
+                      min="0"
+                      value={row.followUpDays}
+                      onChange={(e) => updateBuilderRow(row.id, 'followUpDays', e.target.value)}
+                      className={`${inputClass} text-center`}
+                    />
+                  </td>
+                  <td className="px-3 py-2 border-r border-slate-200 align-top">
+                    <div className="px-2 py-1.5 mt-0.5 text-sm font-black text-slate-700 text-center">
+                      ₹{row.rate}
                     </div>
-                  </div>
-                </div>
-
-                <div className={`${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'bg-rose-50 border-rose-100' : 'bg-amber-50 border-amber-100'} border rounded-2xl p-5 flex gap-4 transition-colors`}>
-                  { (selectedProcedure.basePrice * sessionsCount) > 5000 ? (
-                    <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-                  ) : (
-                    <Info className="w-5 h-5 text-amber-500 shrink-0" />
-                  )}
-                  <div>
-                    <h5 className={`text-[11px] font-black uppercase tracking-widest mb-1 ${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'text-rose-800' : 'text-amber-800'}`}>
-                      {(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'Financial Approval Required' : 'Billing Notice'}
-                    </h5>
-                    <p className={`text-[11px] leading-relaxed font-medium italic ${(selectedProcedure.basePrice * sessionsCount) > 5000 ? 'text-rose-700/80' : 'text-amber-700/80'}`}>
-                      Scheduling adds ₹{(selectedProcedure.basePrice * sessionsCount).toLocaleString()} to the patient's bill. 
-                      {(selectedProcedure.basePrice * sessionsCount) > 5000 && " Due to high value, this procedure will be marked 'Approval Pending' until cleared by reception."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center py-20">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-slate-200">
-                  <Scissors className="w-10 h-10 text-slate-200" />
-                </div>
-                <h3 className="text-slate-400 font-black text-xs uppercase tracking-[0.2em]">Select Procedure</h3>
-                <p className="text-slate-300 text-[11px] font-medium mt-2 max-w-[200px]">
-                  Pick a procedure from the catalog to configure and schedule
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="p-8 bg-white border-t border-slate-100 space-y-4 shadow-[0_-8px_40px_-12px_rgba(0,0,0,0.02)]">
-            <Button
-              disabled={!selectedProcedure || submitting}
-              onClick={handleScheduleProcedure}
-              loading={submitting}
-              className="w-full h-16 rounded-2xl text-xs tracking-[0.25em] shadow-2xl shadow-blue-200"
-              icon={<CheckCircle2 className="w-5 h-5" />}
-            >
-              SCHEDULE PROCEDURE
-            </Button>
-            {/* Always show Save & Next at the bottom of the panel */}
-            {onSaveAndNext && (
-              <Button 
-                variant="secondary"
-                onClick={onSaveAndNext}
-                className="w-full h-14 rounded-2xl text-xs tracking-[0.2em] bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-transparent shadow-xl shadow-slate-900/20"
-                icon={<ChevronRight className="w-5 h-5" />}
-              >
-                SAVE & NEXT TAB
-              </Button>
-            )}
-            <p className="text-[9px] text-slate-400 text-center font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 italic">
-              <Activity className="w-3 h-3" /> Real-time synchronization enabled
-            </p>
-          </div>
+                  </td>
+                  <td className="px-2 py-2 align-top text-center">
+                    <button 
+                      onClick={() => removeBuilderRow(row.id)}
+                      className="p-1.5 mt-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors mx-auto block"
+                      title="Remove Item"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-            {/* Multi-Session Tracking Table Section */}
-      <div className="col-span-12 space-y-6 mt-8">
-        <SectionHeader 
-          title="Procedure Multi-Session Tracking" 
-          subtitle="Track and execute clinical procedures across multiple sessions"
-        />
-        
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
-          {data?.procedureOrders?.length > 0 ? (
-            <table className="w-full text-left border-collapse min-w-[1200px]">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                  <th className="py-4 px-6 whitespace-nowrap">Date / Therapist</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Procedure / Body Part</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Session</th>
-                  <th className="py-4 px-6 whitespace-nowrap">F/U Date</th>
-                  <th className="py-4 px-6 min-w-[300px]">Performance Details</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Status</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Action</th>
+
+        {/* Generated Sessions Grid (Wide Table) */}
+        {data?.procedureOrders?.length > 0 && (
+          <div className="flex-1 overflow-auto bg-slate-50/50">
+            <table className="w-max text-left border-collapse border-t border-slate-200">
+              <thead className="bg-slate-800 text-white sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[120px] sticky left-0 bg-slate-800 z-20">Date</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[120px]">Therapist</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[150px]">Procedure</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[120px]">Body Part</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[80px] text-center">Session</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[80px] text-center">F/U Days</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[130px]">Performed Date</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Skin Type</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[80px]">Unit</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[80px]">Power</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Wave Length</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Pulse Duration</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Spot Size</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Pulse Impuls</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Thickness</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Density</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Dot Density</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Short Fire</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[130px]">Status</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[150px]">Remark / Reason</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Rate</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-r border-slate-700 min-w-[100px]">Payment</th>
+                  <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider border-slate-700 min-w-[90px] sticky right-0 bg-slate-800 z-20 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="text-sm divide-y divide-slate-100">
-                {data.procedureOrders.map((order: any) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="py-4 px-6">
-                      <div className="font-bold text-slate-900">{order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Pending'}</div>
-                      <div className="text-[10px] text-slate-400 font-medium">Dr. {data?.doctor?.name} (Auto)</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                        {order.procedure?.name || 'Procedure'}
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-400 mt-0.5">BODY PART: FACE</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-1.5 font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md w-fit text-[11px]">
-                        1/{order.sessions || 1}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="text-slate-600 font-medium text-xs">
-                        {new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toLocaleDateString()}
-                      </div>
-                      <div className="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">20 Days</div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="grid grid-cols-4 gap-2 text-[10px] font-medium text-slate-500">
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Skin Type</span> II</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Unit</span> 10</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Power</span> 100 Hz</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Wave Length</span> 10</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Pulse Dur.</span> 2.2</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Spot Size</span> 25</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Density</span> 10</div>
-                        <div className="bg-slate-50 border border-slate-100 p-1.5 rounded"><span className="text-slate-400 block text-[8px] uppercase">Dot Density</span> 0.5</div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex flex-col gap-1.5">
-                        <Badge variant={order.status === 'APPROVAL_PENDING' ? 'rose' : 'emerald'} className="text-[9px] uppercase tracking-[0.1em] w-fit">
-                          {order.status === 'APPROVAL_PENDING' ? 'Pending Approval' : 'Done'}
-                        </Badge>
-                        <Badge variant="blue" className="text-[8px] uppercase tracking-[0.1em] w-fit opacity-80">
-                          Payment: {order.status === 'APPROVAL_PENDING' ? 'Pending' : 'Paid'}
-                        </Badge>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex flex-col gap-2">
-                        {order.procedure?.requiresConsent && (
-                          <div className="grid grid-cols-2 gap-2">
-                            <button 
-                              onClick={() => {
-                                setActiveConsentOrder(order);
-                                setConsentNotes('');
-                                setConsentRisks('');
-                                setIsConsentModalOpen(true);
-                              }}
-                              className="px-2 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center justify-center gap-1 w-full whitespace-nowrap"
-                            >
-                              <FileSignature className="w-3 h-3" /> Fill
-                            </button>
-                            <button 
-                              onClick={() => {
-                                window.open(`/opd/print/consent/${caseId}`, '_blank');
-                              }}
-                              className="px-2 py-1.5 bg-slate-800 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all flex items-center justify-center gap-1 w-full whitespace-nowrap"
-                            >
-                              Print
-                            </button>
-                          </div>
-                        )}
-                        {!order.procedure?.requiresConsent && (
-                          <button className="px-3 py-1.5 bg-slate-50 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all w-full border border-slate-200">
-                            Edit Stats
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-slate-200">
+                {data.procedureOrders.flatMap((order: any) => {
+                  if (!order.sessions || order.sessions.length === 0) return [];
+                  return order.sessions.map((session: any) => (
+                    <SessionRow key={session.id} caseId={caseId} procedure={order} session={session} doctorName={doctorName} />
+                  ));
+                })}
               </tbody>
             </table>
-          ) : (
-            <div className="py-16 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center m-6 rounded-3xl">
-              <Calendar className="w-10 h-10 text-slate-200 mb-4" />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No Scheduled Procedures</p>
-              <p className="text-xs text-slate-300 mt-2">Pick a procedure from the catalog to start tracking sessions.</p>
+          </div>
+        )}
+      </div>
+
+      {focusedRowId && dropdownPos && ReactDOM.createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 9999,
+          }}
+          className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
+        >
+          {searchQuery.length < 2 && (
+            <div className="px-4 py-3 text-xs text-slate-400 font-medium border-b border-slate-100 flex items-center gap-2">
+              <Search className="w-3 h-3" />
+              Type 2+ chars to search procedures...
             </div>
           )}
-        </div>
-      </div>   </div>
 
-      {/* Consent Modal */}
-      {isConsentModalOpen && activeConsentOrder && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                  <FileSignature className="w-6 h-6 text-indigo-600" />
+          {searchQuery.length >= 2 && (
+            <>
+              {searchLoading ? (
+                <div className="flex items-center gap-2 px-4 py-3 text-xs text-blue-500 font-medium">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Searching...
                 </div>
-                <div>
-                  <h2 className="text-slate-900 font-black text-lg leading-none mb-1">Generate Consent Form</h2>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                    {activeConsentOrder.procedure?.name}
-                  </p>
+              ) : filteredProcedures?.length > 0 ? (
+                <div className="max-h-[280px] overflow-y-auto">
+                  {filteredProcedures.map((proc: any) => (
+                    <div
+                      key={proc.id}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        selectProcedure(focusedRowId, proc);
+                      }}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer flex items-center justify-between transition-colors border-b border-slate-50 last:border-0"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-slate-800">{proc.name}</span>
+                        </div>
+                        {proc.category && (
+                          <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">{proc.category}</div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-bold text-blue-600">₹{proc.basePrice}</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <button
-                onClick={() => setIsConsentModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-100 hover:bg-rose-50 transition-all flex items-center justify-center"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="p-8 space-y-6 overflow-y-auto max-h-[60vh] bg-white">
-              <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 flex gap-4">
-                 <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
-                 <div>
-                    <h5 className="text-[11px] font-black uppercase tracking-widest text-indigo-800 mb-1">Auto-Populated Data</h5>
-                    <p className="text-[11px] font-medium text-indigo-700/80 leading-relaxed">
-                      Patient details, MRD, Case number, and the standard terms for this procedure will be populated automatically by the system.
-                    </p>
-                 </div>
-              </div>
-
-              <TextArea
-                label="Specific Risks & Complications (Optional)"
-                value={consentRisks}
-                onChange={(e) => setConsentRisks(e.target.value)}
-                placeholder="List any patient-specific risks (e.g. History of keloids, hyperpigmentation) that the patient must acknowledge..."
-                className="min-h-[120px]"
-              />
-
-              <TextArea
-                label="Doctor's Special Notes (Optional)"
-                value={consentNotes}
-                onChange={(e) => setConsentNotes(e.target.value)}
-                placeholder="Any other terms or notes specific to this patient..."
-                className="min-h-[120px]"
-              />
-            </div>
-
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-              <button
-                onClick={() => setIsConsentModalOpen(false)}
-                className="px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-200 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    // Get first available template (or dummy if none)
-                    const templatesResponse = await api.get('/consent/templates');
-                    const templates = templatesResponse.data || [];
-                    const templateId = templates.length > 0 ? templates[0].id : '00000000-0000-0000-0000-000000000000';
-                    
-                    await api.post(`/consent/case/${caseId}`, {
-                      templateId,
-                      customRisks: consentRisks,
-                      doctorNotes: consentNotes
-                    });
-                    
-                    toast.success('Consent Form successfully generated and saved to Patient File!');
-                    setIsConsentModalOpen(false);
-                  } catch (error) {
-                    console.error('Failed to generate consent form:', error);
-                    toast.error('Failed to generate consent form. Please try again.');
-                  }
-                }}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-200 flex items-center gap-2 transition-all"
-              >
-                <Save className="w-4 h-4" />
-                Generate & Save
-              </button>
-            </div>
-          </div>
-        </div>
+              ) : (
+                <div className="px-4 py-3 text-xs text-slate-400 font-medium">
+                  No procedures found for "{searchQuery}"
+                </div>
+              )}
+            </>
+          )}
+        </div>,
+        document.body
       )}
-    </div>
+    </>
+  );
+};
+
+const SessionRow = ({ caseId, procedure, session, doctorName }: any) => {
+  const baseDate = new Date(session.createdAt || Date.now());
+  const calculatedDate = new Date(baseDate);
+  const totalFollowUpDays = (session.sessionNumber - 1) * (session.followUpDays || 0);
+  calculatedDate.setDate(calculatedDate.getDate() + totalFollowUpDays);
+  const displayDate = calculatedDate.toLocaleDateString();
+
+  const [params, setParams] = useState({
+    skinType: '', unit: '', power: '', waveLength: '', pulseDuration: '', spotSize: '', pulseImpuls: '', thickness: '', density: '', dotDensity: '', shortFire: ''
+  });
+  const [rate, setRate] = useState(session.rate ?? procedure.procedure?.basePrice ?? 0);
+  const [discount, setDiscount] = useState(session.discount ?? 0);
+  const [followUpDays, setFollowUpDays] = useState(session.followUpDays ?? '');
+  const [bodyPart, setBodyPart] = useState(session.bodyPart ?? procedure.bodyPart ?? '');
+  const [status, setStatus] = useState(session.status || 'SCHEDULED');
+  const [paymentStatus, setPaymentStatus] = useState(session.paymentStatus || 'PENDING');
+  const [performedDate, setPerformedDate] = useState(session.performedDate ? new Date(session.performedDate).toISOString().split('T')[0] : '');
+  const [remarks, setRemarks] = useState(session.notes ?? '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (session.parameters) {
+      const p: any = { ...params };
+      session.parameters.forEach((param: any) => {
+        // map db keys to local state if needed, or just dump
+        if (p[param.parameterName] !== undefined) p[param.parameterName] = param.parameterValue;
+      });
+      setParams(p);
+    }
+  }, [session]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.patch(`/consultation/${caseId}/procedures/${session.id}`, {
+        status, remarks, rate, discount, paymentStatus, performedDate, followUpDays, bodyPart, parameters: params
+      });
+      toast.success('Session updated successfully');
+    } catch (err) {
+      toast.error('Failed to update session');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const tblInputClass = "border border-slate-200 rounded bg-slate-50 px-2 py-1.5 w-full text-xs font-medium text-slate-700 focus:bg-white focus:border-blue-500 outline-none placeholder-slate-300";
+
+  return (
+    <tr className="hover:bg-slate-50 transition-colors bg-white">
+      <td className="px-4 py-2 border-r border-slate-200 sticky left-0 bg-white z-10 shadow-[4px_0_10px_rgba(0,0,0,0.02)]">
+        <div className="font-bold text-slate-800 text-xs whitespace-nowrap">{displayDate}</div>
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <div className="text-xs font-semibold text-slate-600 whitespace-nowrap">Dr. {doctorName}</div>
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <div className="font-bold text-slate-900 text-xs truncate max-w-[150px]">{procedure.procedure?.name}</div>
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <input type="text" value={bodyPart} onChange={e => setBodyPart(e.target.value)} placeholder="Body Part" className={tblInputClass} />
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200 text-center">
+        <div className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-[10px] border border-blue-100 inline-block">
+          {session.sessionNumber}/{procedure.totalSessions || procedure.sessions?.length || 1}
+        </div>
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <input type="number" value={followUpDays} onChange={e => setFollowUpDays(e.target.value)} placeholder="Days" className={`${tblInputClass} text-center`} />
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <input type="date" value={performedDate} onChange={e => setPerformedDate(e.target.value)} className={tblInputClass} />
+      </td>
+      {Object.keys(params).map(key => (
+        <td key={key} className="px-3 py-2 border-r border-slate-200">
+          <input type="text" value={(params as any)[key]} onChange={e => setParams({...params, [key]: e.target.value})} className={tblInputClass} placeholder={key.replace(/([A-Z])/g, ' $1').trim()} />
+        </td>
+      ))}
+      <td className="px-3 py-2 border-r border-slate-200">
+        <select value={status} onChange={e => setStatus(e.target.value)} className={tblInputClass}>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="COMPLETED">Done</option>
+          <option value="CANCELLED">Cancelled</option>
+          <option value="NOT_TAKEN">Not Taken</option>
+        </select>
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <input type="text" value={remarks} onChange={e => setRemarks(e.target.value)} className={tblInputClass} placeholder="Reason/Note" />
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <input type="number" value={rate} onChange={e => setRate(parseFloat(e.target.value))} className={`${tblInputClass} mb-1`} placeholder="Rate" />
+        <input type="number" value={discount} onChange={e => setDiscount(parseFloat(e.target.value))} className={tblInputClass} placeholder="Disc." />
+      </td>
+      <td className="px-3 py-2 border-r border-slate-200">
+        <select value={paymentStatus} onChange={e => setPaymentStatus(e.target.value)} className={tblInputClass}>
+          <option value="PENDING">Pending</option>
+          <option value="PAID">Paid</option>
+        </select>
+      </td>
+      <td className="px-3 py-2 sticky right-0 bg-slate-50 border-l border-slate-200 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.02)]">
+        <button disabled={saving} onClick={handleSave} className="bg-blue-600 text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full hover:bg-blue-700 shadow transition-colors">
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+          SAVE
+        </button>
+      </td>
+    </tr>
   );
 };
 

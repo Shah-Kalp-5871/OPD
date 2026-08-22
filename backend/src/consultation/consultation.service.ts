@@ -181,7 +181,7 @@ export class ConsultationService {
               prescriptions: {
                 include: { items: { include: { drug: true } } },
               },
-              procedureSessions: { include: { procedure: true } },
+              patientProcedures: { include: { procedure: true, sessions: { include: { parameters: true } } } },
               clinicalImages: {
                 include: { uploadedBy: { select: { name: true } } },
               },
@@ -230,7 +230,7 @@ export class ConsultationService {
                 prescriptions: {
                   include: { items: { include: { drug: true } } },
                 },
-                procedureSessions: { include: { procedure: true } },
+                patientProcedures: { include: { procedure: true, sessions: { include: { parameters: true } } } },
                 clinicalImages: {
                   include: { uploadedBy: { select: { name: true } } },
                 },
@@ -560,6 +560,8 @@ export class ConsultationService {
     scheduledDate: string | undefined,
     scheduledTime: string | undefined,
     sessions: number | undefined,
+    bodyPart: string | undefined,
+    followUpDays: number | undefined,
     isCompletedByDoctor: boolean | undefined,
     doctorId: string,
     branchId: string,
@@ -592,24 +594,72 @@ export class ConsultationService {
       
       const sessionDate = scheduledDate ? new Date(`${scheduledDate}T${scheduledTime || '00:00:00'}`) : null;
 
-      const session = await tx.procedureSession.create({
-        data: {
-          caseId,
-          procedureId,
-          doctorId,
-          branchId,
-          status,
-          notes,
-          ...(isCompletedByDoctor ? { startTime: new Date(), endTime: new Date() } : {}),
-        },
-        include: { procedure: true },
-      });
-
       const patientCase = await tx.patientCase.findUnique({
         where: { id: caseId },
         select: { patientId: true },
       });
       if (!patientCase) throw new NotFoundException('Patient case not found');
+
+      if (sessionDate && status !== 'COMPLETED') {
+        const appointmentDateOnly = new Date(sessionDate);
+        appointmentDateOnly.setUTCHours(0, 0, 0, 0);
+
+        let doctorProfile = await tx.doctorProfile.findUnique({ where: { id: doctorId } });
+        if (!doctorProfile) {
+           doctorProfile = await tx.doctorProfile.findUnique({ where: { userId: doctorId } });
+        }
+        
+        if (doctorProfile) {
+          await tx.appointment.create({
+            data: {
+              patientId: patientCase.patientId,
+              doctorId: doctorProfile.id,
+              branchId,
+              appointmentDate: appointmentDateOnly,
+              appointmentTime: sessionDate,
+              purpose: procedure?.name || 'Procedure Session',
+              remarks: notes || `Procedure Session #1`,
+              status: 'SCHEDULED'
+            }
+          });
+        }
+      }
+
+      const patientProcedure = await tx.patientProcedure.create({
+        data: {
+          caseId,
+          patientId: patientCase.patientId,
+          procedureId,
+          bodyPart,
+          totalSessions: actualSessions,
+          overallStatus: isCompletedByDoctor ? 'COMPLETED' : 'ACTIVE',
+        }
+      });
+
+      const sessionsData: any[] = [];
+      for (let i = 1; i <= actualSessions; i++) {
+        sessionsData.push({
+          patientProcedureId: patientProcedure.id,
+          sessionNumber: i,
+          doctorId,
+          branchId,
+          status: i === 1 ? status : 'SCHEDULED',
+          notes: i === 1 ? notes : undefined,
+          startTime: (i === 1 && isCompletedByDoctor) ? new Date() : undefined,
+          endTime: (i === 1 && isCompletedByDoctor) ? new Date() : undefined,
+          followUpDays: followUpDays || 0,
+        });
+      }
+
+      await tx.procedureSession.createMany({
+        data: sessionsData
+      });
+
+      const firstSession = await tx.procedureSession.findFirst({
+        where: { patientProcedureId: patientProcedure.id, sessionNumber: 1 },
+        include: { patientProcedure: { include: { procedure: true } } }
+      });
+      if (!firstSession) throw new BadRequestException('Session creation failed');
 
       const bill = await this.billing.ensureActiveBill(
         caseId,
@@ -623,13 +673,13 @@ export class ConsultationService {
         bill.id,
         [
           {
-            serviceName: session.procedure.name,
+            serviceName: firstSession.patientProcedure.procedure.name,
             quantity: actualSessions,
-            unitPrice: session.procedure.basePrice,
+            unitPrice: firstSession.patientProcedure.procedure.basePrice,
             discount: 0,
             itemType: 'PROCEDURE',
-            referenceId: session.id,
-            procedureSessionId: session.id,
+            referenceId: patientProcedure.id,
+            procedureSessionId: firstSession.id,
           },
         ],
         branchId,
@@ -639,14 +689,14 @@ export class ConsultationService {
       await tx.auditLog.create({
         data: {
           userId: doctorId,
-          entityType: 'PROCEDURE_SESSION',
-          entityId: session.id,
+          entityType: 'PATIENT_PROCEDURE',
+          entityId: patientProcedure.id,
           action: 'CREATE',
-          details: `Doctor scheduled procedure ${session.procedure.name} for Case ${caseId}`,
+          details: `Doctor scheduled procedure ${firstSession.patientProcedure.procedure.name} for Case ${caseId}`,
         },
       });
 
-      return session;
+      return firstSession;
     });
 
     this.events.emitBillingUpdate({
@@ -656,6 +706,107 @@ export class ConsultationService {
     });
 
     return result;
+  }
+
+  async updateProcedureSession(sessionId: string, dto: any, branchId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.procedureSession.findUnique({
+        where: { id: sessionId },
+        include: { patientProcedure: { include: { patientCase: true, procedure: true } } }
+      });
+      if (!session) throw new NotFoundException('Procedure session not found');
+
+      const {
+        status, remarks, rate, discount, paymentStatus, performedDate, followUpDays, parameters
+      } = dto;
+
+      const updatedSession = await tx.procedureSession.update({
+        where: { id: sessionId },
+        data: {
+          status,
+          notes: remarks,
+          rate: rate ? parseFloat(rate) : undefined,
+          discount: discount ? parseFloat(discount) : undefined,
+          paymentStatus,
+          performedDate: performedDate ? new Date(performedDate) : undefined,
+          followUpDays: followUpDays ? parseInt(followUpDays) : undefined
+        }
+      });
+
+      // Update parameters
+      if (parameters && typeof parameters === 'object') {
+        // Clear existing parameters
+        await tx.procedureParameter.deleteMany({
+          where: { sessionId }
+        });
+        
+        // Add new parameters
+        const paramsToCreate = Object.entries(parameters)
+          .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+          .map(([key, value]) => ({
+            sessionId,
+            parameterName: key,
+            parameterValue: String(value)
+          }));
+        
+        if (paramsToCreate.length > 0) {
+          await tx.procedureParameter.createMany({
+            data: paramsToCreate
+          });
+        }
+      }
+
+      // Auto schedule next session if completed and followUpDays provided
+      if (status === 'COMPLETED' && followUpDays && session.status !== 'COMPLETED') {
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + followUpDays);
+        nextDate.setUTCHours(0, 0, 0, 0);
+
+        // Check if there is a next session in the database
+        const nextSession = await tx.procedureSession.findFirst({
+          where: {
+            patientProcedureId: session.patientProcedureId,
+            sessionNumber: session.sessionNumber + 1
+          }
+        });
+
+        if (nextSession) {
+          // Update it with the follow-up date (which maps to scheduled date)
+          await tx.procedureSession.update({
+            where: { id: nextSession.id },
+            data: { followUpDate: nextDate }
+          });
+        } else {
+          // Create a new session if they need more (dynamic overflow)
+          await tx.procedureSession.create({
+             data: {
+                patientProcedureId: session.patientProcedureId,
+                sessionNumber: session.sessionNumber + 1,
+                doctorId: session.doctorId,
+                branchId: session.branchId,
+                status: 'SCHEDULED',
+                followUpDate: nextDate
+             }
+          });
+        }
+
+        // Also create an Appointment for the next session so it shows in the Queue
+        await tx.appointment.create({
+          data: {
+            patientId: session.patientProcedure.patientCase.patientId,
+            doctorId: session.doctorId,
+            branchId,
+            appointmentDate: nextDate,
+            appointmentTime: nextDate,
+            purpose: session.patientProcedure.procedure.name || 'Follow-up Procedure Session',
+            remarks: `Auto-scheduled follow up for Session #${session.sessionNumber + 1}`,
+            status: 'SCHEDULED'
+          }
+        });
+      }
+
+      return updatedSession;
+    });
   }
 
   async getClinicalImages(caseId: string, branchId: string) {

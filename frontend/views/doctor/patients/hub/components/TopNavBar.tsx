@@ -14,6 +14,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ activeSection, setActiveSection }
     { id: 'documents', label: 'Reports & Files', icon: FileText },
     // Case-Specific Sections
     { id: 'clinical_data', label: 'Complaints & Vitals', icon: Activity },
+    { id: 'procedures', label: 'Procedures', icon: Activity },
     { id: 'consent', label: 'Consent Forms', icon: FileSignature },
     { id: 'billing', label: 'Billing Records', icon: CreditCard },
   ];

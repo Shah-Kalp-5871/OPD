@@ -8,15 +8,7 @@ export function useProcedureSearch(limit = 20) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!query && !category) {
-      setResults([]);
-      setIsLoading(false);
-      return;
-    }
-
-    if (query.trim().length < 2 && !category) {
-      setResults([]);
-      setIsLoading(false);
+    if (query.trim().length > 0 && query.trim().length < 2) {
       return;
     }
 

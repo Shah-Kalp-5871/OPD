@@ -192,6 +192,8 @@ export class ConsultationController {
       dto.scheduledDate,
       dto.scheduledTime,
       dto.sessions,
+      dto.bodyPart,
+      dto.followUpDays,
       dto.isCompletedByDoctor,
       req.user.id,
       branchId,

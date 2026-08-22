@@ -14,6 +14,7 @@ import TimelineTab from './components/tabs/TimelineTab';
 import DocumentsTab from './components/tabs/DocumentsTab';
 import ConsentTab from './components/tabs/ConsentTab';
 import BillingTab from './components/tabs/BillingTab';
+import ProcedureTab from './components/tabs/ProcedureTab';
 import ProfileSection from './components/ProfileSection';
 import { useAuthStore } from '@/store/authStore';
 
@@ -303,6 +304,15 @@ const PatientHubView = () => {
                            onSaveClinicalData={handleClinicalDataSubmit}
                          />
                        </div>
+
+                       <div id="procedures" className="scroll-mt-48 pt-12 border-t border-slate-200">
+                          <h3 className="text-xl font-black text-slate-800 tracking-tight mb-8">Procedures</h3>
+                          <ProcedureTab 
+                            patient={patient}
+                            selectedCaseId={selectedCaseId}
+                            onRefresh={fetchPatientData}
+                          />
+                        </div>
 
                        <div id="consent" className="scroll-mt-48 pt-12 border-t border-slate-200">
                          <h3 className="text-xl font-black text-slate-800 tracking-tight mb-8">Consent Forms</h3>

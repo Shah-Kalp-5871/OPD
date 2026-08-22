@@ -357,8 +357,11 @@ export class QueueService {
       where: {
         branchId,
         doctorId: doctorId || undefined,
-        checkInTime: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         status: { not: 'CANCELLED' },
+        OR: [
+          { checkInTime: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+          { status: { in: ['WAITING', 'CALLING', 'IN_SESSION'] } }
+        ]
       },
       include: {
         patient: {

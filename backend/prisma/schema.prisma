@@ -178,6 +178,7 @@ model Patient {
   notificationLogs        NotificationLog[]
   wearableDevices         WearableDevice[]
   healthMetrics           HealthMetric[]
+  patientProcedures       PatientProcedure[]
 
   @@index([firstName, lastName])
   @@index([createdAt])
@@ -258,7 +259,7 @@ model PatientCase {
   patient                 Patient                  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   vitalsList              PatientVitals[]
   prescriptions           Prescription[]
-  procedureSessions       ProcedureSession[]
+  patientProcedures       PatientProcedure[]
   queueEntry              QueueEntry?
   sessions                VisitSession[]
   branchId                String
@@ -1199,31 +1200,55 @@ model Procedure {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   consumableTemplates ProcedureConsumable[]
-  sessions            ProcedureSession[]
+  patientProcedures   PatientProcedure[]
 
   @@index([isActive])
   @@index([category])
   @@index([displayOrder])
 }
 
+model PatientProcedure {
+  id                String             @id @default(uuid())
+  caseId            String
+  patientId         String
+  procedureId       String
+  bodyPart          String?
+  totalSessions     Int                @default(1)
+  completedSessions Int                @default(0)
+  overallStatus     String             @default("ACTIVE")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  patient           Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientCase       PatientCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  procedure         Procedure          @relation(fields: [procedureId], references: [id])
+  sessions          ProcedureSession[]
+}
+
 model ProcedureSession {
-  id            String               @id @default(uuid())
-  caseId        String
-  procedureId   String
-  doctorId      String
-  status        ProcedureStatus      @default(SCHEDULED)
-  startTime     DateTime?
-  endTime       DateTime?
-  notes         String?
-  complications String?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  branchId      String
-  branch        Branch               @relation("BranchProcedures", fields: [branchId], references: [id])
-  images        ProcedureImage[]
-  parameters    ProcedureParameter[]
-  patientCase   PatientCase          @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  procedure     Procedure            @relation(fields: [procedureId], references: [id])
+  id                 String               @id @default(uuid())
+  patientProcedureId String
+  sessionNumber      Int                  @default(1)
+  doctorId           String
+  status             ProcedureStatus      @default(SCHEDULED)
+  paymentStatus      String               @default("PENDING")
+  followUpDate       DateTime?
+  startTime          DateTime?
+  endTime            DateTime?
+  notes              String?
+  complications      String?
+  followUpDays       Int?
+  performedDate      DateTime?
+  rate               Float?
+  discount           Float?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  branchId           String
+  
+  branch             Branch               @relation("BranchProcedures", fields: [branchId], references: [id])
+  images             ProcedureImage[]
+  parameters         ProcedureParameter[]
+  patientProcedure   PatientProcedure     @relation(fields: [patientProcedureId], references: [id], onDelete: Cascade)
 }
 
 model ProcedureParameter {
