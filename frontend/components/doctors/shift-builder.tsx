@@ -60,16 +60,22 @@ export default function ShiftBuilder({ shifts, onChange }: ShiftBuilderProps) {
       if (isNaN(startHour) || isNaN(endHour) || shift.slotDuration <= 0) return;
 
       const startMinutes = startHour * 60 + startMin;
-      const endMinutes = endHour * 60 + endMin;
+      let endMinutes = endHour * 60 + endMin;
+      
+      // If end time is earlier than start time (e.g., 12:00 AM), assume it extends into the next day
+      if (endMinutes <= startMinutes) {
+        endMinutes += 24 * 60;
+      }
       
       let currentMinutes = startMinutes;
       while (currentMinutes + shift.slotDuration <= endMinutes) {
-        const ampm = Math.floor(currentMinutes / 60) >= 12 ? 'PM' : 'AM';
-        const displayH = Math.floor(currentMinutes / 60) % 12 || 12;
-        const m = (currentMinutes % 60).toString().padStart(2, '0');
+        const totalMins = currentMinutes % (24 * 60); // Handle next day overflow for display
+        const ampm = Math.floor(totalMins / 60) >= 12 && Math.floor(totalMins / 60) < 24 ? 'PM' : 'AM';
+        const displayH = Math.floor(totalMins / 60) % 12 || 12;
+        const m = (totalMins % 60).toString().padStart(2, '0');
         const displayTime = `${displayH.toString().padStart(2, '0')}:${m} ${ampm}`;
 
-        result[shift.dayOfWeek].push({ time: displayTime, minutes: currentMinutes });
+        result[shift.dayOfWeek].push({ time: displayTime, minutes: totalMins });
         currentMinutes += shift.slotDuration;
       }
     });

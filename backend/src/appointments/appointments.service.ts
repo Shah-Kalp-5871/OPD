@@ -385,6 +385,10 @@ export class AppointmentsService {
 
       const end = new Date(date);
       end.setHours(endH, endM, 0, 0);
+      
+      if (end <= current) {
+        end.setDate(end.getDate() + 1);
+      }
 
       const duration = shift.slotDuration || 15;
 
